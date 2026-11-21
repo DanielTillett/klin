@@ -12,6 +12,7 @@
  * buffered io, the translator on real parser input, the timer. */
 
 #include "klin_conf.h"
+#include <errno.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -1553,9 +1554,29 @@ static void test_embedded_resources(void)
     CHECK(emb_term() == 0);
 }
 
+/* "0" parses whatever errno an earlier call left (LibU tested errno after
+   strtol(3) without clearing it: a setting of 0 kept its default) */
+static void test_atoi_zero(void)
+{
+    struct { const char *s; int v; } ok[] = { { "0", 0 }, { "214", 214 },
+        { "-1", -1 } };
+    size_t i;
+    int v;
+
+    for(i = 0; i < sizeof ok / sizeof ok[0]; ++i)
+    {
+        errno = EINVAL;
+        v = 12345;
+        CHECK(u_atoi(ok[i].s, &v) == 0 && v == ok[i].v);
+    }
+    errno = EINVAL;
+    CHECK(u_atoi("x", &v) != 0);
+}
+
 int main(void)
 {
     test_io_read_codecs();
+    test_atoi_zero();
 #ifdef HAVE_LIBZ
     test_deflate_windows();
 #endif
