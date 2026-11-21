@@ -357,12 +357,35 @@ err:
     return HTTP_STATUS_INTERNAL_SERVER_ERROR;
 }
 
-/* does the Content-Type 'mime' (its parameters ignored) match one of
-   'types', "type/subtype" or "type/ *", compared without regard to case? */
+/* the length of the run of token characters (RFC 9110, less '*') at the
+   start of the 'n' bytes at 's' */
+static size_t valid_token(const char *s, size_t n)
+{
+    size_t i;
+
+    for(i = 0; i < n && s[i] && ((s[i] >= 'a' && s[i] <= 'z') ||
+                (s[i] >= 'A' && s[i] <= 'Z') || (s[i] >= '0' && s[i] <= '9') ||
+                strchr("!#$%&'+-.^_`|~", s[i])); ++i)
+        ;
+    return i;
+}
+
+/* does the Content-Type 'mime' match one of 'types', "type/subtype" or
+   "type/ *", compared without regard to case? 'mime' must be a whole
+   type/subtype, followed only by blanks or by ';' and parameters (which
+   are ignored) */
 static int valid_type_ok(const char *types, const char *mime)
 {
-    size_t n = strcspn(mime, "; \t"), k;
+    size_t t = valid_token(mime, SIZE_MAX), n, k;
     const char *p, *e;
+
+    if(t == 0 || mime[t] != '/' ||
+            (n = valid_token(mime + t + 1, SIZE_MAX)) == 0)
+        return 0;
+    n += t + 1;
+    p = mime + n + strspn(mime + n, " \t");
+    if(*p && *p != ';')
+        return 0;
 
     for(p = types; *p; p = e)
     {
@@ -372,8 +395,7 @@ static int valid_type_ok(const char *types, const char *mime)
             continue;
         if(k == n && !strncasecmp(p, mime, n))
             return 1;
-        if(k >= 2 && p[k - 1] == '*' && n > k - 1 &&
-                !strncasecmp(p, mime, k - 1))
+        if(k == t + 2 && p[k - 1] == '*' && !strncasecmp(p, mime, t + 1))
             return 1;               /* "image/" then any subtype */
     }
     return 0;
@@ -533,23 +555,23 @@ err:
     return ~0;
 }
 
-/* is each entry of a type list "type/subtype" or "type/ *"? */
+/* is each entry of a type list "type/subtype" or "type/ *", the type and
+   the subtype each made of token characters (as valid_type_ok() wants)? */
 static int valid_types_ok(const char *types)
 {
-    const char *p, *e, *slash;
+    const char *p, *e;
+    size_t k, t;
 
     for(p = types; *p; p = e)
     {
         p += strspn(p, " \t,");
         e = p + strcspn(p, " \t,");
-        if(e == p)
+        if((k = (size_t) (e - p)) == 0)
             continue;
-        if((slash = memchr(p, '/', (size_t) (e - p))) == NULL ||
-                slash == p || slash + 1 == e ||
-                memchr(slash + 1, '/', (size_t) (e - slash - 1)) ||
-                memchr(p, '*', (size_t) (slash - p)) ||
-                (memchr(slash + 1, '*', (size_t) (e - slash - 1)) &&
-                 e - slash != 2))
+        if((t = valid_token(p, k)) == 0 || t + 1 >= k || p[t] != '/')
+            return 0;
+        if(!(k == t + 2 && p[t + 1] == '*') &&
+                valid_token(p + t + 1, k - t - 1) != k - t - 1)
             return 0;
     }
     return 1;
