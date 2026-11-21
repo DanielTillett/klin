@@ -1542,9 +1542,9 @@ def run_keymgr_checks(check, root_pid, key, sanitized):
 
 def key_managers(root_pid, procs):
     """The key managers among klind's processes. They are not dumpable,
-    so (unless we are root) their /proc entries belong to root; as root,
-    they are the processes with only their control socket (and /dev/null)
-    open."""
+    so (unless we are root) the files in their /proc directory belong to
+    root (the directory itself stays the user's); as root, they are the
+    processes with only their control socket (and /dev/null) open."""
     found = set()
     for pid in procs:
         if pid == root_pid:
@@ -1553,7 +1553,7 @@ def key_managers(root_pid, procs):
             if os.geteuid() == 0:
                 if few_fds(pid):
                     found.add(pid)
-            elif Path(f"/proc/{pid}").stat().st_uid == 0:
+            elif Path(f"/proc/{pid}/status").stat().st_uid == 0:
                 found.add(pid)
         except OSError:
             pass    # exited meanwhile
