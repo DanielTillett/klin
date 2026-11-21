@@ -92,6 +92,11 @@ Klin 4.0.0:
 	  stops the signalling of the other workers; blind_chroot checks the
 	  directory and enters it through one descriptor and removes it once
 	  inside (a fixed one-second wait) (found by reviews)
+	- sessions: a session's encrypted KLIN_CIPHER_KEY longer than the key
+	  buffer overflowed it on the stack while it was decrypted
+	  (u_cipher_encrypt/decrypt wrote whatever OpenSSL produced and
+	  ignored the size of dst). Data that may not fit is now refused
+	  before anything is written (found by ClusterFuzzLite)
 	- key manager (doc/KEYMGR.md): it is undumpable (PR_SET_DUMPABLE 0, no
 	  core dumps), so a worker of the same user cannot read the key from
 	  its memory when klind runs as that user from the start (systemd

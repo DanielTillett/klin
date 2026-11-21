@@ -1454,6 +1454,13 @@ static int u_cipher_run(int cipher, int encrypt, unsigned char *key,
     dbg_return_if (dst == NULL, ~0);
     dbg_return_if (ssz > INT_MAX, ~0);
 
+    /* *dcount is the size of dst: OpenSSL may write the data and a block
+       (and writes before it checks a decryption's padding), so data that
+       may not fit is refused before anything is written */
+    dbg_return_if (kc_cipher_block_size(cipher) == 0, ~0);
+    dbg_return_if (*dcount < ssz || *dcount - ssz < kc_cipher_block_size(cipher),
+            ~0);
+
     dbg_err_if(kc_cipher_new(cipher, encrypt, key, iv, &c));
 
     dbg_err_if(kc_cipher_update(c, (unsigned char *)dst, &wr,
@@ -1508,13 +1515,15 @@ int u_cipher_encrypt(int cipher, unsigned char *key,
  *
  * Decrypt the data block \p src of size \p ssz using the encryption algorithm
  * \p cipher, with key \p key and initialisation vector \p iv.  The result is
- * stored at \p dst, with length \p dcount.
+ * stored at \p dst, a preallocated buffer with a size of at least
+ * \c cipher_block_size + the length in bytes of \p src (else nothing is
+ * written and ~0 is returned); its length is stored at \p *dcount.
  *
  * \param   cipher  a \c KC_* cipher (klin/crypto.h)
  * \param   key     decryption key string
  * \param   iv      initialisation vector
  * \param   dst     buffer holding the result
- * \param   dcount  size in bytes of the result buffer
+ * \param   dcount  in: the size of \p dst; out: the length of the result
  * \param   src     the buffer to be decrypted
  * \param   ssz     size of \p src in bytes
  *
