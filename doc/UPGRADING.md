@@ -46,7 +46,7 @@ behaviour back:
 | Header limits, a header deadline, connections per client address, SSE and WebSocket streams | `max_header_*`, `idle_timeout`, `max_conn_per_ip`, `max_streams` ([LIMITS](LIMITS.md)) |
 | Symbolic links are followed only inside the document root | `follow_symlinks` ([FILES](FILES.md)) |
 | CGI: 60 s, 30 s of CPU, 512 MB; klind's environment and the Authorization field are not passed | the `cgi` block: `timeout`, `max_cpu`, `max_memory`, `pass_env`, `pass_headers` ([CGI](CGI.md)) |
-| Security headers on every response, unless turned off | `security_headers` ([HEADERS](HEADERS.md)) |
+| Security headers on every response except `nph-` CGI output and WebSocket upgrades, unless turned off | `security_headers` ([HEADERS](HEADERS.md)) |
 | A session id the client makes up is not accepted | none: call `session_regenerate_id()` at login ([SESSIONS](SESSIONS.md)) |
 | klind does not keep root credentials | `uid` and `gid`, or `allow_root yes` ([SYSTEMD](SYSTEMD.md)) |
 | Settings out of range stop klind at startup | `max_child` 1 to 896, `verify_depth` 0 to 100 ([klind.conf(5)](man/klind.conf.5)) |

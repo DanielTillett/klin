@@ -31,7 +31,10 @@ cgi
 | `max_cpu` | 30 | Seconds of CPU time (RLIMIT_CPU): SIGXCPU, then SIGKILL a second later. |
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
-0 sets no limit. The script runs in a process group of its own, and when
+0 means klind sets no limit of its own, so the script keeps the limits
+it inherits from the worker ([LIMITS](LIMITS.md)); a value above the
+worker's hard limit cannot be granted, and klind keeps the inherited
+limit without a warning. The script runs in a process group of its own, and when
 the timeout fires klind kills the script and that group. A child that
 moves to a group or session of its own (with setsid(2), say) escapes it.
 
