@@ -292,10 +292,10 @@ static ssize_t rf_transform(codec_t *codec,
             *dcount = 0;    /* zero output byte written */
             return src_sz;  /* src_sz input byte consumed */
         } else {
-            /* here's the last chance to modify HTTP header so, if not already
-               set, add a session ID to the cookie list */
-            if(rf->ss && strlen(rf->ss->id) == 0)
-                dbg_err_if(session_priv_set_id(rf->ss, NULL));
+            /* the last chance to change the header: a server-side session
+               gets its id cookie, a client session is saved (cookies) */
+            if(rf->ss)
+                dbg_err_if(session_prv_commit(rf->ss));
 
             /* the buffer is full, print the header and flush the buffer */
             dbg_err_if(rf_start(rf, 0));

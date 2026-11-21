@@ -60,9 +60,11 @@ id cookie goes out with the headers, whenever they commit. For a small
 response that is after the save, but a page whose output reaches the
 4,096-byte buffer, or that streams (an SSE page, say), commits its headers
 while it is still running. If the session has no id yet, one is drawn
-then, and its cookie is sent before MSES_SAVE. A
+then, and its cookie is sent before MSES_SAVE. Changes the page makes
+after that are still saved, as only the id travels in a cookie. A
 session with no variables of the page's own is not saved: its stored copy
-is removed instead (MSES_REMOVE).
+is removed instead (MSES_REMOVE). File sessions work the same way. Client
+sessions do not: see [Client sessions](#client-sessions).
 
 The size limit is the one to watch. The session's name and time take 264
 of a message's 8,192 bytes on 64-bit Linux, so a serialised session over
@@ -172,6 +174,14 @@ covers the session id and the time of the save (the `KL1_CLISES_MTIME`
 cookie), so none of the three can be changed or moved to another session.
 `KL1_CLISES_DATA` holds the nonce, ciphertext and tag in hex.
 
+A client session travels in Set-Cookie fields, so it must be saved before
+the headers go out. For a small response that is when the page has run.
+A page whose output reaches the 4,096-byte buffer, or that streams,
+commits its headers while it is still running, and the session is saved
+at that moment with whatever it holds then. A change the page makes after
+that cannot reach the browser: klind logs a warning and the change is
+lost. On a large page, set the session first and print afterwards.
+
 Sessions in the format before 4.0 (AES-256-CBC, then an HMAC in
 `KL1_CLISES_HMAC`, with the IV in `KL1_CLISES_IV`) are still read in 4.x
 and rewritten in the new format. 5.0 removes that. The keys of both are
@@ -228,7 +238,11 @@ sessions (test/site/www/sessec.kl1):
   memory and file sessions the old id no longer loads the session;
 - GET passes the CSRF check, and POST passes only with the token (header
   or form value);
-- a client session with a changed data, time or id cookie is refused.
+- a client session with a changed data, time or id cookie is refused;
+- a change made before a page has printed more than 4,096 bytes is kept,
+  for a new session and an old one; one made after is kept by memory and
+  file sessions, and for a client session it is lost with a warning in
+  the log.
 
 On a memory store with a 2-second idle and 4-second absolute timeout (the
 `limits` fixture), a session left unused ends, and one used every second

@@ -108,6 +108,9 @@ struct session_s
     session_opt_t *so;          /* runtime option                             */
     int raw;                    /* >0: saved and loaded without the cipher
                                    codec (the driver encrypts: client-side) */
+    int committed;              /* >0: the response headers have gone out
+                                   (a client session was saved then)      */
+    unsigned long long sent;    /* ... and the fingerprint of what was in it */
 };
 
 /* main c'tor */
@@ -128,6 +131,7 @@ int session_prv_save_to_buf(session_t *ss, char **pbuf, size_t *psz);
 int session_prv_load_from_buf(session_t *ss, char *buf, size_t size);
 int session_prv_set_id(session_t *ss, const char *sid);
 int session_priv_set_id(session_t *ss, const char *sid); /* backward comp. */
+int session_prv_commit(session_t *ss);
 
 /* init/term funcs */
 int session_module_init(u_config_t *config, session_opt_t **pso);
