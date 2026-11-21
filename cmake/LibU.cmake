@@ -202,6 +202,29 @@ foreach(_m vsyslog syslog strtok_r unlink getpid fnmatch timegm strsep
 endforeach()
 list(TRANSFORM _libu_srcs PREPEND "${LIBU_SOURCE_DIR}/srcs/")
 
+# LibU's u_atol() and u_atoumax() test errno after strtol(3)/strtoumax(3)
+# without clearing it first, so "0" fails to parse whenever an earlier call
+# left EINVAL behind, and a setting of 0 silently keeps its default (seen
+# with worker_max_procs 0 on macOS). Build a copy of misc.c that clears it;
+# stop if the pinned LibU no longer has that code.
+file(READ "${LIBU_SOURCE_DIR}/srcs/toolbox/misc.c" _libu_misc)
+foreach(_call "tmp = strtol(nptr, &endptr, 10);"
+        "tmp = strtoumax(nptr, (char **) NULL, 10);")
+    string(FIND "${_libu_misc}" "\n    ${_call}" _at)
+    if(_at EQUAL -1)
+        message(FATAL_ERROR "LibU's srcs/toolbox/misc.c no longer has '${_call}': "
+            "review the errno fix in cmake/LibU.cmake")
+    endif()
+    string(REPLACE "\n    ${_call}" "\n    errno = 0;\n    ${_call}"
+        _libu_misc "${_libu_misc}")
+endforeach()
+file(WRITE "${CMAKE_BINARY_DIR}/libu/misc.c.new" "${_libu_misc}")
+configure_file("${CMAKE_BINARY_DIR}/libu/misc.c.new" "${CMAKE_BINARY_DIR}/libu/misc.c"
+    COPYONLY)   # rewritten only when it changes
+list(FIND _libu_srcs "${LIBU_SOURCE_DIR}/srcs/toolbox/misc.c" _at)
+list(REMOVE_AT _libu_srcs ${_at})
+list(INSERT _libu_srcs ${_at} "${CMAKE_BINARY_DIR}/libu/misc.c")
+
 add_library(libu STATIC ${_libu_srcs})
 set_target_properties(libu PROPERTIES OUTPUT_NAME u)
 target_include_directories(libu PUBLIC "${LIBU_GENERATED_INCLUDE_DIR}")
