@@ -46,7 +46,7 @@ jobs:
       - name: klind under the hardened systemd unit
         if: matrix.mode == 'release'
         run: sudo python3 test/run_systemd_test.py --build .build/release/cmake
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: build-logs-${{ matrix.mode }}
@@ -79,7 +79,7 @@ jobs:
         run: python3 build/build.py --test --generator "Unix Makefiles" --make-program "$(command -v bmake)"
       - name: Build-system checks (bmake)
         run: python3 test/run_build_checks.py --generator "Unix Makefiles" --make-program "$(command -v bmake)"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: build-logs-bsd-make
@@ -145,7 +145,7 @@ jobs:
       - name: Build-system checks
         if: matrix.mode == 'release'
         run: python3 test/run_build_checks.py
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: build-logs-macos-${{ matrix.mode }}
