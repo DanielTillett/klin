@@ -20,15 +20,24 @@ void unregister_pages(void);
 static u_hmap_t *embmap = NULL;     /* hashmap of embedded resources */
 static int init = 0;
 
+struct list_cursor
+{
+    char **list;
+    size_t idx;
+};
+
 static int listadd (const void *val, const void *arg);
 
 int emb_init(void)
 {
     u_hmap_opts_t *hopts = NULL;
 
-    if(init++ == 0)
+    if(!init)
     {
         dbg_err_if (u_hmap_opts_new(&hopts));
+
+        /* Start with LibU's smallest bucket array; it grows as needed. */
+        dbg_err_if (u_hmap_opts_set_size(hopts, 13));
 
         /* no free function needed for static values */
         dbg_err_if (u_hmap_opts_set_val_freefunc(hopts, NULL));
@@ -38,7 +47,8 @@ int emb_init(void)
         u_hmap_opts_free(hopts);
         hopts = NULL;
 
-        /* call autogen external function (cannot be called more then once!) */
+        /* Mark initialized before the generated code calls emb_register. */
+        init = 1;
         u_dbg("registering embedded resources");
         register_pages();
     }
@@ -114,16 +124,20 @@ err:
     return ~0;
 }
 
-int emb_open(const char *file, io_t **pio)
+static int emb_open_sized(const char *file, io_t **pio, size_t *size)
 {
-    embfile_t *e = NULL;
+    embres_t *res;
+    const embfile_t *e;
+    size_t read_size;
     codec_t *gzip = NULL;
-    io_t *io;
+    io_t *io = NULL;
 
     dbg_return_if (pio == NULL, ~0);
     dbg_return_if (file == NULL, ~0);
     
-    dbg_err_if(emb_lookup(file, (embres_t**)&e) || e->res.type != ET_FILE);
+    dbg_err_if(emb_lookup(file, &res) || res->type != ET_FILE);
+    e = (const embfile_t *)res;
+    read_size = e->size;
 
     dbg_err_if(io_mem_create(KLIN_UNCONST(e->data), e->size, 0, &io));
 
@@ -132,46 +146,52 @@ int emb_open(const char *file, io_t **pio)
     {
         dbg_err_if(codec_gzip_create(e->comp == EMB_COMP_ZLIB ?
                     ZLIB_UNCOMPRESS : GZIP_UNCOMPRESS, &gzip));
-        dbg_err_if(io_codec_add_tail(io, (codec_t*)gzip));
+        dbg_err_if(io_codec_add_tail(io, gzip));
         gzip = NULL;
+        read_size = e->file_size;
     }
 #endif
 
     *pio = io;
+    if(size)
+        *size = read_size;
 
     return 0;
 err:
     if(gzip)
         codec_free(gzip);
+    if(io)
+        io_free(io);
     return ~0;
+}
+
+int emb_open(const char *file, io_t **pio)
+{
+    return emb_open_sized(file, pio, NULL);
 }
 
 int emb_list (char ***plist)
 {
-    size_t i;
     ssize_t nelems;
-    char **list = NULL;
+    struct list_cursor cursor = { NULL, 0 };
 
+    dbg_err_if (plist == NULL);
     /* See how many elements are registered. */
     dbg_err_if ((nelems = u_hmap_count(embmap)) <= 0);
 
-    /* Create the array of strings needed to hold the list. */
-    list = u_malloc(((size_t) nelems + 1) * sizeof(char *));
-    dbg_err_sif (list == NULL);
-
-    for (i = 0; i <= (size_t) nelems; i++)
-        list[i] = NULL;
+    /* Zero the array for the terminator and cleanup of a partial list. */
+    cursor.list = u_calloc((size_t) nelems + 1, sizeof(*cursor.list));
+    dbg_err_sif (cursor.list == NULL);
 
     /* Walk through the embfs to collect res names. */
-    u_hmap_foreach_arg(embmap, listadd, list);
+    dbg_err_if (u_hmap_foreach_arg(embmap, listadd, &cursor));
 
     /* Copy out result. */
-    *plist = list;
+    *plist = cursor.list;
 
     return 0;
 err:
-    if (list)
-        emb_list_free(list);
+    emb_list_free(cursor.list);
     return ~0;
 }
 
@@ -193,6 +213,7 @@ void emb_list_free (char **list)
 int emb_to_ubuf(const char *res_name, u_buf_t **pubuf)
 {
     int c;
+    size_t size;
     char buf[1024];
     io_t *tmp = NULL;
     u_buf_t *ubuf = NULL;
@@ -200,9 +221,10 @@ int emb_to_ubuf(const char *res_name, u_buf_t **pubuf)
     dbg_err_if(res_name == NULL);
     dbg_err_if(pubuf == NULL);
 
-    dbg_err_if(emb_open(res_name, &tmp));
+    dbg_err_if(emb_open_sized(res_name, &tmp, &size));
 
     dbg_err_if(u_buf_create(&ubuf));
+    dbg_err_if(size == SIZE_MAX || u_buf_reserve(ubuf, size));
 
     for (;;)
     {
@@ -230,19 +252,13 @@ err:
     return ~0;
 }
 
-/* Here 'val' is an embres_t object and 'arg' the res names' list. */
 static int listadd (const void *val, const void *arg)
 {
-    size_t i;
-    const char **list = KLIN_UNCONST(arg);
-    const embres_t *res = (const embres_t *) val;
+    struct list_cursor *cursor = KLIN_UNCONST(arg);
+    const embres_t *res = val;
 
-    /* Skip over already filled slots. */
-    for (i = 0; list[i] != NULL; i++)
-        ;
-
-    /* Attach the resource filename. */
-    dbg_err_sif ((list[i] = u_strdup(res->filename)) == NULL);
+    dbg_err_sif ((cursor->list[cursor->idx] = u_strdup(res->filename)) == NULL);
+    cursor->idx++;
 
     return 0;
 err:

@@ -20,6 +20,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <u/libu.h>
+#include <klin/emb.h>
 #include <klin/field.h>
 #include <klin/header.h>
 #include <klin/io.h>
@@ -1469,6 +1470,89 @@ end:
     test_http_term(&http);
 }
 
+static void test_embedded_resources(void)
+{
+    enum { PAGES = 64 };
+    embres_t pages[PAGES] = {0}, *res = NULL;
+    char names[PAGES][16];
+    int seen[PAGES] = {0};
+    char **list = NULL;
+    u_buf_t *buf = NULL;
+    io_t *io = NULL;
+    unsigned char contents[4096] = "embedded test";
+    embfile_t file = {
+        .res = { .filename = "/file", .type = ET_FILE },
+        .size = sizeof(contents), .data = contents, .file_size = sizeof(contents)
+    };
+    int i, index;
+#ifdef HAVE_LIBZ
+    unsigned char compressed[sizeof(contents) + 128];
+    unsigned long compressed_size = sizeof(compressed);
+#endif
+
+    CHECK(emb_init() == 0);
+    CHECK(emb_list(&list) != 0 && list == NULL);
+    for(i = 0; i < PAGES; i++)
+    {
+        snprintf(names[i], sizeof(names[i]), "/page%d", i);
+        pages[i].filename = names[i];
+        pages[i].type = ET_PAGE;
+        CHECK(emb_register(&pages[i]) == 0);
+    }
+    CHECK(emb_register(&pages[0]) != 0);
+    for(i = 0; i < PAGES; i++)
+        CHECK(emb_lookup(names[i], &res) == 0 && res == &pages[i]);
+    CHECK(emb_open(names[0], &io) != 0 && io == NULL);
+    CHECK(emb_list(&list) == 0 && list != NULL);
+    if(list)
+    {
+        for(i = 0; i < PAGES && list[i]; i++)
+        {
+            index = -1;
+            CHECK(sscanf(list[i], "/page%d", &index) == 1);
+            CHECK(index >= 0 && index < PAGES);
+            if(index >= 0 && index < PAGES)
+            {
+                CHECK(seen[index]++ == 0);
+                CHECK(list[i] != names[index] && !strcmp(list[i], names[index]));
+            }
+        }
+        CHECK(i == PAGES && list[i] == NULL);
+        emb_list_free(list);
+    }
+    for(i = 0; i < PAGES; i++)
+        CHECK(emb_unregister(&pages[i]) == 0);
+    CHECK(emb_lookup(names[0], &res) != 0);
+    CHECK(emb_unregister(&pages[0]) != 0);
+
+    CHECK(emb_register(&file.res) == 0);
+    CHECK(emb_to_ubuf(file.res.filename, &buf) == 0 && buf != NULL);
+    if(buf)
+    {
+        CHECK(u_buf_size(buf) == sizeof(contents));
+        CHECK(u_buf_len(buf) == sizeof(contents)
+                && !memcmp(u_buf_ptr(buf), contents, sizeof(contents)));
+        u_buf_free(buf);
+        buf = NULL;
+    }
+#ifdef HAVE_LIBZ
+    CHECK(compress(compressed, &compressed_size, contents, sizeof(contents)) == Z_OK);
+    file.comp = EMB_COMP_ZLIB;
+    file.size = compressed_size;
+    file.data = compressed;
+    CHECK(emb_to_ubuf(file.res.filename, &buf) == 0 && buf != NULL);
+    if(buf)
+    {
+        CHECK(u_buf_size(buf) == sizeof(contents));
+        CHECK(u_buf_len(buf) == sizeof(contents)
+                && !memcmp(u_buf_ptr(buf), contents, sizeof(contents)));
+        u_buf_free(buf);
+    }
+#endif
+    CHECK(emb_unregister(&file.res) == 0);
+    CHECK(emb_term() == 0);
+}
+
 int main(void)
 {
     test_io_read_codecs();
@@ -1484,6 +1568,7 @@ int main(void)
     test_memory_session_ppc();
     test_field_reuse();
     test_timer();
+    test_embedded_resources();
     test_translate();
     test_json_parse();
 #ifdef SSL_OPENSSL
