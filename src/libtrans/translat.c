@@ -112,7 +112,10 @@ static int kblock_create(const char *name, const char *buf, size_t size,
     }
 
     if(buf && size)
+    {
+        dbg_err_if(size == SIZE_MAX || u_buf_reserve(b->ubuf, size));
         dbg_err_if(u_buf_append(b->ubuf, buf, size));
+    }
 
     *pblock = b;
 

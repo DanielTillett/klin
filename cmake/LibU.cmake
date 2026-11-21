@@ -181,14 +181,12 @@ foreach(_h IN LISTS _libu_headers)
     endforeach()
 endforeach()
 
-# Same module list as LibU's srcs/Makefile with Klin's configure options.
+# Modules used by Klin and their LibU dependencies (uri.c uses lexer.c).
 set(_libu_srcs
     toolbox/memory.c toolbox/misc.c toolbox/str.c toolbox/buf.c
-    toolbox/log.c toolbox/lexer.c toolbox/test.c toolbox/hmap.c
-    toolbox/config.c toolbox/config_fs.c toolbox/env.c toolbox/net.c
-    toolbox/uri.c toolbox/fs.c toolbox/b64.c toolbox/pwd.c toolbox/list.c
-    toolbox/array.c toolbox/rb.c toolbox/pqueue.c toolbox/bst.c
-    toolbox/json.c)
+    toolbox/log.c toolbox/lexer.c toolbox/hmap.c
+    toolbox/config.c toolbox/config_fs.c toolbox/net.c
+    toolbox/uri.c toolbox/fs.c toolbox/b64.c toolbox/pwd.c toolbox/list.c)
 # replacements for functions the platform lacks
 foreach(_m vsyslog syslog strtok_r unlink getpid fnmatch timegm strsep
         strlcpy strlcat gettimeofday daemon mkstemps setenv)
