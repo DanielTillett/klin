@@ -35,7 +35,7 @@ protector, which has its own option, `KLIN_STACK_PROTECTOR`.
 | `-Wl,-z,noexecstack` | code injected on the stack: the stack is not executable | ELF | `KLIN_HARDENING` |
 
 `_FORTIFY_SOURCE` needs optimisation to work, which is why Debug builds,
-and the sanitizer builds, leave it out. The default build type is
+and the sanitiser builds, leave it out. The default build type is
 Release.
 
 MinGW (Windows) links with `--dynamicbase`, `--nxcompat` and

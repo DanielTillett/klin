@@ -167,13 +167,18 @@ Transfer-Encoding it sets is replaced, and a CGI `Status:` line sets the
 status rather than being passed through. Reading a request body stops at
 its end, and an unread body is skipped before the next request.
 
-On prefork sites, a worker holding a kept-alive connection counts as
-busy. While clients wait, the pool doubles every
-second up to `prefork.max_child`. A worker started beyond
-`prefork.start_child` exits after `prefork.idle_timeout` seconds without a
-client (default 10, 0 means never), so the pool shrinks back after a
-burst. If you set `prefork.max_requests_per_child`, note that it now counts
-connections, not requests.
+What to do about it:
+
+- Make sure no page or CGI script sets a Content-Length that does not
+  match its body; it is now enforced.
+- If you set `prefork.max_requests_per_child`, recount it: it now counts
+  connections, not requests.
+- On prefork sites, size `prefork.max_child` for kept-alive clients. A
+  worker holding a kept-alive connection counts as busy; while clients
+  wait, the pool doubles every second up to `prefork.max_child`, and
+  workers beyond `prefork.start_child` exit after
+  `prefork.idle_timeout` seconds without a client (default 10, 0 means
+  never).
 
 ### Utility functions
 

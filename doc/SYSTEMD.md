@@ -18,7 +18,10 @@ The unit starts `/usr/local/sbin/klind -F -f /etc/klin/klind.conf` as
 `Type=simple`: `-F` keeps klind in the foreground, so systemd tracks the
 main process directly. klind does not use socket activation or
 `sd_notify()`, so there is no `.socket` unit and no `Type=notify`. It
-restarts on failure after 2 s, with `UMask=0027`.
+restarts on failure after 2 s, with `UMask=0027`. A clean exit is not a
+failure: klind exits with status 0 when a TLS key manager dies
+([KEYMGR](KEYMGR.md#when-a-key-manager-dies)), and the unit then leaves
+it stopped.
 
 ## Root, then not
 

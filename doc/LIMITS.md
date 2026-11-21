@@ -41,17 +41,18 @@ flowchart TD
     K --> S
 ```
 
-A refusal at the header stage (the 414, 431, 400 or 501 and 413 boxes)
-ends the connection. One of those 400s catches clients out. klind reads
+A long URL gets 400, not 414. A request target (path and query) of
+4,096 bytes or more is refused with 400 while the request line is
+parsed; 414 is only for a request line with no end in sight. klind reads
 up to 8,193 bytes looking for the end of the request line: if the LF is
 among them, even as byte 8,193, the line goes on to normal parsing, and
-414 comes only when 8,193 bytes arrive with no LF. In that parsing a
-request target (path and query) of 4,096 bytes or more is refused with
-400, so a long URL usually gets 400, not 414. A later error, such as
-the 400 for too many arguments or a form body the parser cannot read,
-gets an error page and the connection can stay open for the next
-request. A deadline that runs out closes the connection without a
-response.
+414 comes only when 8,193 bytes arrive with no LF.
+
+A refusal at the header stage (the 414, 431, 400 or 501 and 413 boxes)
+ends the connection. A later error, such as the 400 for too many arguments
+or a form body the parser cannot read, gets an error page and the
+connection can stay open for the next request. A deadline that runs out
+closes the connection without a response.
 
 ## The request
 
@@ -60,7 +61,7 @@ response.
 | `max_header_fields` | 100 | 8 | 431 Request Header Fields Too Large |
 | `max_header_line` | 8192 | 256 (maximum 65534) | 431 (the bytes of one field line, with its CRLF) |
 | `max_header_size` | 32768 | 1024 | 431 (the bytes of the whole header) |
-| (the request line) | 8192 | not configurable | 414 URI Too Long; a target of 4096 bytes or more gets 400 first |
+| (the request line) | 8192 | not configurable | 414 URI Too Long when no LF arrives in 8,193 bytes; a shorter line whose target is 4096 bytes or more gets 400 |
 | `max_args` | 1000 | 1 | 400 (query and form arguments, multipart fields and uploads, counted together, where arguments are parsed) |
 | `post_maxsize` | 5 MB | 1024 | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | 1 s | the connection is closed |
@@ -174,7 +175,7 @@ ordinary user (with `uid` and `gid` set, see [SYSTEMD](SYSTEMD.md)) cannot
 raise them. One running as root could. `RLIMIT_NPROC` counts every process
 of the user, not just klind's, so give klind a user of its own.
 
-A few exceptions: sanitizer builds set no memory limit, because
+A few exceptions: sanitiser builds set no memory limit, because
 AddressSanitizer reserves terabytes of address space. klind itself and the
 key manager keep their own limits. The iterative model (`-d`) has no
 workers at all.

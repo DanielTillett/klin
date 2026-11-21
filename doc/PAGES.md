@@ -18,9 +18,8 @@ Everything under the site directory becomes klind's embedded file system.
 With `dir_root /www` in a server block (as in the example site), the URL
 `/index.kl1` is served from `www/index.kl1`, `/style.css` from
 `www/style.css`, and `/` from the index page (`index` in
-[klind.conf(5)](man/klind.conf.5)).
-Keep anything secret out of `www/`: whatever is under `dir_root` can be
-fetched.
+[klind.conf(5)](man/klind.conf.5)). Keep anything secret out of `www/`:
+whatever is under `dir_root` can be fetched.
 
 Files ending in `.kl1` are pages, and so are `.klin`, `.klc` and the
 `.klone` files left over from KLone. KLone's C++ pages, `.klx`, are the
@@ -437,15 +436,13 @@ when each worker starts and stops, and once for each request
 sandbox ([SANDBOX.md](SANDBOX.md)), so use it to open whatever the pages
 will need.
 
-The request hook does not always run at the same point. When the request
-reaches its page or file, the hook runs after the supplier has served it,
-whether that worked or failed, and before the response is finished; if it
-failed, the error page comes after the hook, unless the page had already
-sent its header. When the request is refused before that (a malformed
-request, an access rule, a realm, a 405 from routing, a failed
-validation), the hook runs just before the error page. A connection that
-closes, or sits idle until it times out, before sending any byte of a
-request gets no hook at all.
+The request hook does not always run at the same point:
+
+| The request | When the hook runs |
+|---|---|
+| reaches its page or file | after the supplier, whether it worked or failed, and before the response is finished; an error page comes after the hook unless the page had already sent its header |
+| is refused first (malformed, an access rule, a realm, a 405 from routing, failed validation) | just before the error page |
+| never starts (the connection closes or times out before any byte of a request) | not at all |
 
 ## Where next
 

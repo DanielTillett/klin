@@ -123,7 +123,7 @@ Naming one of these calls in `sandbox_allow` lifts its argument check:
 | `mmap` or `mprotect` | W+X memory, for example for a JIT |
 | `kill` or `tgkill` | any target |
 
-Sanitizer builds do not check `kill` and `tgkill`, because LeakSanitizer
+Sanitiser builds do not check `kill` and `tgkill`, because LeakSanitizer
 signals its threads.
 
 ### CGI
@@ -154,7 +154,7 @@ The key manager gets a much shorter list: its socket, memory, randomness
 and exit. It signs once before the filter is set, so OpenSSL has loaded
 everything it needs before the door closes.
 
-Sanitizer builds (AddressSanitizer) also allow clone and ptrace in both
+Sanitiser builds (AddressSanitizer) also allow clone and ptrace in both
 filters, because LeakSanitizer uses them at exit.
 
 ## Other systems

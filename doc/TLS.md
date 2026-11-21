@@ -6,11 +6,10 @@ data). When a client cannot connect, these rules are the usual reason, and
 the settings below change them.
 
 An https server block ([klind.conf(5)](man/klind.conf.5), SSL/TLS) needs
-only `cert_file`,
-plus `key_file` if the private key is in a file of its own. Without
-`key_file`, klind warns and looks for the key in `cert_file`. Use a
-separate `key_file` that the workers' user cannot read, and do not load
-the same key in another server with `key_manager no`: the key manager
+only `cert_file`, plus `key_file` if the private key is in a file of its
+own. Without `key_file`, klind warns and looks for the key in `cert_file`.
+Use a separate `key_file` that the workers' user cannot read, and do not
+load the same key in another server with `key_manager no`: the key manager
 keeps the key out of the workers only then
 ([KEYMGR](KEYMGR.md#why-it-exists)). The other settings have secure
 defaults.
@@ -36,9 +35,8 @@ The only values are `1.2` (the default) and `1.3`; anything else stops
 klind at startup.
 
 TLS compression and renegotiation are refused, and no setting turns them
-back on. TLS 1.3 has no
-renegotiation at all, and a TLS 1.2 client that asks for one gets a "no
-renegotiation" alert.
+back on. TLS 1.3 has no renegotiation at all, and a TLS 1.2 client that
+asks for one gets a "no renegotiation" alert.
 
 ## Ciphers
 
@@ -61,8 +59,7 @@ For TLS 1.3 it uses OpenSSL's default suites unless you set
 This default list shuts out old clients. It is new in 4.0, and a client
 that has only CBC ciphers or RSA key exchange (very old browsers and
 libraries) cannot connect to a server that keeps it. I made that trade on
-purpose, but you can change
-either list:
+purpose, but you can change either list:
 
 ```conf
 tls_ciphers       <OpenSSL cipher list>      # TLS 1.2
@@ -156,8 +153,8 @@ client's certificate and a CA in `ca_file`. The default of 1 allows one;
 `ca_file`. It must be a number from 0 to 100, or klind stops at startup.
 
 A `crl_file` (certificate revocation list) on its own checks the client's
-own certificate. Add
-`crl_opts CHECK_ALL` to check every certificate in the chain.
+own certificate. Add `crl_opts CHECK_ALL` to check every certificate in
+the chain.
 
 ## Not supported
 
