@@ -3,14 +3,28 @@
 %><%
     /* session hardening (doc/SESSIONS.md): ?op=set&v=X, ?op=login (a new id),
        ?op=csrf (the token), ?op=change (needs the token unless GET);
-       anything else prints the session */
+       ?op=big&v=X sets v and prints over 4 KB, ?op=late&v=X sets it after
+       printing that much (doc/SESSIONS.md); anything else prints the
+       session */
     const char *op = request_get_arg(request, "op"), *v, *u;
+    int i;
 
     if(op && !strcmp(op, "set"))
     {
         v = request_get_arg(request, "v");
         session_set(session, "v", v ? v : "");
         io_printf(out, "set\n");
+    }
+    else if(op && (!strcmp(op, "big") || !strcmp(op, "late")))
+    {
+        v = request_get_arg(request, "v");
+        if(!strcmp(op, "big"))
+            session_set(session, "v", v ? v : "");
+        io_printf(out, "%s\n", op);
+        for(i = 0; i < 100; ++i)    /* 6,400 bytes: past the 4,096 buffer */
+            io_printf(out, "%063d\n", i);
+        if(!strcmp(op, "late"))
+            session_set(session, "v", v ? v : "");
     }
     else if(op && !strcmp(op, "login"))
     {

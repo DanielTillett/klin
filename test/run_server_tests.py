@@ -2076,12 +2076,13 @@ def run_limit_checks(args, check, plain, limits, temp):
             stream.close()
 
 
-def run_session_checks(check, plain, client, files, limits, sessions):
+def run_session_checks(args, check, plain, client, files, limits, sessions, memlog):
     """Session hardening (doc/SESSIONS.md), on memory (plain), file (files)
     and client-side (client) sessions: an unknown id is not taken on
     (session fixation), session_regenerate_id() at login, CSRF tokens,
-    client sessions sealed with AES-256-GCM; then the idle and absolute
-    timeouts (limits: 2 s and 4 s)."""
+    client sessions sealed with AES-256-GCM, changes on pages larger than
+    the response buffer; then the idle and absolute timeouts (limits: 2 s
+    and 4 s)."""
 
     def call(port, query, cookies, method=b"GET", body=b"", extra=b""):
         head = (method + b" /sessec.kl1?" + query + b" HTTP/1.1\r\nHost: localhost\r\n" + extra +
@@ -2152,6 +2153,31 @@ def run_session_checks(check, plain, client, files, limits, sessions):
                 check(call(port, b"", forged)[2] == "v=- user=-",
                       f"client: a session with a changed {name} was accepted")
             check(call(port, b"", cookies)[2] == "v=a user=alice", "client: sealed session not read")
+
+        # a page that prints more than the 4,096-byte buffer commits its
+        # headers while it runs: a change made before that is kept, on a
+        # new session as well as an old one
+        status, cookies, text = call(port, b"op=big&v=b", cookies)
+        check(status == 200 and len(text) > 4096, f"{kind}: large page failed: {status} {len(text)}")
+        check(call(port, b"", cookies)[2] == "v=b user=alice",
+              f"{kind}: a change on a large page was lost")
+        status, fresh, _ = call(port, b"op=big&v=n", {})
+        check(call(port, b"", fresh)[2] == "v=n user=-", f"{kind}: a new session on a large page was lost")
+        # a change after the commit: kept on the server, but the cookies of
+        # a client session have gone (a warning is logged instead)
+        status, cookies, _ = call(port, b"op=late&v=c", cookies)
+        check(call(port, b"", cookies)[2] == ("v=b" if kind == "client" else "v=c") + " user=alice",
+              f"{kind}: wrong session after a change made once the headers had gone")
+
+    if args.prefork:
+        # a client session changed after the headers had gone: the warning
+        # is in the log ('memlog' keeps client sessions, and its log in
+        # memory under prefork)
+        status, cookies, _ = call(memlog, b"op=set&v=a", {})
+        call(memlog, b"op=late&v=c", cookies)
+        reply = exchange(memlog, b"GET /memlog.kl1 HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        check(b"client session changed after the response headers were sent" in reply,
+              f"No warning for a client session changed too late: {reply[-600:]!r}")
 
     # idle (2 s) and absolute (4 s) timeouts on 'limits'
     status, cookies, _ = call(limits, b"op=set&v=idle", {})
@@ -2735,7 +2761,7 @@ def run_server_checks(args, env, output, daemon):
                 ("secure", secure, True, "client", auth),
                 ("files", files, False, f"file\n        file.path {sessions}",
                  "index missing.kl1 pid.kl1\n    send_enc_deflate yes\n    " + files_config(temp)),
-                ("memlog", memlog, False, "memory",
+                ("memlog", memlog, False, "client",
                  "log\n    {\n        type memory\n    }\n    sandbox no"),
                 ("blocked", blocked, False, "memory", BLOCKED),
                 ("limits", limits, False,
@@ -2909,7 +2935,7 @@ def run_server_checks(args, env, output, daemon):
                 run_sse_checks(args, check, plain, secure, temp)
                 run_websocket_checks(check, plain, secure)
                 run_limit_checks(args, check, plain, limits, temp)
-                run_session_checks(check, plain, client, files, limits, sessions)
+                run_session_checks(args, check, plain, client, files, limits, sessions, memlog)
                 run_tls_checks(check, secure, mtls, (client_cert, client_key))
                 run_worker_limit_checks(args, check, plain, limits,
                                         "-fsanitize" in cmake_cache_value(daemon.parent.parent,

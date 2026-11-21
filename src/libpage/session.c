@@ -632,11 +632,80 @@ err:
     return ~0;
 }
 
+/* FNV-1a over 'n' bytes of 'p' */
+static void session_fp_add(unsigned long long *h, const void *p, size_t n)
+{
+    const unsigned char *c = p;
+
+    while (n--)
+        *h = (*h ^ *c++) * 1099511628211ULL;
+}
+
+static int session_fp_var(var_t *v, void *arg)
+{
+    size_t sz = var_get_value_size(v);
+
+    session_fp_add(arg, var_get_name(v), strlen(var_get_name(v)) + 1);
+    session_fp_add(arg, &sz, sizeof sz);
+    if (var_get_value(v))
+        session_fp_add(arg, var_get_value(v), sz);
+
+    return 0;
+}
+
+/* a fingerprint of what a save would send: the id, the variables and
+   whether the session was removed, or 0 if it holds nothing to save */
+static unsigned long long session_fingerprint(session_t *ss)
+{
+    unsigned long long h = 14695981039346656037ULL;
+
+    if (!session_has_user_vars(ss))
+        return 0;
+
+    session_fp_add(&h, &ss->removed, sizeof ss->removed);
+    session_fp_add(&h, ss->id, strlen(ss->id));
+    vars_foreach(ss->vars, session_fp_var, &h);
+
+    return h ? h : 1;
+}
+
+/* The response filter (rsfilter.c) calls this as the headers are about to
+ * go out, while the page may still be running. A server-side session only
+ * needs its id cookie by then. A client session lives in its cookies, so
+ * it is saved now; session_free() then warns if the page changes it
+ * afterwards, as that change cannot reach the client. */
+int session_prv_commit(session_t *ss)
+{
+    dbg_return_if (ss == NULL, ~0);
+
+    if (ss->so->type != SESSION_TYPE_CLIENT)
+        return ss->id[0] == '\0' ? session_prv_set_id(ss, NULL) : 0;
+
+    if (ss->committed)
+        return 0;
+    ss->committed = 1;
+
+    /* a failed save (too big for a cookie, say) loses the change, as it
+       would in session_free(), but not the response */
+    if (!ss->removed)
+        dbg_if (session_save(ss));
+    ss->sent = session_fingerprint(ss);
+
+    return 0;
+}
+
 int session_free(session_t *ss)
 {
     if (ss)
-    { 
-        if(!ss->removed)
+    {
+        if (ss->committed)
+        {
+            if (session_fingerprint(ss) != ss->sent)
+                warn("%s: the client session changed after the response "
+                        "headers were sent; the change is lost",
+                        request_get_uri(ss->rq));
+        }
+        else if(!ss->removed)
             dbg_if(session_save(ss));
 
         /* driver cleanup */
