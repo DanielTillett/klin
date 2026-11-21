@@ -34,6 +34,9 @@
 #include <klin/vhost.h>
 #include "../../src/libhttp/http_s.h"
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include "../../src/klind/server_s.h"
 #ifdef SSL_OPENSSL
 #include <klin/auth.h>
 #endif
@@ -1061,6 +1064,93 @@ end:
     test_http_term(&limited);
 }
 
+static void check_large_form(http_t *http, const char *type,
+    const char *body, size_t body_len, const char *value, size_t value_len)
+{
+    static const char query[] = "f=from+URI";
+    char wire[20000];
+    request_t *rq = NULL;
+    io_t *io = NULL;
+    vars_t *args, *post;
+    var_t *v;
+    const char *get;
+    int n;
+
+    n = snprintf(wire, sizeof wire, "POST /?%s HTTP/1.1\r\nHost: localhost\r\n"
+            "Content-Type: %s\r\nContent-Length: %zu\r\n\r\n", query, type,
+            body_len);
+    if(n < 0 || (size_t)n >= sizeof wire || body_len > sizeof wire - n ||
+            request_create(http, &rq) ||
+            io_mem_create(wire, n + body_len, 0, &io))
+    {
+        CHECK(!"create large form request");
+        goto end;
+    }
+    memcpy(wire + n, body, body_len);
+    request_bind(rq, io);
+    if(request_parse_header(rq, NULL, NULL) || request_parse_data(rq))
+    {
+        CHECK(!"parse large form request");
+        goto end;
+    }
+    CHECK(request_parse_data(rq) == 0);
+    CHECK(request_get_query_string(rq) &&
+            !strcmp(request_get_query_string(rq), query));
+    get = vars_geti_value(request_get_getargs(rq), "f", 0);
+    CHECK(get && !strcmp(get, "from URI"));
+
+    args = request_get_args(rq);
+    post = request_get_postargs(rq);
+    CHECK(vars_count(args) == 2 && vars_count(post) == 1);
+    v = vars_get(post, "f");
+    CHECK(v && vars_geti(args, "f", 1) == v);
+    CHECK(v && var_get_value_size(v) == value_len &&
+            !memcmp(var_get_value(v), value, value_len) &&
+            var_get_value(v)[value_len] == '\0');
+
+end:
+    if(rq)
+        request_free(rq);
+}
+
+static void test_large_forms(void)
+{
+    static const char mp_head[] =
+        "--xyz\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\n";
+    static const char mp_tail[] = "\r\n--xyz--\r\n";
+    enum { N = 9500 };
+    char value[N], encoded[4 + N + 3], multipart[sizeof mp_head +
+        N + sizeof mp_tail];
+    http_t http = { 0 };
+
+    if(test_http_init(&http, NULL))
+    {
+        CHECK(!"initialize large form fixture");
+        goto end;
+    }
+
+    memset(value, 'x', sizeof value);
+    value[0] = ' ';
+    value[N - 1] = '&';
+    memcpy(encoded, "%66=+", 5);
+    memcpy(encoded + 5, value + 1, N - 2);
+    memcpy(encoded + N + 3, "%26&", 4);
+    check_large_form(&http, "application/x-www-form-urlencoded", encoded,
+        sizeof encoded, value, sizeof value);
+
+    /* The field spans several parser buffers and includes a binary NUL. */
+    value[4096] = '\0';
+    memcpy(multipart, mp_head, sizeof mp_head - 1);
+    memcpy(multipart + sizeof mp_head - 1, value, sizeof value);
+    memcpy(multipart + sizeof mp_head - 1 + sizeof value,
+        mp_tail, sizeof mp_tail - 1);
+    check_large_form(&http, "multipart/form-data; boundary=xyz", multipart,
+        sizeof multipart - 2, value, sizeof value);
+
+end:
+    test_http_term(&http);
+}
+
 static int save_test_session(session_t *ss, const char *id, const char *value)
 {
     strcpy(ss->filename, id);
@@ -1134,6 +1224,22 @@ static void test_memory_session_eviction(void)
     CHECK(atoms_get(so.atoms, "d", &atom) == 0);
     CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
 
+    /* Idle sessions that are never requested again are swept on a save. */
+    so.mem_limit = 0;
+    so.max_age = 120;
+    if(atoms_get(so.atoms, "d", &atom))
+    {
+        CHECK(!"find session to age");
+        goto end;
+    }
+    atom->arg = (void *)(time(NULL) - 121);
+    CHECK(save_test_session(ss, "live", "x") == 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) != 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+    CHECK(save_test_session(ss, "new", "x") == 0);
+    CHECK(atoms_get(so.atoms, "live", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+
 end:
     if(ss)
     {
@@ -1149,13 +1255,129 @@ end:
     test_http_term(&http);
 }
 
+/* Run the store end of a worker's PPC connection in a separate process. */
+static int serve_test_session_ppc(ppc_t *ppc, int fd)
+{
+    char data[PPC_MAX_DATA_SIZE];
+    unsigned char cmd;
+    ssize_t n;
+
+    while((n = ppc_read(ppc, fd, &cmd, data, sizeof data)) > 0)
+    {
+        if(ppc_dispatch(ppc, fd, cmd, data, n))
+            return EXIT_FAILURE;
+    }
+    return n == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+static void test_memory_session_ppc(void)
+{
+    http_t http = { 0 };
+    server_t server = { 0 };
+    backend_t backend = { 0 };
+    session_opt_t so = { 0 };
+    request_t *rq = NULL;
+    response_t *rs = NULL;
+    session_t *ss = NULL;
+    int pair[2] = { -1, -1 }, status;
+    pid_t pid = -1;
+    const char *loaded;
+    char large[6400], oversized[PPC_MAX_DATA_SIZE + 1];
+    size_t stale_size;
+
+    ctx->server = &server;
+    if(test_http_init(&http, NULL) || request_create(&http, &rq) ||
+            response_create(&http, &rs) || ppc_create(&server.ppc) ||
+            session_mem_module_init(NULL, &so) ||
+            session_mem_create(&so, rq, rs, &ss) ||
+            save_test_session(ss, "id", "inherited") ||
+            socketpair(AF_UNIX, SOCK_STREAM, 0, pair))
+    {
+        CHECK(!"initialize memory session PPC fixture");
+        goto end;
+    }
+
+    if((pid = fork()) < 0)
+    {
+        CHECK(!"fork memory session PPC peer");
+        goto end;
+    }
+    if(pid == 0)
+    {
+        close(pair[0]);
+        _exit(serve_test_session_ppc(server.ppc, pair[1]));
+    }
+    close(pair[1]);
+    pair[1] = -1;
+    ctx->pipc = pair[0];
+    ctx->backend = &backend;
+    backend.model = SERVER_MODEL_PREFORK;
+    stale_size = atoms_size(so.atoms);
+
+    memset(large, 'x', sizeof large - 1);
+    large[sizeof large - 1] = '\0';
+    CHECK(save_test_session(ss, "id", large) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == stale_size);
+
+    /* An oversized save leaves the previous record and PPC stream intact. */
+    memset(oversized, 'y', sizeof oversized - 1);
+    oversized[sizeof oversized - 1] = '\0';
+    CHECK(save_test_session(ss, "id", oversized) != 0);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) == 0);
+    loaded = session_get(ss, "v");
+    CHECK(loaded && !strcmp(loaded, large));
+    CHECK(ss->remove(ss) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == stale_size);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) != 0);
+
+    /* Fork workers still read and mutate their local copy. */
+    backend.model = SERVER_MODEL_FORK;
+    CHECK(save_test_session(ss, "id", "fork value") == 0);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) == 0);
+    loaded = session_get(ss, "v");
+    CHECK(loaded && !strcmp(loaded, "fork value"));
+    CHECK(ss->remove(ss) == 0);
+    CHECK(atoms_count(so.atoms) == 0);
+
+end:
+    ctx->pipc = 0;
+    ctx->backend = NULL;
+    ctx->server = NULL;
+    if(pair[0] >= 0)
+        close(pair[0]);
+    if(pair[1] >= 0)
+        close(pair[1]);
+    if(pid > 0)
+        CHECK(waitpid(pid, &status, 0) == pid &&
+                WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
+    if(ss)
+    {
+        ss->removed = 1;
+        session_free(ss);
+    }
+    if(so.atoms)
+        atoms_free(so.atoms);
+    if(server.ppc)
+        ppc_free(server.ppc);
+    if(rq)
+        request_free(rq);
+    if(rs)
+        response_free(rs);
+    test_http_term(&http);
+}
+
 int main(void)
 {
     test_header_fields();
     test_header_limits();
     test_large_vars();
     test_request_arg_limit();
+    test_large_forms();
     test_memory_session_eviction();
+    test_memory_session_ppc();
     test_field_reuse();
     test_timer();
     test_translate();
