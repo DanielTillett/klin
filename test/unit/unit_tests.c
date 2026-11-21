@@ -28,6 +28,9 @@
 #include <klin/utils.h>
 #include <math.h>
 #include <klin/crypto.h>
+#include <klin/klog.h>
+#include <klin/klogprv.h>
+#include <sys/stat.h>
 #ifdef SSL_OPENSSL
 #include <klin/auth.h>
 #endif
@@ -808,6 +811,96 @@ static void test_crypto(void)
 }
 #endif
 
+/* ctime(t) without its newline, the reference for klog_timestamp() */
+static void ctime_ref(time_t t, char ref[KLOG_TS_SZ])
+{
+    char buf[26];
+    const char *ct = ctime_r(&t, buf);
+
+    snprintf(ref, KLOG_TS_SZ, "%.24s", ct ? ct : "?");
+}
+
+/* klog lines: their timestamps match ctime(3); log files are created mode
+   0640 whatever the umask allows */
+static void test_klog(void)
+{
+    static const time_t times[] = { 0, 86399, 1000000000, 1700000000 };
+    char dir[] = "/tmp/klin-unit-XXXXXX", base[64], fn[80];
+    char ts[KLOG_TS_SZ], ref[KLOG_TS_SZ], want[KLOG_LN_SZ + 1];
+    char ln[KLOG_LN_SZ + 1], ref2[KLOG_TS_SZ];
+    const char *sfx[] = { "0", "1", "head" };
+    klog_t *kl = NULL;
+    struct stat st;
+    mode_t old;
+    time_t now;
+    FILE *fp;
+    size_t i;
+
+    for(i = 0; i < sizeof times / sizeof times[0]; ++i)
+    {
+        klog_timestamp(times[i], ts);
+        ctime_ref(times[i], ref);
+        CHECK(strcmp(ts, ref) == 0);
+    }
+
+    /* the memory log formats its lines with the same timestamp */
+    CHECK(klog_new(KLOG_TYPE_MEM, KLOG_DEBUG, "unit", &kl) == 0);
+    CHECK(kl && klog_open_mem(kl, 4) == 0);
+    if(kl)
+    {
+        now = time(NULL);
+        CHECK(klog(kl, KLOG_INFO, "hello %d", 1) == 0);
+        CHECK(klog_getln(kl, 1, ln) == 0);
+        ctime_ref(now, ref);
+        ctime_ref(now + 1, ref2);
+        snprintf(want, sizeof want, "[INF] %s <unit>: hello 1", ref);
+        if(strcmp(ln, want) != 0)
+            snprintf(want, sizeof want, "[INF] %s <unit>: hello 1", ref2);
+        CHECK(strcmp(ln, want) == 0);
+        klog_close(kl);
+        kl = NULL;
+    }
+
+    /* the file log: three lines over two-line pages make page 1 too */
+    CHECK(mkdtemp(dir) != NULL);
+    snprintf(base, sizeof base, "%s/log", dir);
+    old = umask(022);
+    CHECK(klog_new(KLOG_TYPE_FILE, KLOG_DEBUG, "unit", &kl) == 0);
+    CHECK(kl && klog_open_file(kl, base, 2, 2) == 0);
+    if(kl)
+    {
+        for(i = 0; i < 3; ++i)
+            CHECK(klog(kl, KLOG_INFO, "line %u", (unsigned) i) == 0);
+        klog_close(kl);     /* writes log.head */
+    }
+    (void) umask(old);
+
+    for(i = 0; i < sizeof sfx / sizeof sfx[0]; ++i)
+    {
+        snprintf(fn, sizeof fn, "%s.%s", base, sfx[i]);
+        CHECK(stat(fn, &st) == 0 && (st.st_mode & 0777) == 0640);
+    }
+
+    snprintf(fn, sizeof fn, "%s.0", base);
+    if((fp = fopen(fn, "r")) != NULL)
+    {
+        CHECK(fgets(ln, sizeof ln, fp) != NULL &&
+                strncmp(ln, "[INF] ", 6) == 0 &&
+                strlen(ln) > 6 + 24 && ln[6 + 24] == ' ' &&
+                strcmp(ln + 6 + 24, " <unit>: line 0\n") == 0);
+        fclose(fp);
+    }
+    else
+        CHECK(!"log.0 opened");
+
+    for(i = 0; i < sizeof sfx / sizeof sfx[0]; ++i)
+    {
+        snprintf(fn, sizeof fn, "%s.%s", base, sfx[i]);
+        (void) unlink(fn);
+    }
+    (void) rmdir(dir);
+}
+
 int main(void)
 {
     test_header_fields();
@@ -820,6 +913,7 @@ int main(void)
     test_crypto();
 #endif
     test_json_write();
+    test_klog();
 #ifdef SSL_OPENSSL
     test_auth();
 #endif

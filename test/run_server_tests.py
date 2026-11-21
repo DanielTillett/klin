@@ -1464,6 +1464,34 @@ def run_orphan_checks(check, daemon, env, temp):
         process.wait()
 
 
+def run_pid_file_checks(check, daemon, env, temp):
+    """-p: the PID file holds klind's PID and is created mode 0644 even
+    under umask 0 (LibU's u_savepid() left it to the umask)."""
+    port = free_port()
+    config = temp / "pidfile.conf"
+    pid_file = temp / "klind.pid"
+    config.write_text(f"server_list one\nallow_root yes\none\n{{\ntype http\n"
+                      f"addr tcp4://127.0.0.1:{port}\ndir_root /www\n}}\n")
+    process = subprocess.Popen([str(daemon), "-F", "-f", str(config), "-p", str(pid_file)],
+                               env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               start_new_session=True, umask=0)
+    try:
+        deadline = time.monotonic() + 10
+        text = ""
+        while time.monotonic() < deadline and not text.endswith("\n"):
+            time.sleep(0.1)
+            text = pid_file.read_text() if pid_file.exists() else ""
+        check(text == f"{process.pid}\n", f"PID file holds {text!r}, not {process.pid}")
+        mode = pid_file.stat().st_mode & 0o777 if pid_file.exists() else None
+        check(mode == 0o644, f"PID file mode {mode and oct(mode)}, not 0o644")
+    finally:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+
+
 def run_blind_chroot_checks(check, daemon, env, temp):
     """blind_chroot (root only): klind enters a new, empty directory of
     mode 0100 under 'chroot', through the descriptor it checked, and the
@@ -2620,6 +2648,7 @@ def run_server_checks(args, env, output, daemon):
         run_ipv6_checks(args, check, daemon, env, temp, cert, key)
         run_bad_server_checks(check, daemon, env, temp)
         run_orphan_checks(check, daemon, env, temp)
+        run_pid_file_checks(check, daemon, env, temp)
         run_blind_chroot_checks(check, daemon, env, temp)
         plain, client, secure, files, memlog, blocked, limits, mtls = (free_port() for _ in range(8))
         ca, client_cert, client_key = make_client_ca(temp)
