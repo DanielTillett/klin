@@ -670,8 +670,11 @@ static int cgi_exec(request_t *rq, response_t *rs, const cgi_limits_t *lim,
             rl.rlim_max = (rlim_t) lim->max_cpu + 1;
             (void) setrlimit(RLIMIT_CPU, &rl);
         }
+#ifndef __APPLE__
+        /* (macOS refuses it: cgi_check_limit() has said so) */
         if(lim->max_memory > 0)
             cgi_rlimit(RLIMIT_AS, (rlim_t) lim->max_memory * 1024 * 1024);
+#endif
         cgi_rlimit(RLIMIT_CORE, 0);
 
         /* run the cgi (never returns); execve() does not modify argv, its
@@ -709,41 +712,98 @@ err:
     return ~0;
 }
 
-/* the POSTed body did not arrive within post_timeout */
+/* the POST relay, for its deadline */
+typedef struct cgi_post_s
+{
+    io_t *client;       /* the connection the body comes from */
+    int *pfd;           /* the cgi's stdin (the worker's end of the pipe) */
+    int timed_out;
+} cgi_post_t;
+
+/* the POSTed body was not passed on within post_timeout: the relay may be
+ * waiting on the client or on a cgi that does not read, so both are cut */
 static int cgi_cb_post_timeout(talarm_t *al, void *arg)
 {
+    cgi_post_t *post = (cgi_post_t *) arg;
+
     u_unused_args(al);
 
-    warn("request body not received in time, connection closed");
-    io_close((io_t *) arg);
+    warn("request body not passed to the cgi in time, connection closed");
+    post->timed_out = 1;
+    io_close(post->client);
+    if(*post->pfd != -1)
+    {
+        close(*post->pfd);
+        *post->pfd = -1;
+    }
 
     return 0;
 }
 
-/* send the POSTed data (Content-Length bytes) to the cgi's stdin, within
- * the request's post_timeout (the connection is closed when it runs out).
- * The script may not read it, so a broken pipe is not an error; one that
- * reads nothing while more than a pipe buffer is POSTed blocks this write
- * until the timeout kills it */
-static int cgi_send_post(request_t *rq, int cgi_stdin)
+/* write 'n' bytes to the cgi's stdin, which is nonblocking: wait for room
+ * with the alarms running (the deadline closes '*pfd', which ends it) */
+static int cgi_write_post(int *pfd, const char *buf, size_t n)
 {
-    io_t *cgi_out = NULL;
+    ssize_t c;
+
+    while(n > 0)
+    {
+        nop_err_if(timerm_wait(pfd, TIMERM_WAIT_WRITE));
+
+        c = write(*pfd, buf, n);
+        if(c < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+            continue;
+        nop_err_if(c < 0);  /* EPIPE: the script exited without reading */
+
+        buf += c;
+        n -= (size_t) c;
+    }
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* send the POSTed data (Content-Length bytes) to the cgi's stdin, within
+ * the request's post_timeout. The script may not read it, so a broken pipe
+ * is not an error. When the time runs out (a client that stops sending, or
+ * a script that leaves its stdin full) the connection and '*pcgi_stdin'
+ * are closed and this fails: the caller kills the cgi */
+static int cgi_send_post(request_t *rq, int *pcgi_stdin)
+{
+    cgi_post_t post = { NULL, NULL, 0 };
     talarm_t *al = NULL;
-    ssize_t clen;
+    char buf[4096];
+    ssize_t clen, c;
+    int fl;
 
     if(request_get_method(rq) != HM_POST ||
             (clen = request_get_content_length(rq)) <= 0)
         return 0;
 
-    dbg_err_if(timerm_add(request_get_post_timeout(rq), cgi_cb_post_timeout,
-                request_io(rq), &al));
+    post.client = request_io(rq);
+    post.pfd = pcgi_stdin;
 
-    /* the descriptor is the caller's to close */
-    crit_err_sif(io_fd_create(cgi_stdin, IO_FD_NO_FLAGS, &cgi_out));
-    if(io_copy(cgi_out, request_io(rq), clen) < 0)
+    /* a blocking write could not be cut short */
+    warn_err_sif((fl = fcntl(*pcgi_stdin, F_GETFL)) < 0 ||
+            fcntl(*pcgi_stdin, F_SETFL, fl | O_NONBLOCK) < 0);
+
+    dbg_err_if(timerm_add(request_get_post_timeout(rq), cgi_cb_post_timeout,
+                &post, &al));
+
+    for(; clen > 0; clen -= c)
+    {
+        c = io_read(post.client, buf, (size_t) U_MIN((ssize_t) sizeof(buf), clen));
+        if(c <= 0 || cgi_write_post(pcgi_stdin, buf, (size_t) c))
+            break;
+    }
+    if(clen > 0 && !post.timed_out)
         u_info("cgi: POST body not copied whole");
-    io_free(cgi_out);
+
     timerm_del(al);
+    al = NULL;
+
+    nop_err_if(post.timed_out);
 
     return 0;
 err:
@@ -853,11 +913,15 @@ static void cgi_reap(cgi_run_t *run)
 static void cgi_wait(pid_t child, int failed)
 {
     int status;
+    pid_t rc;
 
     if(failed)
         cgi_kill(child);
 
-    if(waitpid(child, &status, 0) == child && !failed &&
+    while((rc = waitpid(child, &status, 0)) < 0 && errno == EINTR)
+        ;
+
+    if(rc == child && !failed &&
             WIFEXITED(status) && WEXITSTATUS(status))
         warn("cgi exited with [%d]", WEXITSTATUS(status));
 }
@@ -898,9 +962,11 @@ static int cgi_serve(request_t *rq, response_t *rs)
     /* by default disable caching */
     response_disable_caching(rs);
 
-    /* the POSTed data, then EOF on the cgi's stdin */
-    dbg_err_if(cgi_send_post(rq, cgi_stdin));
-    close(cgi_stdin);
+    /* the POSTed data, then EOF on the cgi's stdin (a relay cut short by
+       post_timeout has closed it, and the client, already) */
+    nop_err_if(cgi_send_post(rq, &cgi_stdin));
+    if(cgi_stdin != -1)
+        close(cgi_stdin);
     cgi_stdin = -1;
 
     /* the cgi's output; the descriptor is closed below, not by io_free */
@@ -920,11 +986,6 @@ static int cgi_serve(request_t *rq, response_t *rs)
 
     cgi_relay(cgi_in, response_io(rs));
 
-    /* killed in the middle of its output: the client must not take it for
-       the whole of it */
-    if(run.timed_out)
-        response_close_connection(rs);
-
     io_free(cgi_in);
     close(cgi_stdout);
 
@@ -935,6 +996,12 @@ static int cgi_serve(request_t *rq, response_t *rs)
         timerm_del(al);
     } else
         cgi_wait(child, 0);
+
+    /* killed in the middle of its output, or after it while it ran on: the
+       client must not take it for the whole of it (checked after the reap,
+       which runs the alarm too) */
+    if(run.timed_out)
+        response_close_connection(rs);
 
     return 0;
 err:

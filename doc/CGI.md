@@ -47,12 +47,15 @@ output to the client, or waiting for the script to exit once its output
 has ended. So it is wall-clock time, and time spent waiting on a slow
 client counts towards it. A script that closes its standard output and
 carries on running is killed when the timeout fires, and klind then
-sends what is left in its buffer.
+sends what is left in its buffer and closes the connection.
 
 The timeout kills only the script, though. The client has deadlines of
 its own. The rest of a POST body, which klind relays from the client's
 socket, must arrive within the server's `post_timeout` (10 minutes by
-default), or klind closes the connection. A write to the client that
+default), or klind closes the connection. The same deadline covers
+handing the body to the script: one that leaves its standard input
+unread while more is POSTed than the pipe holds is killed when it runs
+out, even with `timeout 0`. A write to the client that
 makes no progress for `send_timeout` seconds (60 by default) closes it
 too ([LIMITS](LIMITS.md)). A client that keeps reading, however slowly,
 still holds the worker for as long as it reads.
@@ -159,7 +162,8 @@ sandbox. It runs scripts that:
   and the sleep they started is gone too), or close their output and
   sleep on (killed by the timeout);
 - spin on the CPU (killed after `max_cpu`, before the timeout);
-- get a POST body that stops arriving (closed by `post_timeout`);
+- get a POST body that stops arriving (closed by `post_timeout`), or
+  leave a large one unread with `timeout 0` (killed at `post_timeout`);
 - are reached through a link out of the script directory (404).
 
 See also: [FILES](FILES.md) for where scripts may live,

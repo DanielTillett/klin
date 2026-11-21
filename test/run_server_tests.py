@@ -2555,6 +2555,7 @@ def make_file_tree(temp):
         "late.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\npartial\\n'\nsleep 32 &\nwait\n",
         "spin.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nspinning\\n'\nwhile :; do :; done\n",
         "closed.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nclosed\\n'\nexec >&-\nsleep 33\n",
+        "unread.sh": "exec sleep 47\n",
     }
     for name, body in scripts.items():
         (cgi / name).write_text("#!/bin/sh\n" + body)
@@ -2600,6 +2601,15 @@ def files_config(temp):
         }}
         serve_files no
         run_cgi no
+    }}
+    slow.test
+    {{
+        dir_root /www
+        cgi
+        {{
+            script_alias /cgi-bin {temp / 'cgi-bin'}
+            timeout 0
+        }}
     }}"""
 
 
@@ -2754,10 +2764,25 @@ def run_file_checks(check, files, temp, cgi):
     check(not left.strip(), f"Processes of killed CGIs left: {left}")
 
     # a script that closes its output and runs on is still killed by the
-    # timeout, and the response then goes out
-    status, body, took = get(b"/cgi-bin/closed.sh")
-    check(status == b"200" and body == b"closed\n" and took < 6,
-          f"CGI that closed its output: {status} {body[:80]!r} after {took:.1f}s")
+    # timeout, and the response then goes out, on a connection that is not
+    # kept open (the client asked for keep-alive)
+    with socket.create_connection(("127.0.0.1", files), timeout=8) as sock:
+        start = time.monotonic()
+        sock.sendall(b"GET /cgi-bin/closed.sh HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        reply = b""
+        try:
+            while True:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                reply += chunk
+        except OSError:
+            pass
+        took = time.monotonic() - start
+    head, _, body = reply.partition(b"\r\n\r\n")
+    check(head.startswith(b"HTTP/1.1 200") and body == b"closed\n" and took < 6 and
+          b"\r\nconnection: close" in head.lower(),
+          f"CGI that closed its output: {reply[:300]!r} after {took:.1f}s")
     time.sleep(0.3)
     left = subprocess.run(["pgrep", "-f", "sleep 33"], capture_output=True, text=True).stdout
     check(not left.strip(), f"A CGI that closed its output still runs: {left}")
@@ -2777,6 +2802,30 @@ def run_file_checks(check, files, temp, cgi):
         took = time.monotonic() - start
     check(closed and 4 < took < 9, f"CGI POST body: connection not closed by post_timeout "
           f"({'closed' if closed else 'open'} after {took:.1f}s)")
+
+    # a script that never reads its stdin, with no timeout of its own
+    # (slow.test: timeout 0), while more is POSTed than the pipe holds:
+    # post_timeout cuts the relay to the script too, which is killed
+    body = b"x" * (1 << 20)
+    with socket.create_connection(("127.0.0.1", files), timeout=15) as sock:
+        start = time.monotonic()
+        try:
+            sock.sendall(b"POST /cgi-bin/unread.sh HTTP/1.1\r\nHost: slow.test\r\n"
+                         b"Content-Type: application/octet-stream\r\n"
+                         b"Content-Length: %d\r\n\r\n" % len(body) + body)
+            while sock.recv(65536):
+                pass
+            closed = True
+        except (ConnectionResetError, BrokenPipeError):
+            closed = True
+        except OSError:
+            closed = False
+        took = time.monotonic() - start
+    time.sleep(0.3)
+    left = subprocess.run(["pgrep", "-f", "sleep 47"], capture_output=True, text=True).stdout
+    check(closed and 4 < took < 9 and not left.strip(),
+          f"CGI that does not read its POST body: {'closed' if closed else 'open'} "
+          f"after {took:.1f}s, left running: {left.strip()!r}")
 
     # max_cpu 1: killed for its CPU time before the timeout
     status, body, took = get(b"/cgi-bin/spin.sh")
