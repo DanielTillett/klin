@@ -1,9 +1,10 @@
 # CGI scripts
 
 klind can run Common Gateway Interface (CGI) scripts, under time, CPU and
-memory limits and with a pared-down environment. They run only in a build with `-DKLIN_ENABLE_SUP_CGI=ON` (not
-available on Windows). They run from the directories a `cgi` block names,
-or through the handler of a file extension:
+memory limits and with a pared-down environment. They run only in a build
+with `-DKLIN_ENABLE_SUP_CGI=ON` (not available on Windows). They run from
+the directories a `cgi` block names, or through the handler of a file
+extension:
 
 ```conf
 cgi
@@ -31,22 +32,26 @@ cgi
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
 0 sets no limit. What a timeout looks like to the client depends on when
-it happens. Before the script has sent its header, the client gets 504
-Gateway Timeout. In the middle of its output, the output stops there and
-the connection is closed. The script runs in a process group of its own,
+it happens. If the script is killed before klind has read its header, the
+client gets 504 Gateway Timeout. That needs a header to parse: an `nph-`
+script's output is not parsed, so a timeout there, as in the middle of
+any script's output, stops the output where it is and closes the
+connection. The script runs in a process group of its own,
 and the kill goes to the script and that group. A child that moves to a
 group or session of its own (with setsid(2), say) escapes it.
 
-The catch with the timeout is that it is wall-clock time, including the
-time a slow client takes to read the output.
+The timeout is wall-clock time, and it includes the time a slow client
+takes to read the output.
 
-The limits are set in the script's process, soft and hard, so it cannot
-raise them. It gets no core dumps (RLIMIT_CORE 0), and no descriptor of
-the worker's except its standard input, output and error. All others are
-closed, with close_range(2) where the system has it, or by closing every
-descriptor number up to 65536 (or the hard limit, if that is higher)
-elsewhere. Its processes also count towards the worker's
-`worker_max_procs` ([LIMITS](LIMITS.md)).
+The limits are set in the script's process. For `max_memory` the soft and
+hard limits are the same, so the script cannot raise them; for `max_cpu`
+the hard limit is one second above the soft one, which is what lets
+SIGKILL follow SIGXCPU. It gets no core dumps (RLIMIT_CORE 0), and no
+descriptor of the worker's except its standard input, output and error.
+All others are closed, with close_range(2) where the system has it, or by
+closing every descriptor number up to 65536 (or the hard limit, if that is
+higher, up to 1,048,576) elsewhere. Its processes also count towards the
+worker's `worker_max_procs` ([LIMITS](LIMITS.md)).
 
 ## Environment
 
@@ -61,6 +66,14 @@ pass_env      PATH LANG TZ
 
 Without it, a script has no `PATH`, and a shell then uses its built-in
 default path.
+
+The body of a POST with a non-zero Content-Length is copied to the
+script's standard input; other methods get an empty standard input. The
+copy starts after validation. If a `params` block ([VALIDATE](VALIDATE.md))
+matches the script's path and method, klind has already parsed a
+URL-encoded or multipart form body by then, so the script does not get
+that body on its standard input. Leave such scripts out of your `params`
+blocks.
 
 The request's header fields become `HTTP_<NAME>` variables
 (Accept-Language becomes `HTTP_ACCEPT_LANGUAGE`). Some never do:

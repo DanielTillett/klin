@@ -2,7 +2,9 @@
 
 On a Linux host, run klind from the hardened systemd unit that ships with
 Klin. The unit fences klind in, and klind gives up root as soon as its
-sockets are open. Firmware with its own init doesn't need any of this.
+sockets are open. Firmware with its own init doesn't need the unit,
+though the rules about root below apply wherever klind runs on a
+Unix-like system.
 
 The unit is `contrib/systemd/klind.service`. Copy it to
 `/etc/systemd/system/`, set the paths in `ExecStart`, then run:
@@ -24,7 +26,7 @@ klind starts as root so that it can bind ports below 1024, read a TLS key
 that only root can read, and chroot. Once the listening sockets are open it
 chroots (if `chroot` is set) and drops to the `uid` and `gid` in
 klind.conf. The TLS key manager ([KEYMGR](KEYMGR.md)) drops to the same
-user and group, in this order:
+user and group. Start-up runs in this order:
 
 ```mermaid
 sequenceDiagram
@@ -52,7 +54,7 @@ gid 65534
 **klind refuses to start if it would keep root credentials.** Started as
 root, it needs both `uid` and `gid`. A `uid` alone would leave it in group
 root, and a `chroot` alone is not enough, since root can leave a chroot.
-The only way round this is an explicit:
+To run it with root ids anyway, you have to say so explicitly:
 
 ```conf
 allow_root yes
@@ -69,7 +71,7 @@ I would not set it anywhere else.
 | `NoNewPrivileges` | no set-uid program can give privileges back |
 | `ProtectSystem=strict` | the file system is read-only except `/run/klin`, `/var/lib/klin` and `/var/log/klin` (`RuntimeDirectory`, `StateDirectory`, `LogsDirectory`); add `ReadWritePaths=` for anything else the site writes |
 | `ProtectHome`, `PrivateTmp`, `PrivateDevices`, `DevicePolicy=closed` | no home directories, a private `/tmp`, only pseudo-devices such as `/dev/null` |
-| `ProtectKernelTunables`, `ProtectKernelModules`, `ProtectKernelLogs`, `ProtectControlGroups`, `ProtectClock`, `ProtectHostname`, `ProtectProc=invisible`, `ProcSubset=pid` | kernel and system interfaces klind never uses |
+| `ProtectKernelTunables`, `ProtectKernelModules`, `ProtectKernelLogs`, `ProtectControlGroups`, `ProtectClock`, `ProtectHostname`, `ProtectProc=invisible`, `ProcSubset=pid` | kernel and system interfaces klind does not need |
 | `RestrictNamespaces`, `RestrictRealtime`, `RestrictSUIDSGID`, `LockPersonality`, `MemoryDenyWriteExecute`, `KeyringMode=private`, `RemoveIPC` | the rest of the usual hardening set |
 | `RestrictAddressFamilies` | `AF_UNIX` (for the key manager), `AF_INET`, `AF_INET6` |
 | `SystemCallFilter` | `@system-service` without `@privileged`, `@mount`, `@debug` and similar groups, then `@setuid` and `chroot` added back for the drop; klind adds its own, narrower filter in each worker ([SANDBOX](SANDBOX.md)) |

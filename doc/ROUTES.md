@@ -41,12 +41,11 @@ for `/api/items/{id}` and fall through to an ordinary 404.
 
 ## How a request is matched
 
-The path a route is matched against is the request path, URL-decoded and
-normalised, after index selection, and whole: if the first part of it
-names an existing page, the rest (the PATH_INFO) is still included. Index
-selection means a path ending in `/` that has an index page is matched
-with the index page's name appended, so a route for `/api/` never sees a
-request for `/api/` if `/api/index.kl1` exists.
+A route is matched against the whole request path, PATH_INFO included,
+after index selection. [Which path each check sees](#which-path-each-check-sees)
+below shows those steps. Index selection runs first, so a route for
+`/api/` does not see a request for `/api/` when `/api/index.kl1` exists:
+by then the path is `/api/index.kl1`.
 
 Routes are tried in the order they are written, and the first one whose
 path and method both match serves the request. A path that matches only
@@ -82,15 +81,66 @@ The value is already URL-decoded, so an encoded slash (`%2F`) is a plain
 slash by the time matching happens. It ends a `{name}` segment rather
 than becoming part of it.
 
-## Routes, authentication and validation
+## Which path each check sees
+
+Access rules, authentication realms, routes and validation do not all
+match the same path, and the difference decides what a pattern actually
+protects. Klin takes the path part of the request target (everything
+before `?`), URL-decodes and normalises it, then looks for an existing
+page or file. If the whole path is one, or none of its prefixes is, the
+whole path is the FILENAME and there is no PATH_INFO. If only a prefix
+ending before a `/` exists, the longest such prefix is the FILENAME and
+the rest is the PATH_INFO. For a vhost other than the first, the split is
+redone against that vhost's files once the `Host` header is known. Step
+by step, with what each check is given:
+
+```mermaid
+flowchart TD
+    A["request target<br/>/path?query"] --> B["path before ? decoded<br/>and normalised"]
+    B --> C{"whole path an existing<br/>page or file?"}
+    C -- yes --> E["FILENAME = whole path<br/>no PATH_INFO"]
+    C -- no --> D{"a shorter prefix<br/>exists?"}
+    D -- no --> E
+    D -- "yes, the longest" --> F["FILENAME = that prefix<br/>PATH_INFO = the rest"]
+    E --> G["FILENAME ends in /:<br/>index page appended"]
+    F --> G
+    G --> H["access rules, then auth realms:<br/>FILENAME only"]
+    H --> I["routes:<br/>FILENAME + PATH_INFO"]
+    I --> J["validation: FILENAME + PATH_INFO<br/>as the client sent it"]
+    J --> K["page runs"]
+```
+
+Validation is given the path as it stood before routing, so it matches
+what the client asked for, not the route's page. A few requests show the
+difference:
+
+| Request, and what exists in the site | FILENAME (access rules, realms) | FILENAME + PATH_INFO (routes, validation) |
+| --- | --- | --- |
+| `/admin/`, with `/admin/index.kl1` | `/admin/index.kl1` | `/admin/index.kl1` |
+| `/status.kl1/cpu`, with `/status.kl1` | `/status.kl1` | `/status.kl1/cpu` |
+| `/api/users/42`, nothing on that path | `/api/users/42` | `/api/users/42` |
+| `/api/users/42`, with a file called `/api` | `/api` | `/api/users/42` |
+
+## Protecting routes
 
 Access rules ([ACCESS.md](ACCESS.md)) and authentication realms
-([AUTH.md](AUTH.md)) run before routing and match the path the client
-asked for, after index selection but without any PATH_INFO. Protect
-`/api/*` and every route under it is protected, whichever page ends up
-serving it. Request validation ([VALIDATE.md](VALIDATE.md)) matches the
-same whole path that routes do, but runs after routing, so it can check
-the `{name}` values a route found.
+([AUTH.md](AUTH.md)) run before routing and match the FILENAME of the
+path the client asked for. Routing rewrites the request to the route's
+page only afterwards, so a realm written for the page's own path
+(`/api/user.kl1`) does nothing for a request to `/api/users/42`.
+
+To protect a set of routes under `/api/`, give the realm or access rule
+two patterns, `/api` and `/api/*`. The patterns are fnmatch(3) without
+special treatment of `/`, so `/api/*` covers the FILENAME however much of
+the path was split off as PATH_INFO, as long as the existing prefix is
+below `/api/`. `/api` covers the last row of the table, where something
+called `/api` takes the rest of the path. Keep the pages your routes
+point to under the same prefix too: a client can request a page directly
+by its own path, and the realm then sees that path, not the route's.
+
+Request validation ([VALIDATE.md](VALIDATE.md)) matches the same whole
+path that routes do, but runs after routing, so it can check the
+`{name}` values a route found.
 
 ## Mistakes klind refuses
 

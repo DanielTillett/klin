@@ -23,8 +23,9 @@ for(i = 0; i < json_count(list); ++i)
 json_free(doc);
 ```
 
-Every accessor accepts NULL and returns NULL, 0 or false, so you can chain
-lookups without checking each step. That includes `json_type()`, which
+Every accessor accepts NULL and returns NULL, 0 or false
+(`json_int64()` returns its error), so you can chain lookups without
+checking each step. That includes `json_type()`, which
 returns `JSON_NULL` for a NULL pointer, so it cannot on its own tell a
 missing member from an explicit JSON `null`. Test the pointer first:
 

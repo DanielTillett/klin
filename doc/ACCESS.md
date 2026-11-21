@@ -35,7 +35,7 @@ Entries are IPv4 or IPv6 addresses, networks (address/prefix bits) or
 For a request, the first rule whose path matches decides. A rule without
 a path matches every path. Within that rule, the first `allow` or `deny`
 line naming the client's address wins, and a client that no line names is
-allowed. That is the whole rule. A refused request gets 403 Forbidden.
+allowed. A refused request gets 403 Forbidden.
 
 ```mermaid
 flowchart TD
@@ -56,14 +56,11 @@ a network kept out everywhere, put its rule first.
 
 ## What the path is
 
-Rules match the request's file name: the decoded, normalised path the
-client asked for, after the index page is chosen and without any path
-info. Aliases and routes do not change it, and authentication realms
-match the same name. So `/admin/` that has an index page is checked as
-`/admin/index.kl1`, and `/status.kl1/extra` is checked as `/status.kl1`
-(the page exists, so `/extra` is path info).
-Patterns use fnmatch(3) with no flags, so `*` also matches `/`. IP rules
-are checked before authentication.
+Rules match the request's file name, without any path info and before
+routing, as authentication realms do; the figure in
+[Which path each check sees](ROUTES.md#which-path-each-check-sees) shows
+how that name is worked out. Patterns use fnmatch(3) with no flags, so `*`
+also matches `/`. IP rules are checked before authentication.
 
 ## At connection time
 

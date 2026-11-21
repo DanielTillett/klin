@@ -7,7 +7,8 @@ how the binary was built.
 
 klind, klin, the libraries, LibU and the site's pages are all compiled
 with these flags, and the programs are linked with the linker flags.
-**Each flag is used only if the compiler or linker accepts it**, so an
+**Each flag is used only if the compiler or linker accepts it** (the
+`_FORTIFY_SOURCE` define is simply added), so an
 older toolchain quietly gets fewer protections rather than a failed
 build. To build without them:
 
@@ -41,7 +42,8 @@ MinGW (Windows) links with `--dynamicbase`, `--nxcompat` and
 `--high-entropy-va` instead, for ASLR and DEP. macOS links PIE by
 default, and the `-z` options do not apply there.
 
-MSVC is not a supported build today (see the README), but if used it
+MSVC is not a supported build today (see
+[Known limitations](../README.md#known-limitations) in the README), but if used it
 would get `/GS` and `/guard:cf`, and link with `/guard:cf /DYNAMICBASE
 /HIGHENTROPYVA /NXCOMPAT`.
 

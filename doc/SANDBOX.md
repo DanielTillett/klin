@@ -2,8 +2,9 @@
 
 klind's worker processes and the TLS key manager ([KEYMGR](KEYMGR.md))
 run in a sandbox that limits what the kernel lets them do. It is on by
-default, and when a page needs a system call the sandbox refuses, you
-name that call in `sandbox_allow`. The idea is simple: a worker parses
+default on Linux (x86-64 and ARM64) and OpenBSD, the systems that have
+one ([Other systems](#other-systems)). When a page needs a system call
+the sandbox refuses, you name that call in `sandbox_allow`. The idea is simple: a worker parses
 untrusted input all day, so if one is compromised, the attacker should
 find themselves in a process that can serve files and talk on sockets
 and very little else. I would leave it on for any device that faces a
@@ -33,9 +34,10 @@ writes logs. Each process gets this much (Linux defaults):
 | undumpable | no | no | no | yes (Linux) |
 
 The worker limits default to 1024 MB of address space (`RLIMIT_AS`),
-1024 open files (`RLIMIT_NOFILE`) and `max_child` + 64 processes of its
-user (`RLIMIT_NPROC`); 0 turns one off. They are set in the worker only,
-just before the sandbox, and are covered in [LIMITS](LIMITS.md). Builds
+1024 open files (`RLIMIT_NOFILE`) and the model's maximum workers
+(`prefork.max_child` or `fork.max_child`) + 64 processes of its user
+(`RLIMIT_NPROC`); 0 leaves the inherited system limit unchanged. They
+are set in the worker only, just before the sandbox, and are covered in [LIMITS](LIMITS.md). Builds
 with AddressSanitizer get no memory limit, because ASan reserves
 terabytes of address space.
 
@@ -60,13 +62,14 @@ perf_event_open, keyctl and the other key calls, unshare and setns
 (namespaces), userfaultfd, personality, reboot, swap, acct, clock and
 time setting, syslog, quotactl, open_by_handle_at and name_to_handle_at,
 fanotify_init, vhangup, iopl and ioperm. The process is killed with
-SIGSYS, and klind starts a new worker.
+SIGSYS. Under prefork, klind starts new workers as it needs them; under
+fork, the next connection gets a new one anyway.
 
 Anything else fails with EPERM, so code that tries something unusual
 gets an error instead of dying.
 
-A worker's filter decides in this order (the key manager's is the same
-without the argument checks):
+A worker's filter decides each call in this order (the key manager's is
+the same without the argument checks):
 
 ```mermaid
 flowchart TD
@@ -90,14 +93,15 @@ workers run without one.
 ### Calls whose arguments are checked
 
 Some allowed calls have their arguments checked too, and fail with EPERM
-otherwise:
+otherwise, unless you name them in `sandbox_allow` (see the table below):
 
 - `socket` may make UNIX, IPv4 and IPv6 sockets only (not netlink, packet,
   vsock, Bluetooth and so on), and `socketpair` UNIX sockets only.
-- `mmap` and `mprotect` never get memory that is writable and executable
+- `mmap` and `mprotect` do not get memory that is writable and executable
   at once (W^X), as with systemd's `MemoryDenyWriteExecute`. Executable
   code is still mapped from files (libraries, CGI programs).
-- `kill` and `tgkill` let a worker signal itself only.
+- `kill` and `tgkill` let a worker signal itself only (a worker that
+  runs CGI gets the wider rule below).
 
 CGI needs a wider rule. A worker that runs CGI scripts kills them by
 process group at their timeout, and the scripts signal their own processes, so
@@ -162,9 +166,10 @@ have no sandbox.
 
 ## What is not sandboxed
 
-klind itself, and the single-process server of `-d`, which is meant for
-development. CGI scripts are filtered only as far as the worker's filter
-goes.
+klind itself, the single-process server of `-d`, which is meant for
+development, and any server with `sandbox no`. Workers on other
+architectures and systems run unfiltered too (above). CGI scripts are
+filtered only as far as the worker's filter goes.
 
 ## Tested
 

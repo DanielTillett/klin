@@ -1,15 +1,14 @@
 # Cryptography and TLS
 
 All of Klin's cryptography goes through one small C interface, and only
-six files may touch OpenSSL. Read this if you write C against that layer
+six of Klin's own files may touch OpenSSL. Read this if you write C against that layer
 or want to port it to another library.
 
 ## One door to the crypto library
 
-All of Klin's cryptography goes through one small interface,
-`klin/crypto.h` (the `kc_` functions), and all of its TLS through
-`klin/tls.h` and the TLS io driver. Only these files call the crypto
-library:
+The interface is `klin/crypto.h` (the `kc_` functions); TLS goes
+through `klin/tls.h` and the TLS io driver. Only these files call the
+crypto library:
 
 | File | What it does |
 |---|---|
@@ -25,8 +24,8 @@ means rewriting six files and not hunting through the tree. The build
 checks (test/run_build_checks.py) enforce it: they fail if any other
 file under src/, klin/ or webapp/ includes an OpenSSL header. Klin's own
 code is also compiled with `OPENSSL_NO_DEPRECATED`
-(`OPENSSL_API_COMPAT=30000`), so no API deprecated in OpenSSL 3.0 is
-used.
+(`OPENSSL_API_COMPAT=30000`), so it uses no API deprecated in OpenSSL
+3.0. Site pages are your code and are not held to that.
 
 ## The interface (`klin/crypto.h`)
 
@@ -51,6 +50,11 @@ used.
 - **Sizes.** `KC_MD_MAX`, `KC_KEY_MAX`, `KC_IV_MAX` and `KC_BLOCK_MAX` equal
   OpenSSL's `EVP_MAX_*` values, so key buffers, session cookies and
   encrypted pages keep their formats.
+
+In a build without OpenSSL (`KLIN_WITH_OPENSSL=OFF`) the interface is
+still there, but every function that hashes, encrypts or draws random
+bytes, `kc_random()` included, returns an error. `kc_memeq()` and
+`kc_cleanse()` still work.
 
 For TLS, `tls_load_init_ctx()` returns an opaque `tls_ctx_t` (an
 `SSL_CTX` in the OpenSSL backend). Free it with `tls_ctx_free()`, and

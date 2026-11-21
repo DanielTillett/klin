@@ -6,7 +6,8 @@ how you will stop session fixation and cross-site request forgery (CSRF).
 
 A session is kept on the server (type `file` or `memory`) or in the
 client's cookies (type `client`). You choose in the server's `session`
-block, described in klind.conf(5). The default is `file`.
+block, described in [klind.conf(5)](man/klind.conf.5). The default is
+`file`.
 
 ## Choosing a store
 
@@ -84,9 +85,9 @@ a session ends; client sessions send their data cookies with every save.
 An id the client sends is accepted only if it names a stored session that
 holds something. For client sessions, the cookies carrying the session
 must be genuine. Otherwise the id is dropped and a new one drawn when the
-page stores something. An attacker therefore cannot plant an id in a
-victim's browser and then use the session the victim logs into. File
-sessions do not create a file for an unknown id.
+page stores something. Klin rejects ids it did not issue, so a planted id
+is not adopted; regenerate the id at login anyway. File sessions do not
+create a file for an unknown id.
 
 At login, and at any change of privilege, give the session a new id, and
 grant nothing if that fails:
@@ -109,10 +110,12 @@ grant nothing if that fails:
 ```
 
 `check_password()` stands for your own check, declared in a `<%! %>`
-block. `session_regenerate_id()` returns 0 on success. The data is kept
-and the copy stored under the old id is removed (file and memory
-sessions), so the old id is worth nothing. Call it before the page prints
-anything, because the new id goes out in a cookie.
+block. `session_regenerate_id()` returns 0 on success. The data is kept,
+and for file and memory sessions Klin attempts to remove the copy stored
+under the old id. The result of that removal is discarded, so a failed
+removal does not make the call fail and the old copy can survive until it
+expires. Call it before the page prints anything, because the new id goes
+out in a cookie.
 
 Client sessions have nothing stored on the server to remove. An old set of
 cookies stays valid until its timeouts, as with any session kept by the
@@ -213,7 +216,7 @@ sessions (test/site/www/sessec.kl1):
 
 - a planted id is not kept (and, for file sessions, creates no file);
 - `session_regenerate_id()` changes the id and keeps the data, and for
-  memory and file sessions the old id is then worthless;
+  memory and file sessions the old id no longer loads the session;
 - GET passes the CSRF check, and POST passes only with the token (header
   or form value);
 - a client session with a changed data, time or id cookie is refused.

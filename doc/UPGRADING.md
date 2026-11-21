@@ -2,9 +2,8 @@
 
 Klin 4.0.0 is KLone 3.1.0 renamed and brought up to date. A KLone 3.x site
 builds with few changes, but 4.0.0 is stricter by default, so read the new
-defaults below before you deploy it. The
-[ChangeLog](https://github.com/DanielTillett/klin/blob/master/ChangeLog)
-lists every change.
+defaults below before you deploy it. The [ChangeLog](../ChangeLog) lists
+every change.
 
 ## The checklist
 
@@ -14,15 +13,17 @@ Work through these in order. Most sites need only the first four.
    with the [build options](#build-options) table. Pass `-DKLIN_SITE_DIR`
    for the site you embed.
 2. Set `uid` and `gid` in klind.conf if klind starts as root. Without them
-   it now refuses to start ([SYSTEMD](SYSTEMD.md)).
+   it now refuses to start on Unix-like systems, unless you set
+   `allow_root yes` ([SYSTEMD](SYSTEMD.md)).
 3. Read [New defaults that may change a deployment](#new-defaults-that-may-change-a-deployment)
    and turn back on anything your devices or clients depend on, one setting
    at a time.
 4. Call `session_regenerate_id()` at login. A session id made up by the
    client is no longer accepted ([SESSIONS](SESSIONS.md)).
 5. Test any third-party login or embedding flow, since session cookies are
-   now `SameSite=Lax`. Expect every existing client-side session to be
-   rejected once, because klind draws fresh session keys at each start.
+   now `SameSite=Lax`. If you use client-side sessions, expect every
+   existing one to be rejected once, because klind draws fresh session keys
+   at each start.
 6. Check that numeric settings are in range: `max_child` from 1 to 896 and
    `verify_depth` from 0 to 100. A setting out of range now stops klind at
    startup.
@@ -38,17 +39,17 @@ behaviour back:
 
 | What changed | To change it |
 | --- | --- |
-| TLS 1.2 ciphers: forward-secret authenticated encryption (AEAD) only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)); RSA key exchange also needs `key_manager no`, since the key manager does not decrypt with the key ([KEYMGR](KEYMGR.md)) |
-| The TLS private key is held by a separate process (RSA and EC keys) | `key_manager no` ([KEYMGR](KEYMGR.md)) |
-| Workers run under a seccomp sandbox, with argument checks (sockets, W^X memory, signals) | `sandbox no`, `sandbox_allow` ([SANDBOX](SANDBOX.md)) |
+| TLS 1.2 ciphers by default: forward-secret authenticated encryption (AEAD) only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)); RSA key exchange also needs `key_manager no`, since the key manager does not decrypt with the key ([KEYMGR](KEYMGR.md)) |
+| The TLS private key is held by a separate process (RSA and EC keys; not on native Windows) | `key_manager no` ([KEYMGR](KEYMGR.md)) |
+| Workers run under a seccomp sandbox on Linux (x86-64 and ARM64), with argument checks (sockets, W^X memory, signals) | `sandbox no`, `sandbox_allow` ([SANDBOX](SANDBOX.md)) |
 | Worker limits: 1024 MB, 1024 files, and processes up to the model's maximum workers (`prefork.max_child` or `fork.max_child`, 150 by default) + 64 | `worker_max_memory`, `worker_max_files`, `worker_max_procs`; 0 leaves the inherited system limit unchanged ([LIMITS](LIMITS.md)) |
 | Header limits, a header deadline, connections per client address, SSE and WebSocket streams | `max_header_*`, `idle_timeout`, `max_conn_per_ip`, `max_streams` ([LIMITS](LIMITS.md)) |
 | Symbolic links are followed only inside the document root | `follow_symlinks` ([FILES](FILES.md)) |
 | CGI: 60 s, 30 s of CPU, 512 MB; klind's environment and the Authorization field are not passed | the `cgi` block: `timeout`, `max_cpu`, `max_memory`, `pass_env`, `pass_headers` ([CGI](CGI.md)) |
-| Security headers on every response | `security_headers` ([HEADERS](HEADERS.md)) |
+| Security headers on every response, unless turned off | `security_headers` ([HEADERS](HEADERS.md)) |
 | A session id the client makes up is not accepted | none: call `session_regenerate_id()` at login ([SESSIONS](SESSIONS.md)) |
 | klind does not keep root credentials | `uid` and `gid`, or `allow_root yes` ([SYSTEMD](SYSTEMD.md)) |
-| Settings out of range stop klind at startup | `max_child` 1 to 896, `verify_depth` 0 to 100 (klind.conf(5)) |
+| Settings out of range stop klind at startup | `max_child` 1 to 896, `verify_depth` 0 to 100 ([klind.conf(5)](man/klind.conf.5)) |
 
 ## Build options
 
@@ -96,13 +97,12 @@ Some things did not change: the `.kl1` and `.klc` page extensions, the `KL1_CLIS
 file format, the Windows service name (`kloned`) and the installed library
 names (`libhttp.a`, `libutils.a` ...). A `kloned.conf` given with `-f`
 works as it is; only the names of the example and the manual changed
-(`klind.conf`).
+([klind.conf(5)](man/klind.conf.5)).
 
 ## Other changes since KLone 3.1.0
 
 Most of what changed needs nothing from you, and the
-[ChangeLog](https://github.com/DanielTillett/klin/blob/master/ChangeLog)
-has all of it. These are the changes a port may have to act on.
+[ChangeLog](../ChangeLog) has all of it. These are the changes a port may have to act on.
 
 ### TLS
 
@@ -154,7 +154,7 @@ unchanged.
 Connections now stay open for further requests (HTTP/1.1 by default,
 HTTP/1.0 with `Connection: keep-alive`), including pipelined requests. The
 settings are `keep_alive`, `keep_alive_timeout` (5 s) and `keep_alive_max`
-(100 requests); see klind.conf(5). Keep-alive is off in the iterative model
+(100 requests); see [klind.conf(5)](man/klind.conf.5). Keep-alive is off in the iterative model
 (`-d`) and in CGI mode.
 
 Every response body is now delimited, so a page or CGI must not lie about
@@ -165,8 +165,8 @@ Transfer-Encoding it sets is replaced, and a CGI `Status:` line sets the
 status rather than being passed through. Reading a request body stops at
 its end, and an unread body is skipped before the next request.
 
-The catch for prefork sites is that a worker holding a kept-alive
-connection counts as busy. While clients wait, the pool doubles every
+On prefork sites, a worker holding a kept-alive connection counts as
+busy. While clients wait, the pool doubles every
 second up to `prefork.max_child`. A worker started beyond
 `prefork.start_child` exits after `prefork.idle_timeout` seconds without a
 client (default 10, 0 means never), so the pool shrinks back after a
@@ -189,7 +189,7 @@ correctly sized buffer from the caller.
 | `skin/` packaging system and `pkg/` | `cmake --install`, with the installed CMake package and pkg-config file |
 | the RHEL init script and the old `contrib/` tools | the systemd unit in `contrib/systemd` ([SYSTEMD](SYSTEMD.md)) |
 | CyaSSL backend | OpenSSL 3 |
-| C++ pages (`.klx`) | none: the site import stops with an error |
+| C++ pages (`.klx`) | none: `klin -c import` still accepts them, but the site build stops at the CMake configure step ("C++ page ... is not supported by this build") |
 | OpenSSL TLS-PSK support | none |
 | Kilt URL module | none; a `routes` block ([ROUTES](ROUTES.md)) is the nearest thing |
 | `autogen.mk` and `autogen.dps` from `klin -c import` | `autogen.cmake`, written by the same command for the site build |

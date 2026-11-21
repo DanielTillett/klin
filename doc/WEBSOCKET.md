@@ -37,10 +37,14 @@ Put nothing before the code block. `ws_accept()` answers the handshake
 itself with 101 Switching Protocols, and from then on the connection
 belongs to the page. It is closed when the page ends.
 
+**The wait loop is Unix-only.** On a native Windows build `ws_wait()`
+returns `WS_CLOSED` at once, so the echo loop ends before it reads
+anything.
+
 ## The connection from start to finish
 
-With the echo page above doing the work, a connection runs like this
-from the handshake to a close started by the browser:
+A connection to the echo page, from the handshake to its end (here a
+close started by the browser):
 
 ```mermaid
 sequenceDiagram
@@ -52,18 +56,21 @@ sequenceDiagram
         P->>B: 400, 403, 426, 501 or 503 (page returns)
     else accepted
         P->>B: 101 Switching Protocols, Sec-WebSocket-Accept
-        loop until WS_CLOSED
-            B->>P: text or binary frame(s)
-            P->>P: ws_wait() gives WS_MESSAGE, ws_recv() returns the message
-            P->>B: ws_send() echoes it
-            opt idle for 30 s
-                P->>B: ws_ping()
-                B->>P: pong (taken by ws_recv)
+        loop until WS_CLOSED (Unix only)
+            alt a message
+                B->>P: text or binary frame(s)
+                P->>P: ws_wait() gives WS_MESSAGE, ws_recv() returns it
+                P->>B: ws_send() echoes it
+            else idle for 30 s
+                P->>B: ws_ping() on WS_TIMEOUT
+                B->>P: pong (ws_recv() returns WS_AGAIN)
+            else the browser closes
+                B->>P: close frame with a code
+                P->>B: close frame with the same code
+                P->>P: ws_recv() returns WS_CLOSED, loop exits
             end
         end
-        B->>P: close frame with a code
-        P->>B: close frame with the same code
-        P->>P: ws_recv() returns WS_CLOSED, page ends, connection closed
+        P->>P: ws_free(), page ends, connection closed
     end
 ```
 
@@ -120,8 +127,9 @@ So, unless the page passes `WS_ANY_ORIGIN`, `ws_accept()` refuses with 403
 any handshake whose `Origin` names another host. It compares the host and
 port in `Origin` (everything after the `://`) with the `Host` header,
 ignoring case. The scheme is not compared. The comparison is of the text
-as sent, so `Origin: https://dev:443` does not match `Host: dev`. A client that is not a browser sends no `Origin` and
-is accepted. I would leave the check on for any device that keeps a login
+as sent, so `Origin: https://dev:443` does not match `Host: dev`. A
+handshake with no `Origin` at all, which is what clients other than
+browsers normally send, is accepted. I would leave the check on for any device that keeps a login
 session. If you do pass `WS_ANY_ORIGIN`, the page must check
 `request_get_field_value(rq, "Origin")` itself.
 
@@ -136,8 +144,8 @@ lasts.** In the prefork model the watchdog asks the parent for another
 worker after a second, and the worker exits after the connection. Size
 `prefork.max_child` for the number of connections you expect, and use
 `max_streams` (default 100) to keep long-lived connections from taking
-every worker. The single-process server (`-d`) serves nothing else while
-a WebSocket is open.
+every worker. The iterative model (`-d`, or `model iterative`) runs one
+process, which serves nothing else while a WebSocket is open.
 
 See also: [SSE.md](SSE.md) when only the server talks, and
 [SESSIONS.md](SESSIONS.md) for the login sessions the Origin check protects.
