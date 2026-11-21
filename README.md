@@ -8,6 +8,7 @@ and your pages, compiled into one small program.**
 [![Build and test](https://github.com/DanielTillett/klin/actions/workflows/build.yml/badge.svg)](https://github.com/DanielTillett/klin/actions/workflows/build.yml)
 [![CodeQL](https://github.com/DanielTillett/klin/actions/workflows/codeql.yml/badge.svg)](https://github.com/DanielTillett/klin/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/DanielTillett/klin/badge)](https://scorecard.dev/viewer/?uri=github.com/DanielTillett/klin)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16970/badge)](https://www.bestpractices.dev/projects/16970)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://github.com/DanielTillett/klin/blob/master/LICENSE)
 
 Klin builds a device's web interface into a single executable, `klind`:
