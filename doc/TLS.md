@@ -9,9 +9,11 @@ An https server block ([klind.conf(5)](man/klind.conf.5), SSL/TLS) needs
 only `cert_file`,
 plus `key_file` if the private key is in a file of its own. Without
 `key_file`, klind warns and looks for the key in `cert_file`. Use a
-separate `key_file` that the workers' user cannot read: the key manager
-keeps the key out of the workers only then ([KEYMGR](KEYMGR.md)). The
-other settings have secure defaults.
+separate `key_file` that the workers' user cannot read, and do not load
+the same key in another server with `key_manager no`: the key manager
+keeps the key out of the workers only then
+([KEYMGR](KEYMGR.md#why-it-exists)). The other settings have secure
+defaults.
 
 ## Protocols
 
@@ -56,7 +58,7 @@ DHE-RSA-CHACHA20-POLY1305
 For TLS 1.3 it uses OpenSSL's default suites unless you set
 `tls_ciphersuites`; the defaults are all AEAD.
 
-The catch is old clients. This default list is new in 4.0, and a client
+This default list shuts out old clients. It is new in 4.0, and a client
 that has only CBC ciphers or RSA key exchange (very old browsers and
 libraries) cannot connect to a server that keeps it. I made that trade on
 purpose, but you can change
@@ -89,13 +91,14 @@ flowchart TD
 
 ## Session resumption
 
-Session tickets let a returning client skip the full handshake. Their
-keys change every `tls_ticket_key_lifetime` (default 12 hours). A ticket
-made with the previous key is still accepted, and the client gets a new
-one in return, so with the default lifetime a ticket is good for between
-12 and 24 hours. The session's own lifetime is three periods, so it is
-the ticket's key, not the session timeout, that ends it. With tickets on, the server-side session cache is off:
-the tickets themselves carry a session from one worker to another.
+Session tickets let a returning client skip the full handshake. Their keys
+change every `tls_ticket_key_lifetime` (default 12 hours). A ticket made
+with the previous key is still accepted, and the client gets a new one in
+return, so with the default lifetime a ticket is good for between 12 and
+24 hours. The session's own lifetime is three periods, so it is the
+ticket's key, not the session timeout, that ends it. With tickets on, the
+server-side session cache is off: the tickets themselves carry a session
+from one worker to another.
 
 ```conf
 tls_ticket_key_lifetime  720     # minutes, or e.g. "90s"

@@ -85,9 +85,9 @@ follow_symlinks     inside      # the default
 
 With `inside`, a link is followed if its target is inside the containing
 directory chosen above (the longest of `dir_root` and the `dir_alias` and
-`script_alias` targets that holds the path). A link that leads out of it (to /etc, or to
-../secret.txt) is not found (404). The directory itself may be reached
-through links.
+`script_alias` targets that holds the path). A link that leads out of it
+(to /etc, or to ../secret.txt) is not found (404). The directory itself
+may be reached through links.
 
 With `no`, no link is followed below that directory.
 
@@ -125,9 +125,9 @@ followed. These names are refused whatever the setting:
   that happens to contain it (`v~2.txt`) is;
 - device names (CON, NUL, COM1, ...).
 
-**This code is not tested.** The Windows continuous integration (CI) job builds klind and serves
-embedded pages, but does not build the file-system supplier or run these
-path checks.
+**This code is not tested.** The Windows continuous integration (CI) job
+builds klind and serves embedded pages, but does not build the file-system
+supplier or run these path checks.
 
 ## Paths the tests try
 

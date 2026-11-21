@@ -76,9 +76,11 @@ sequenceDiagram
 
 If the page wants to end the connection itself, `ws_close(ws, code,
 reason)` sends the close frame and waits for the browser's reply before
-returning. The wait for the reply to start is 2 s, but a frame that
-starts arriving inside those 2 s is read under the usual 30 s frame
-deadline, so in the worst case `ws_close()` takes about 32 s.
+returning. Writing the close frame has the usual 30 s frame deadline.
+The 2 s wait for the reply starts after that write, and it is checked
+only between reads: one read can take several frames already buffered,
+and each frame has its own 30 s read deadline. So 2 s is how long
+`ws_close()` waits for a quiet browser, not a bound on the whole call.
 
 ## The calls
 
@@ -131,9 +133,9 @@ port in `Origin` (everything after the `://`) with the `Host` header,
 ignoring case. The scheme is not compared. The comparison is of the text
 as sent, so `Origin: https://dev:443` does not match `Host: dev`. A
 handshake with no `Origin` at all, which is what clients other than
-browsers normally send, is accepted. I would leave the check on for any device that keeps a login
-session. If you do pass `WS_ANY_ORIGIN`, the page must check
-`request_get_field_value(rq, "Origin")` itself.
+browsers normally send, is accepted. I would leave the check on for any
+device that keeps a login session. If you do pass `WS_ANY_ORIGIN`, the
+page must check `request_get_field_value(rq, "Origin")` itself.
 
 ## Timeouts and workers
 

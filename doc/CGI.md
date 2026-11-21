@@ -38,12 +38,20 @@ moves to a group or session of its own (with setsid(2), say) escapes it.
 klind checks the timeout only while the worker is waiting on a
 descriptor: writing the POST body to the script, reading the script's
 output, or writing that output to the client. So it is wall-clock time,
-and it includes the time a slow client takes to read the output. Once
-the output has ended, klind cancels the timeout and then
-waits for the script to exit with a plain blocking waitpid(2). A script
-that closes its standard output and carries on running holds the worker
-until it exits, and the timeout no longer covers it (`max_cpu` still
-does, if it is spinning).
+and time spent waiting on a slow client counts towards it. The timeout
+kills only the script, though. The client's connection stays open, and a
+write that is waiting on it carries on waiting. Once the output has
+ended, klind cancels the timeout, then sends what is left in its buffer
+and waits for the script to exit with a plain blocking waitpid(2).
+
+The simple rule is that `timeout` bounds the script, not the client.
+Nothing in klind limits how long a write to a slow client may take
+(`idle_timeout`, `keep_alive_timeout` and `post_timeout` cover only
+reading the request), so a client that reads slowly holds the worker
+for as long as it keeps reading. A script
+that closes its standard output and carries on running also holds the
+worker until it exits, and the timeout no longer covers it (`max_cpu`
+still does, if it is spinning).
 
 What a timeout looks like to the client depends on when it happens:
 

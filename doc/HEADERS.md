@@ -1,7 +1,9 @@
 # Security headers
 
 klind adds a set of security headers to its responses, pages and error
-pages alike (an `nph-` CGI script is the exception, below). Each can be
+pages alike. There are two exceptions: an `nph-` CGI script (below), and
+a WebSocket upgrade, whose 101 answer `ws_accept()` writes itself with a
+fixed set of fields ([WEBSOCKET.md](WEBSOCKET.md)). Each can be
 changed or left out per server or virtual host in a `security_headers`
 block. The value you give replaces the default, and `no` leaves the header
 out:

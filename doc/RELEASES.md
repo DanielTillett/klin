@@ -1,9 +1,9 @@
 # Releases and workflows
 
 A Klin release is built, checked and signed by a GitHub Actions workflow,
-with no signing key for anyone to keep, and published by hand. This page
-covers cutting a release, the workflows that guard the repository, and
-checking a release you have downloaded.
+with no signing key for anyone to keep, and published by hand. Cutting
+one, the workflows that guard the repository and checking a release you
+have downloaded are below.
 
 ## Release files
 
@@ -93,8 +93,9 @@ identity, which names this repository, this workflow and the tag, and the
 signature is recorded in Sigstore's public transparency log (Rekor). I
 chose this because there is no private key to keep, rotate or lose, and a
 signature made anywhere other than this repository's release workflow
-fails the checks below, as long as you give `--signer-workflow`. The trade-off is that the log entry is public as soon as the
-workflow runs, before the draft is published.
+fails the checks below, as long as you give `--signer-workflow`. The
+trade-off is that the log entry is public as soon as the workflow runs,
+before the draft is published.
 
 To check a downloaded release:
 
@@ -103,15 +104,22 @@ sha256sum -c SHA256SUMS
 gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
     --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
     --source-ref refs/tags/v4.0.0
+gh attestation verify klin-4.0.0.spdx.json --repo DanielTillett/klin \
+    --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
+    --source-ref refs/tags/v4.0.0
 gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
     --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
     --source-ref refs/tags/v4.0.0 \
     --predicate-type https://spdx.dev/Document/v2.3
 ```
 
-`--signer-workflow` and `--source-ref` check that it was the release
-workflow that signed the file, and for that tag, not another workflow in
-the repository or a branch.
+`SHA256SUMS` on its own shows only that the files match the list, not
+who made them: anyone who can replace the files can replace the list
+too. The attestations give authenticity. The first two commands check
+the provenance of the tarball and of the SBOM, and the third the SBOM
+attestation for the tarball. `--signer-workflow` and `--source-ref`
+check that it was the release workflow that signed the file, and for
+that tag, not another workflow in the repository or a branch.
 
 Those commands fetch the attestations and Sigstore's trusted root from
 the network. To check on a machine with no network access, use the
@@ -124,8 +132,22 @@ machine that is online:
 gh attestation trusted-root > trusted_root.jsonl
 
 # offline
-gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin     --signer-workflow DanielTillett/klin/.github/workflows/release.yml     --source-ref refs/tags/v4.0.0     --bundle klin-4.0.0.provenance.sigstore.json     --custom-trusted-root trusted_root.jsonl
-gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin     --signer-workflow DanielTillett/klin/.github/workflows/release.yml     --source-ref refs/tags/v4.0.0     --bundle klin-4.0.0.sbom.sigstore.json     --custom-trusted-root trusted_root.jsonl     --predicate-type https://spdx.dev/Document/v2.3
+gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
+    --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
+    --source-ref refs/tags/v4.0.0 \
+    --bundle klin-4.0.0.provenance.sigstore.json \
+    --custom-trusted-root trusted_root.jsonl
+gh attestation verify klin-4.0.0.spdx.json --repo DanielTillett/klin \
+    --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
+    --source-ref refs/tags/v4.0.0 \
+    --bundle klin-4.0.0.provenance.sigstore.json \
+    --custom-trusted-root trusted_root.jsonl
+gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
+    --signer-workflow DanielTillett/klin/.github/workflows/release.yml \
+    --source-ref refs/tags/v4.0.0 \
+    --bundle klin-4.0.0.sbom.sigstore.json \
+    --custom-trusted-root trusted_root.jsonl \
+    --predicate-type https://spdx.dev/Document/v2.3
 ```
 
 With a bundle, `--repo` is compared only with the repository name written
@@ -178,12 +200,12 @@ and for the CMake and Ninja that image installs with pip
 installed with `--require-hashes`). LibU and the OpenSSL tag in
 `.clusterfuzzlite/Dockerfile` are pinned and updated by hand.
 
-The OpenSSF (Open Source Security Foundation) Scorecard checks the repository's supply-chain practices weekly
-and on pushes to master. Its results go to code scanning and are published
-to the public Scorecard API (`publish_results: true`, with
-`id-token: write` on the job). You can see them at
-https://scorecard.dev/viewer/?uri=github.com/DanielTillett/klin and in the
-README's badge.
+The OpenSSF (Open Source Security Foundation) Scorecard checks the
+repository's supply-chain practices weekly and on pushes to master. Its
+results go to code scanning and are published to the public Scorecard API
+(`publish_results: true`, with `id-token: write` on the job). You can see
+them at https://scorecard.dev/viewer/?uri=github.com/DanielTillett/klin
+and in the README's badge.
 
 ## What CI checks, and what it doesn't yet
 

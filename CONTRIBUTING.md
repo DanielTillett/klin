@@ -33,10 +33,11 @@ checks pass:
 
 The branch must also be up to date with master, so rebase or merge master
 into it if master has moved, and review conversations must be resolved
-before the merge, which is a rebase or a squash. ClusterFuzzLite also fuzzes pull requests, except those
-that change only documentation (`doc/`, `*.md`, ChangeLog, TODO,
-`_config.yml`), but it is not a required check. See
-[doc/RELEASES.md](doc/RELEASES.md#workflows) for what each workflow runs.
+before the merge, which is a rebase or a squash. ClusterFuzzLite also
+fuzzes pull requests, except those that change only documentation (`doc/`,
+`*.md`, ChangeLog, TODO, `_config.yml`), but it is not a required check.
+See [doc/RELEASES.md](doc/RELEASES.md#workflows) for what each workflow
+runs.
 
 ## Building and testing
 

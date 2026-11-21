@@ -63,7 +63,7 @@ sequenceDiagram
     participant B as Browser (EventSource)
     participant P as Page in a klind worker
     participant S as Your event source (my_fd)
-    B->>P: GET /events.kl1 (Last-Event-ID on reconnect)
+    B->>P: GET /events.kl1
     P->>B: 200, text/event-stream, then ": klin" comment
     loop until a send fails or the client closes (Unix only)
         P->>P: sse_wait() polls client socket and my_fd
@@ -126,8 +126,10 @@ To stop streams taking every worker, `max_streams` caps the SSE and
 WebSocket connections open at once across all of a server's workers
 (default 100; 0 turns the cap off). Beyond it `sse_start()` sets
 503 with `Retry-After: 5` and returns non-zero, so the page's
-`if(sse_start(...)) return;` ends the page and that answer is sent. See
-[LIMITS.md](LIMITS.md).
+`if(sse_start(...)) return;` ends the page and that answer is sent. The
+slot belongs to the connection, not the stream: it is freed when the
+connection closes, so a finished stream still counts while its
+connection is kept alive for more requests. See [LIMITS.md](LIMITS.md).
 
 See also: [WEBSOCKET.md](WEBSOCKET.md) for two-way traffic, and
 [LIMITS.md](LIMITS.md) for `max_streams` and the other limits.

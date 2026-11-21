@@ -15,9 +15,9 @@ Work through these in order. Most sites need only the first four.
 2. Set `uid` and `gid` in klind.conf if klind starts as root. Without them
    it now refuses to start on Unix-like systems, unless you set
    `allow_root yes` ([SYSTEMD](SYSTEMD.md)).
-3. Read [New defaults that may change a deployment](#new-defaults-that-may-change-a-deployment)
-   and turn back on anything your devices or clients depend on, one setting
-   at a time.
+3. Read [New defaults that may change a
+   deployment](#new-defaults-that-may-change-a-deployment) and turn back
+   on anything your devices or clients depend on, one setting at a time.
 4. Call `session_regenerate_id()` at login. A session id made up by the
    client is no longer accepted ([SESSIONS](SESSIONS.md)).
 5. Test any third-party login or embedding flow, since session cookies are
@@ -40,7 +40,7 @@ behaviour back:
 | What changed | To change it |
 | --- | --- |
 | TLS 1.2 ciphers by default: forward-secret authenticated encryption (AEAD) only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)); RSA key exchange also needs `key_manager no`, since the key manager does not decrypt with the key ([KEYMGR](KEYMGR.md)) |
-| The TLS private key is held by a separate process (RSA and EC keys; not on native Windows); it stays out of the workers only with a `key_file` separate from the certificate that the workers' user cannot read | `key_manager no` ([KEYMGR](KEYMGR.md)) |
+| The TLS private key is held by a separate process (RSA and EC keys; not on native Windows); it stays out of the workers only with a `key_file` separate from the certificate that the workers' user cannot read and no other server loads with `key_manager no` ([conditions](KEYMGR.md#why-it-exists)) | `key_manager no` ([KEYMGR](KEYMGR.md)) |
 | Workers run under a seccomp sandbox on Linux (x86-64 and ARM64), with argument checks (sockets, W^X memory, signals) | `sandbox no`, `sandbox_allow` ([SANDBOX](SANDBOX.md)) |
 | Worker limits: 1024 MB, 1024 files, and processes up to the model's maximum workers (`prefork.max_child` or `fork.max_child`, 150 by default) + 64 | `worker_max_memory`, `worker_max_files`, `worker_max_procs`; 0 leaves the inherited system limit unchanged ([LIMITS](LIMITS.md)) |
 | Header limits, a header deadline, connections per client address, SSE and WebSocket streams | `max_header_*`, `idle_timeout`, `max_conn_per_ip`, `max_streams` ([LIMITS](LIMITS.md)) |
@@ -93,16 +93,18 @@ be removed in 5.0.0 (TODO lists what goes):
 | `klone_sess_*` session files | `klin_sess_*` | renamed when used |
 | `Server: klone/<version>` | `Server: klin/<version>` | - |
 
-Some things did not change: the `.kl1` and `.klc` page extensions, the `KL1_CLISES_*` client-session cookies, the configuration
-file format, the Windows service name (`kloned`) and the installed library
-names (`libhttp.a`, `libutils.a` ...). A `kloned.conf` given with `-f`
-works as it is; only the names of the example and the manual changed
+Some things did not change: the `.kl1` and `.klc` page extensions, the
+`KL1_CLISES_*` client-session cookies, the configuration file format, the
+Windows service name (`kloned`) and the installed library names
+(`libhttp.a`, `libutils.a` ...). A `kloned.conf` given with `-f` works as
+it is; only the names of the example and the manual changed
 ([klind.conf(5)](man/klind.conf.5)).
 
 ## Other changes since KLone 3.1.0
 
 Most of what changed needs nothing from you, and the
-[ChangeLog](../ChangeLog) has all of it. These are the changes a port may have to act on.
+[ChangeLog](../ChangeLog) has all of it. These are the changes a port may
+have to act on.
 
 ### TLS
 
@@ -154,8 +156,8 @@ unchanged.
 Connections now stay open for further requests (HTTP/1.1 by default,
 HTTP/1.0 with `Connection: keep-alive`), including pipelined requests. The
 settings are `keep_alive`, `keep_alive_timeout` (5 s) and `keep_alive_max`
-(100 requests); see [klind.conf(5)](man/klind.conf.5). Keep-alive is off in the iterative model
-(`-d`) and in CGI mode.
+(100 requests); see [klind.conf(5)](man/klind.conf.5). Keep-alive is off
+in the iterative model (`-d`) and in CGI mode.
 
 Every response body is now delimited, so a page or CGI must not lie about
 its length. Pages that fit the 4 KB response buffer get a Content-Length;

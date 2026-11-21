@@ -101,7 +101,7 @@ create a file for an unknown id.
 At login, and at any change of privilege, give the session a new id, and
 grant nothing if that fails:
 
-```c
+```html
 <%
     const char *user = request_get_arg(request, "user");
     const char *pw = request_get_arg(request, "password");
@@ -202,7 +202,7 @@ It can also send the token in an `X-CSRF-Token` header field. The page
 that acts on the request checks it first. `session_csrf_check()` returns
 0 when the request may go ahead:
 
-```c
+```html
 <%
     if(session_csrf_check(session, request))
     {

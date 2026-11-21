@@ -9,7 +9,8 @@ access
 {
     rule
     {
-        path   /admin/*             # fnmatch(3) patterns, may repeat
+        path   /admin               # fnmatch(3) patterns, may repeat
+        path   /admin/*
         allow  10.0.0.0/8, 2001:db8::/32
         deny   all
     }
@@ -85,7 +86,7 @@ flowchart LR
 
 The address is the socket's peer. Behind a proxy or load balancer it is
 the proxy's, and `X-Forwarded-For` is not used. A client that is not on
-an IP socket (a UNIX socket, or klin run as a CGI) is not checked.
+an IP socket (a UNIX socket, or klind run as a CGI) is not checked.
 
 A bad entry, an unknown key or a rule with no `allow` or `deny` line stops
 klind at startup.
