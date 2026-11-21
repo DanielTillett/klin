@@ -104,9 +104,9 @@ flowchart TD
 
 The limits ([LIMITS.md](LIMITS.md)) are read before the `Host` header is,
 which is why they belong to the server block.
-[klind.conf(5)](man/klind.conf.5) lists the main settings (it leaves out
-`script_alias` and `access_log`), and `etc/` in the source tree has sample
-configurations for vhosts, HTTPS and the other cases.
+[klind.conf(5)](man/klind.conf.5) lists the main settings, and `etc/` in
+the source tree has sample configurations for vhosts, HTTPS and the other
+cases.
 
 ## Your first page, then a login in front of it
 

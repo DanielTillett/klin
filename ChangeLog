@@ -444,8 +444,9 @@ Klin 4.0.0:
 	  on TLS connections; new response_set_cookie_ex() with explicit flags
 	- http: reject duplicate or overflowing Content-Length, any
 	  Transfer-Encoding, invalid field names, control characters, folded
-	  or unterminated headers and decoded NULs in URI paths; limit headers
-	  to 256 fields, 8192 bytes per line and 65536 bytes in total
+	  or unterminated headers and decoded NULs in URI paths; limit request
+	  headers to 100 fields, 8192 bytes per line and 32768 bytes in total
+	  (configurable: see the request limits entry above)
 	- http: split the query string before URL-decoding the path, so %3F and
 	  '+' in paths are preserved
 	- utils: capacity-aware u_{url,hex,html,sql}ncpy_s(); fix out-of-bounds
