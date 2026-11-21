@@ -1,11 +1,15 @@
 # JSON
 
-`<klin/json.h>` reads and writes JSON (RFC 8259). It is in libutils, so
-pages, webapp code and tools can use it.
+`<klin/json.h>` reads and writes JSON (RFC 8259). It lives in libutils,
+so pages, webapp code and tools can all use it. Read this page when you
+write an API page that takes or returns JSON.
 
 ## Reading
 
-```
+`json_parse()` builds a tree that you query with accessors and free with
+`json_free()`:
+
+```c
 json_t *doc;
 char err[128];
 
@@ -19,30 +23,51 @@ for(i = 0; i < json_count(list); ++i)
 json_free(doc);
 ```
 
-Accessors accept NULL and return NULL, 0 or false, so lookups can be
-chained without checks at each step; json_type() tells a JSON null from
-a missing member (json_get() returns NULL only for a missing one).
-json_number() gives every number as a double; json_int64() only an
-integer written without fraction or exponent that fits int64_t exactly.
-Strings are NUL-terminated UTF-8; json_string_len() counts a \u0000 in
-one.
+Every accessor accepts NULL and returns NULL, 0 or false, so you can chain
+lookups without checking each step. `json_get()` returns NULL only for a
+missing member; use `json_type()` to tell a JSON `null` from a member that
+is not there.
 
-The reader is strict, as input from clients should be read: no comments,
-trailing commas, single quotes, unquoted keys, leading zeros, NaN or
-Infinity; strings must be valid UTF-8 with no raw control characters and
-no unpaired surrogates; nesting is limited to JSON_MAX_DEPTH (64). A key
-may appear only once in an object: two parsers that handle a duplicate
-differently (first wins, last wins) are a known way around validation.
+Numbers come in two forms. `json_number()` gives any number as a
+`double`. `json_int64()` succeeds only for an integer written without a
+fraction or exponent that fits `int64_t` exactly, which is what you want
+for ids and counts. Strings are NUL-terminated UTF-8, and
+`json_string_len()` gives the true length when a string contains `\u0000`.
 
-In a page, request_get_json(request, max, &doc) reads and parses the
-request body: it returns 0, or the status to answer with (415 if the
-Content-Type is not application/json or a +json type, 413 if the body is
-larger than max or post_maxsize, 400 if it is not valid JSON).
-request_read_body() reads any body raw.
+### The reader is strict
+
+I made the reader strict on purpose, because its input comes from
+clients. It refuses comments, trailing commas, single quotes, unquoted
+keys, leading zeros, `NaN` and `Infinity`. Strings must be valid UTF-8,
+with no raw control characters and no unpaired surrogates. Nesting is
+limited to `JSON_MAX_DEPTH` (64).
+
+A key may appear only once in an object. That one is a security rule
+rather than pedantry: two parsers that handle a duplicate differently
+(first wins in one, last wins in the other) are a known way around
+validation, so Klin refuses the document instead of picking one.
+
+### Reading a request body
+
+In a page, `request_get_json(request, max, &doc)` reads and parses the
+request body in one call. It returns 0 with the document, or the status
+you should answer with:
+
+| Status | When |
+| --- | --- |
+| 415 | the Content-Type is not `application/json` or a `+json` type (parameters such as `charset` are allowed) |
+| 413 | the body is larger than `max` or than `post_maxsize` |
+| 400 | the body is not valid JSON, or could not be read |
+
+`request_read_body()` reads any body raw into a NUL-terminated buffer,
+under the same two size limits. The body can be read only once: either
+function fails if something has already read it.
 
 ## Writing
 
-```
+The writer streams straight to an `io_t`, normally the page's `out`:
+
+```c
 json_writer_t *w;
 
 response_set_content_type(response, "application/json");
@@ -58,9 +83,12 @@ if(json_writer_free(w))
     ...                     /* the document was incomplete or misused */
 ```
 
-The writer checks the structure (a key before each object member, one
-value at the top, everything closed) and json_writer_free() reports any
-mistake. Strings are escaped so the output is also safe inside an HTML
-`<script>` element: <, >, & and U+2028/U+2029 are written as \u escapes.
-Invalid UTF-8 is written as U+FFFD. NaN and infinities have no JSON form
-and are an error. json_value() writes a parsed document back.
+The writer checks the structure as you go: a key before each object
+member, one value at the top level, and everything closed at the end.
+`json_writer_free()` reports any mistake, so check its return value.
+
+Strings are escaped so the output is also safe inside an HTML `<script>`
+element: `<`, `>`, `&` and U+2028/U+2029 are written as `\u` escapes.
+Invalid UTF-8 is written as U+FFFD. NaN and infinities have no JSON form,
+so `json_double()` treats them as an error. `json_value()` writes a parsed
+document back out, which is handy for echoing part of a request.

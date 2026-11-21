@@ -1,9 +1,14 @@
 # WebSockets
 
-A page can take over its connection as a WebSocket (RFC 6455). Include
-`<klin/ws.h>`; an echo:
+A page can take over its connection as a WebSocket (RFC 6455). Use it
+when the browser and the device both need to send at any time; if only
+the server talks, [SSE.md](SSE.md) is simpler and needs no OpenSSL.
 
-```
+## An echo page
+
+Include `<klin/ws.h>`. This page sends every message back as it came:
+
+```html
 <%! #include <klin/ws.h> %><%
     const char *data;
     size_t len;
@@ -28,51 +33,106 @@ A page can take over its connection as a WebSocket (RFC 6455). Include
 %>
 ```
 
-Put nothing before the code block: ws_accept() answers the handshake
-itself (101 Switching Protocols), and from then on the connection is the
-page's. It is closed when the page ends.
+Put nothing before the code block. `ws_accept()` answers the handshake
+itself with 101 Switching Protocols, and from then on the connection
+belongs to the page. It is closed when the page ends.
 
-- ws_accept(rq, rs, protocols, flags, &ws): checks the handshake (GET,
-  HTTP/1.1, Upgrade: websocket, Sec-WebSocket-Version 13, a 16-byte key).
-  protocols lists the subprotocols the page speaks, by preference; the
-  first one the client offers is chosen (ws_protocol()). On failure the
-  status is set: 400 (not a WebSocket handshake), 426 (another version),
-  403 (another site's page, see below), 501 (no OpenSSL in the build).
-- ws_wait(ws, fd, ms): wait for a message (WS_MESSAGE), for fd, a
-  descriptor of the page's (WS_READY), for ms milliseconds (WS_TIMEOUT;
-  -1: no limit), or for the end of the connection (WS_CLOSED). It waits
-  in poll(2), and the timer's alarms run meanwhile.
-- ws_recv(ws, &type, &data, &len): a whole message, WS_TEXT (checked to
-  be UTF-8) or WS_BINARY, NUL-terminated and valid until the next call.
-  WS_AGAIN when only control frames or part of a message came (wait
-  again), WS_CLOSED when the connection ended. Pings are answered, and a
-  close from the client is answered with its code.
-- ws_send(ws, type, data, len), ws_ping(ws), ws_close(ws, code, reason)
-  (it waits up to 2 s for the client's close).
-- ws_set_max_message(ws, bytes): the largest message received, 1 MB by
-  default; a larger one closes the connection with 1009.
+## The connection from start to finish
 
-Protocol errors close the connection with the RFC's code: 1002 for an
-unmasked frame, a reserved bit (no extension, e.g. compression, is
-offered), an unknown opcode, a long or fragmented control frame or a
-broken fragment sequence; 1007 for text that is not UTF-8.
+The figure below shows a connection from the handshake to a close
+started by the browser, with the echo page above doing the work.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant P as Page (ws_* calls)
+    B->>P: GET, Upgrade: websocket, Sec-WebSocket-Key, Origin
+    P->>P: ws_accept() checks the handshake and Origin
+    alt refused
+        P->>B: 400, 403, 426, 501 or 503 (page returns)
+    else accepted
+        P->>B: 101 Switching Protocols, Sec-WebSocket-Accept
+        loop until WS_CLOSED
+            B->>P: text or binary frame(s)
+            P->>P: ws_wait() gives WS_MESSAGE, ws_recv() returns the message
+            P->>B: ws_send() echoes it
+            opt idle for 30 s
+                P->>B: ws_ping()
+                B->>P: pong (taken by ws_recv)
+            end
+        end
+        B->>P: close frame with a code
+        P->>B: close frame with the same code
+        P->>P: ws_recv() returns WS_CLOSED, page ends, connection closed
+    end
+```
+
+If the page wants to end the connection itself, `ws_close(ws, code,
+reason)` sends the close frame and waits up to 2 s for the browser's
+reply before returning.
+
+## The calls
+
+**`ws_accept(rq, rs, protocols, flags, &ws)`** checks the handshake: GET,
+HTTP/1.1, `Upgrade: websocket`, `Connection: Upgrade`,
+`Sec-WebSocket-Version: 13` and a 16-byte key. `protocols` lists the
+subprotocols the page speaks, in order of preference, separated by blanks
+or commas; the first one the client also offers is chosen, and
+`ws_protocol()` tells you which. On failure the status is set and the
+page should just return:
+
+| Status | Why |
+| --- | --- |
+| 400 | not a WebSocket handshake |
+| 426 | another protocol version (the answer carries `Sec-WebSocket-Version: 13`) |
+| 403 | a page from another site (see [Origin](#origin)) |
+| 503 | `max_streams` connections are already open (with `Retry-After: 5`, see [LIMITS.md](LIMITS.md)) |
+| 501 | no OpenSSL in the build |
+
+The other calls work on an accepted connection.
+
+| Call | What it does |
+| --- | --- |
+| `ws_wait(ws, fd, ms)` | Waits for a message (`WS_MESSAGE`), for `fd`, a descriptor of the page's own (`WS_READY`), for `ms` milliseconds (`WS_TIMEOUT`; -1 means no limit), or for the end of the connection (`WS_CLOSED`). It waits in poll(2) and runs the timer's alarms meanwhile. |
+| `ws_recv(ws, &type, &data, &len)` | Returns 0 with a whole message, `WS_TEXT` (checked to be UTF-8) or `WS_BINARY`, NUL-terminated and valid until the next call. Returns `WS_AGAIN` when only control frames or part of a message came (wait again), and `WS_CLOSED` when the connection ended. Pings are answered, and a close from the client is answered with its own code (1000 if it gave none). |
+| `ws_send(ws, type, data, len)` | Sends a text or binary message. Text must be UTF-8. |
+| `ws_ping(ws)` | Sends a ping, to keep an idle connection open through proxies. |
+| `ws_close(ws, code, reason)` | Sends a close frame and waits up to 2 s for the client's. |
+| `ws_set_max_message(ws, bytes)` | The largest message accepted, 1 MB by default. A larger one closes the connection with 1009. |
+| `ws_free(ws)` | Frees the connection object. The connection itself is closed when the page ends. |
+
+## Protocol errors
+
+Protocol errors close the connection with the RFC's code. Klin uses 1002
+for an unmasked frame, a reserved bit set (no extension, such as
+compression, is offered), an unknown opcode, a control frame that is
+longer than 125 bytes or fragmented, and a broken fragment sequence. It
+uses 1007 for text that is not valid UTF-8.
 
 ## Origin
 
-A browser opens a WebSocket from any page it shows, with the cookies of
-the site it connects to. Unless the page passes WS_ANY_ORIGIN, ws_accept()
-refuses a handshake whose Origin is not the Host the client connected to
-(403): another site's page cannot use the user's session. A client that
-is not a browser sends no Origin and is accepted. If the page uses
-WS_ANY_ORIGIN, it must check request_get_field_value(rq, "Origin")
-itself.
+A browser will open a WebSocket from any page it shows, and it sends the
+cookies of the site it connects to. Without a check, another site's page
+could open a connection to your device and use the logged-in user's
+session. That is cross-site WebSocket hijacking.
+
+So, unless the page passes `WS_ANY_ORIGIN`, `ws_accept()` refuses with 403
+any handshake whose `Origin` does not match the `Host` the client
+connected to. A client that is not a browser sends no `Origin` and is
+accepted. I would leave the check on for any device that keeps a login
+session. If you do pass `WS_ANY_ORIGIN`, the page must check
+`request_get_field_value(rq, "Origin")` itself.
 
 ## Timeouts and workers
 
 A frame must arrive whole, and a frame sent must be taken by the client,
-within 30 s; otherwise the connection is closed. A WebSocket holds its
-connection, and a worker, for as long as it lasts: in the prefork model
-the watchdog asks the parent for another worker after a second, and the
-worker exits after the connection. Size prefork.max_child for the number
-of connections expected. The single-process (-d) server serves nothing
-else while one is open.
+within 30 s; otherwise the connection is closed. That stops a client that
+stalls half way through a frame from holding a worker.
+
+**A WebSocket holds its connection, and a worker, for as long as it
+lasts.** In the prefork model the watchdog asks the parent for another
+worker after a second, and the worker exits after the connection. Size
+`prefork.max_child` for the number of connections you expect, and use
+`max_streams` (default 100) to keep long-lived connections from taking
+every worker. The single-process server (`-d`) serves nothing else while
+a WebSocket is open.

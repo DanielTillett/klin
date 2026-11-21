@@ -1,10 +1,14 @@
 # CGI scripts
 
-CGI scripts run only in a build with -DKLIN_ENABLE_SUP_CGI=ON (not
-available on Windows), from the directories a cgi block names, or by the
-handler of a file extension:
+This page covers running CGI scripts from klind: where they may live,
+the limits they run under, and what they see of the request and of
+klind's environment.
 
-```
+CGI scripts run only in a build with `-DKLIN_ENABLE_SUP_CGI=ON` (not
+available on Windows). They run from the directories a `cgi` block names,
+or through the handler of a file extension:
+
+```conf
 cgi
 {
     script_alias    /cgi-bin /srv/www/cgi-bin
@@ -18,86 +22,94 @@ cgi
 }
 ```
 
-run_cgi no turns CGI off for a server or a virtual host, and
-follow_symlinks applies to scripts too ([FILES](FILES.md)).
+`run_cgi no` turns CGI off for a server or a virtual host, and
+`follow_symlinks` applies to scripts too ([FILES](FILES.md)).
 
 ## Limits
 
-```
-timeout       60    seconds the script may run. Then it is killed
-                    (SIGKILL), with whatever it started (it runs in a
-                    process group of its own). Before its header: 504
-                    Gateway Timeout. In the middle of its output: the
-                    output stops there and the connection is closed.
-max_cpu       30    seconds of CPU time (RLIMIT_CPU): SIGXCPU, a
-                    second later SIGKILL
-max_memory    512   MB of address space (RLIMIT_AS)
-```
+| Setting | Default | Meaning |
+|---|---|---|
+| `timeout` | 60 | Seconds of wall-clock time the script may run. It is then killed (SIGKILL), with whatever it started. |
+| `max_cpu` | 30 | Seconds of CPU time (RLIMIT_CPU): SIGXCPU, then SIGKILL a second later. |
+| `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
-0 sets no limit. The limits are set in the script's process, soft and
-hard, so it cannot raise them. It gets no core dumps (RLIMIT_CORE 0), and
-no descriptor of the worker's but its standard input, output and error
-(all others are closed: close_range(2) where the system has it, every
-descriptor number up to 65536 or the hard limit elsewhere). Its
-processes also count towards the worker's worker_max_procs ([LIMITS](LIMITS.md)).
-The timeout is wall-clock time, including the time a slow client takes
-to read the output.
+0 sets no limit. What a timeout looks like to the client depends on when
+it happens. Before the script has sent its header, the client gets 504
+Gateway Timeout. In the middle of its output, the output stops there and
+the connection is closed. The script runs in a process group of its own,
+so everything it started is killed with it.
+
+The catch with the timeout is that it is wall-clock time, including the
+time a slow client takes to read the output.
+
+The limits are set in the script's process, soft and hard, so it cannot
+raise them. It gets no core dumps (RLIMIT_CORE 0), and no descriptor of
+the worker's except its standard input, output and error. All others are
+closed, with close_range(2) where the system has it, or by closing every
+descriptor number up to 65536 (or the hard limit, if that is higher)
+elsewhere. Its processes also count towards the worker's
+`worker_max_procs` ([LIMITS](LIMITS.md)).
 
 ## Environment
 
-A script gets the CGI meta-variables (RFC 3875: REQUEST_METHOD,
-QUERY_STRING, CONTENT_TYPE, CONTENT_LENGTH, PATH_INFO, SCRIPT_NAME,
-REMOTE_ADDR, REMOTE_USER, SERVER_NAME, HTTPS, ...), and nothing of
-klind's own environment unless listed:
+A script gets the CGI meta-variables of RFC 3875 (`REQUEST_METHOD`,
+`QUERY_STRING`, `CONTENT_TYPE`, `CONTENT_LENGTH`, `PATH_INFO`,
+`SCRIPT_NAME`, `REMOTE_ADDR`, `REMOTE_USER`, `SERVER_NAME`, `HTTPS`, ...),
+and nothing of klind's own environment unless you list it:
 
-```
+```conf
 pass_env      PATH LANG TZ
 ```
 
-Without it, a script has no PATH (a shell then uses its built-in default
-path).
+Without it, a script has no `PATH`, and a shell then uses its built-in
+default path.
 
-The request's header fields become `HTTP_<NAME>` variables (Accept-Language
-is HTTP_ACCEPT_LANGUAGE). Some never do:
+The request's header fields become `HTTP_<NAME>` variables
+(Accept-Language becomes `HTTP_ACCEPT_LANGUAGE`). Some never do:
 
-  - Proxy: HTTP_PROXY is read as a proxy setting by many HTTP libraries,
-  so a client could send the script's own requests through its server
-  ("httpoxy", CVE-2016-5385 and others).
-  - names with characters other than letters, digits and '-': X-User and
-  X_User would both be HTTP_X_USER, and a proxy in front that checks
-  one may pass the other.
+- **Proxy.** `HTTP_PROXY` is read as a proxy setting by many HTTP
+  libraries, so a client could send the script's own requests through its
+  server ("httpoxy", CVE-2016-5385 and others).
+- **Names with characters other than letters, digits and `-`.** `X-User`
+  and `X_User` would both become `HTTP_X_USER`, and a proxy in front that
+  checks one may pass the other.
 
-pass_headers chooses the rest:
+`pass_headers` chooses the rest:
 
+```conf
+pass_headers  default   # all but Authorization and Proxy-Authorization
+pass_headers  all       # those too
+pass_headers  Cookie User-Agent Accept    # only these
 ```
-pass_headers  default   all but Authorization and Proxy-Authorization
-                        (the credentials are for klind's realms,
-                        AUTH.md; the script gets REMOTE_USER)
-pass_headers  all       those too
-pass_headers  Cookie User-Agent Accept    only these
-```
+
+The default holds back the credentials because they are for klind's own
+realms ([AUTH](AUTH.md)); the script gets the user in `REMOTE_USER`.
 
 ## Upgrading
 
-These are new in 4.0: KLone passed every header field (Proxy and
+These settings are new in 4.0. KLone passed every header field (Proxy and
 Authorization included) and set no limits. A script that reads the
-Authorization field itself needs "pass_headers all", or a list with
-Authorization. One that runs longer than a minute, or needs more CPU or
-memory, needs higher limits (or 0).
+Authorization field itself needs `pass_headers all`, or a list that
+includes Authorization. One that runs longer than a minute, or needs more
+CPU or memory, needs higher limits (or 0).
 
 ## Sandbox
 
-A server with a script_alias lets its workers fork, chdir and execute
-([SANDBOX](SANDBOX.md)), and the scripts run under the worker's system call filter.
-Scripts that need a call outside it (e.g. an interpreter's own) need
-sandbox_allow, or sandbox no.
+A server with a `script_alias` lets its workers fork, chdir and execute
+([SANDBOX](SANDBOX.md)), and the scripts run under the worker's system
+call filter. Scripts that need a call outside it (an interpreter's own,
+for example) need `sandbox_allow`, or `sandbox no`.
 
 ## Tested
 
-test/run_server_tests.py (both server models, so prefork with the
-sandbox) runs scripts that print their environment (sending Proxy,
-Authorization, an underscored name and a variable of klind's that is not
-listed, none of which may arrive), print their limits, sleep past the
-timeout (504) or after their header (cut short; the sleep they started is
-gone too), spin on the CPU (killed after max_cpu, before the timeout),
-and one reached through a link out of the script directory (404).
+test/run_server_tests.py runs on both server models, so prefork with the
+sandbox. It runs scripts that:
+
+- print their environment, while the client sends Proxy, Authorization,
+  an underscored name, and klind has a variable that is not listed (none
+  of these may arrive);
+- print their limits;
+- sleep past the timeout (504), or past it after their header (cut short,
+  and the sleep they started is gone too);
+- spin on the CPU (killed after `max_cpu`, before the timeout);
+- are reached through a link out of the script directory (404).
