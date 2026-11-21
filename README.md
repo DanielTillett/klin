@@ -1,3 +1,5 @@
+![Klin: a web framework for embedded devices, compiled into one small program](doc/images/klin-banner.png)
+
 # Klin
 
 **A web framework for embedded devices: the web server, its configuration
