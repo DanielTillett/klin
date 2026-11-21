@@ -210,6 +210,14 @@ def run_keep_alive_checks(args, check, plain, secure, request):
     def get(path, method=b"GET", extra=b""):
         return method + b" " + path + b" HTTP/1.1\r\nHost: localhost\r\n" + extra + b"\r\n"
 
+    # A one-byte write buffer splits the size lines, payloads and trailers.
+    reply = exchange(plain, get(b"/chunked.kl1"))
+    head, _, wire = reply.partition(b"\r\n\r\n")
+    expected = (b"3\r\nabc\r\n1000\r\n" + b"x" * 4096 +
+                b"\r\n5\r\nxxxxx\r\n1\r\n\n\r\n0\r\n\r\n")  # final page newline
+    check(b"\r\ntransfer-encoding: chunked" in head.lower() and wire == expected,
+          f"Chunk framing with a one-byte write buffer: {head!r}, {len(wire)} body bytes")
+
     if not args.prefork:
         # the iterative server (-d) would be blocked by an idle client
         with Connection(plain) as conn:

@@ -13,6 +13,7 @@
 
 #include "klin_conf.h"
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +23,7 @@
 #include <klin/field.h>
 #include <klin/header.h>
 #include <klin/io.h>
+#include <klin/ioprv.h>
 #include <klin/timer.h>
 #include <klin/translat.h>
 #include <klin/json.h>
@@ -40,6 +42,10 @@
 #ifdef SSL_OPENSSL
 #include <klin/auth.h>
 #endif
+#ifdef HAVE_LIBZ
+#include <klin/cgzip.h>
+#include <zlib.h>
+#endif
 
 /* the syslog facility LibU logs with: the program defines it */
 int facility = LOG_LOCAL0;
@@ -56,6 +62,100 @@ static int checks, failures;
                     __LINE__, #expr);                                       \
         }                                                                   \
     } while(0)
+
+/* Fill the read buffer while leaving raw input for the next refill. */
+static ssize_t expand_byte(codec_t *codec, char *dst, size_t *dcount,
+        const char *src, size_t sz)
+{
+    (void) codec;
+    (void) sz;
+    memset(dst, *src, *dcount);
+    return 1;
+}
+
+static void test_io_read_codecs(void)
+{
+    char data[8192], out[4096];
+    io_t *io = NULL, *dup = NULL;
+    codec_t *codec = u_zalloc(sizeof *codec);
+
+    memset(data, 'a', 4096);
+    memset(data + 4096, 'b', 4096);
+    data[4096] = 'c';
+    CHECK(codec && io_mem_create(data, sizeof data, 0, &io) == 0);
+    if(!codec || !io)
+        goto done;
+
+    CHECK(io_read(io, out, 1) == 1 && out[0] == 'a' && io->ubuf == NULL);
+    CHECK(io_dup(io, &dup) == 0 && dup == io);
+    codec->transform = expand_byte;
+    CHECK(io_codec_add_tail(dup, codec) == 0);
+    if(!io_has_codecs(io))
+        goto done;
+    codec = NULL;
+
+    CHECK(io_read(dup, out, 4095) == 4095 &&
+            memcmp(out, data + 1, 4095) == 0 && io->ubuf == NULL);
+    CHECK(io_read(dup, out, sizeof out) == sizeof out && out[4095] == 'c' &&
+            io->ubuf != NULL && io->ucount == 4095);
+    CHECK(io_codecs_discard(io) == 0);
+    CHECK(io_read(dup, out, sizeof out) == 4095 &&
+            memcmp(out, data + 4097, 4095) == 0 && io->ucount == 0);
+
+done:
+    codec_free(codec);
+    if(dup)
+        io_free(dup);
+    if(io)
+        io_free(io);
+}
+
+#ifdef HAVE_LIBZ
+static void test_deflate_windows(void)
+{
+    char data[32768], decoded[sizeof data + 1];
+    unsigned char encoded[sizeof data + 128];
+    uint32_t random = 1;
+    size_t i;
+    int j;
+
+    /* The second half can only match the first using a distance over 8 KB. */
+    for(i = 0; i < sizeof data / 2; ++i)
+    {
+        random = random * UINT32_C(1664525) + UINT32_C(1013904223);
+        data[i] = (char) (random >> 24);
+        data[i + sizeof data / 2] = data[i];
+    }
+
+    for(j = 0; j < 2; ++j)
+    {
+        z_stream z = {0};
+        codec_t *codec = NULL;
+        size_t n = sizeof decoded;
+        int rc;
+
+        rc = deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+                j ? MAX_WBITS : -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
+        CHECK(rc == Z_OK);
+        if(rc != Z_OK)
+            continue;
+        z.next_in = (Bytef *)data;
+        z.avail_in = sizeof data;
+        z.next_out = encoded;
+        z.avail_out = sizeof encoded;
+        CHECK(deflate(&z, Z_FINISH) == Z_STREAM_END && z.total_out < 18000);
+        CHECK(codec_gzip_create(j ? ZLIB_UNCOMPRESS : GZIP_UNCOMPRESS, &codec) == 0);
+        if(codec)
+        {
+            CHECK(codec->transform(codec, decoded, &n, (char *)encoded,
+                        z.total_out) == (ssize_t) z.total_out &&
+                    n == sizeof data && memcmp(decoded, data, n) == 0);
+            codec_free(codec);
+        }
+        deflateEnd(&z);
+    }
+}
+#endif
 
 /* load 'text' into a new header with header_load_ex(); return its result */
 static int load(const char *text, size_t len, header_t **ph)
@@ -1371,6 +1471,10 @@ end:
 
 int main(void)
 {
+    test_io_read_codecs();
+#ifdef HAVE_LIBZ
+    test_deflate_windows();
+#endif
     test_header_fields();
     test_header_limits();
     test_large_vars();

@@ -39,7 +39,7 @@ enum {
 
 enum {
     RF_CHUNK_MAX = RFBUFSZ,     /* max data bytes per chunk                  */
-    RF_CHUNK_EXTRA = 16,        /* size line ("1000\r\n") and trailing CRLF  */
+    RF_CHUNK_EXTRA = 16,       /* size line ("1000\r\n") and trailing CRLF  */
     RF_HBUF_KEEP = 16384        /* max header buffer kept for the next one   */
 };
 
@@ -50,27 +50,27 @@ struct response_filter_s
     response_t *rs;
     session_t *ss;
     int state, feeded;
-    char *ptr;
     size_t off;
     char *head;             /* header and buffered body, ready to be sent */
     size_t hlen, hoff;      /* ... its length and the bytes already sent  */
     int chunked;            /* chunk-encode the body                      */
-    int last_chunk;         /* the terminating chunk has been queued      */
+    int last_chunk;         /* the terminating chunk has been queued     */
     int no_body;            /* HEAD, 1xx, 204, 304: the body is dropped   */
     int limited;            /* the header announced a Content-Length ...  */
     size_t limit, sent;     /* ... of 'limit' bytes; 'sent' so far        */
-    size_t clen, coff;
+    size_t chunk_left;      /* payload bytes still to consume            */
+    const char *frame;      /* unsent portion of a chunk size line or CRLF */
+    size_t frame_left;
+    char chunk_line[RF_CHUNK_EXTRA];
 
-    /* the buffers must be the last items: they are not zeroed on creation */
+    /* the body buffer and reusable header allocation are kept on creation */
     char buf[RFBUFSZ];
-    char cbuf[RF_CHUNK_MAX + RF_CHUNK_EXTRA];  /* pending encoded chunk    */
     char *hbuf;             /* memory of 'head', kept when the filter is   */
     size_t hcap;            /* reused (header + body is too big for the    */
                             /* allocator's fast paths)                     */
 };
 
-/* the filter of the last response, kept for the next one: at 8 KB it is
- * too big for the allocator's fast paths */
+/* the filter of the last response, kept for the next one */
 static response_filter_t *rf_spare = NULL;
 
 /* queue the header followed by the buffered body (if any) */
@@ -152,29 +152,11 @@ err:
     return ~0;
 }
 
-/* encode up to RF_CHUNK_MAX bytes of src as the pending chunk (an empty src
- * queues the terminating chunk); return the number of bytes consumed */
-static size_t rf_queue_chunk(response_filter_t *rf, const char *src, size_t sz)
-{
-    int n;
-
-    sz = U_MIN(sz, RF_CHUNK_MAX);
-
-    n = snprintf(rf->cbuf, RF_CHUNK_EXTRA, "%lx\r\n", (unsigned long) sz);
-    memcpy(rf->cbuf + n, src, sz);
-    memcpy(rf->cbuf + n + sz, "\r\n", 2);
-
-    rf->clen = n + sz + 2;
-    rf->coff = 0;
-
-    return sz;
-}
-
-/* copy queued output (header block first, then the pending chunk) to dst;
+/* copy queued output (header block first, then chunk framing) to dst;
  * return the number of bytes copied (0 if nothing is queued) */
-static ssize_t rf_drain(response_filter_t *rf, char *dst, size_t dsz)
+static size_t rf_drain(response_filter_t *rf, char *dst, size_t dsz)
 {
-    ssize_t c;
+    size_t c;
 
     if(rf->head)
     {
@@ -190,21 +172,59 @@ static ssize_t rf_drain(response_filter_t *rf, char *dst, size_t dsz)
         rf->head = NULL;
     }
 
-    if(rf->coff < rf->clen)
+    if(rf->frame_left)
     {
-        c = U_MIN(dsz, rf->clen - rf->coff);
-        memcpy(dst, rf->cbuf + rf->coff, c);
-        rf->coff += c;
+        c = U_MIN(dsz, rf->frame_left);
+        memcpy(dst, rf->frame, c);
+        rf->frame += c;
+        rf->frame_left -= c;
         return c;
     }
 
     return 0;
 }
 
+/* The caller retains unconsumed input while a chunk spans output buffers. */
+static ssize_t rf_write_chunk(response_filter_t *rf, char *dst, size_t *dcount,
+        const char *src, size_t src_sz)
+{
+    size_t out = 0, body;
+    int n;
+
+    dbg_return_if(*dcount == 0 || src_sz == 0, -1);
+
+    if(rf->chunk_left == 0)
+    {
+        rf->chunk_left = U_MIN(src_sz, RF_CHUNK_MAX);
+        n = snprintf(rf->chunk_line, sizeof rf->chunk_line, "%lx\r\n",
+                (unsigned long) rf->chunk_left);
+        dbg_err_if(n < 0 || (size_t)n >= sizeof rf->chunk_line);
+        rf->frame = rf->chunk_line;
+        rf->frame_left = n;
+        out = rf_drain(rf, dst, *dcount);
+    }
+
+    body = U_MIN(U_MIN(src_sz, rf->chunk_left), *dcount - out);
+    memcpy(dst + out, src, body);
+    out += body;
+    rf->chunk_left -= body;
+    if(rf->chunk_left == 0)
+    {
+        rf->frame = "\r\n";
+        rf->frame_left = 2;
+        out += rf_drain(rf, dst + out, *dcount - out);
+    }
+
+    *dcount = out;
+    return body;
+err:
+    return -1;
+}
+
 static ssize_t rf_flush(codec_t *codec, char *dst, size_t *dcount)
 {
     response_filter_t *rf = (response_filter_t*)codec;
-    ssize_t c;
+    size_t c;
 
     dbg_err_if (codec == NULL);
     dbg_err_if (dst == NULL);
@@ -214,7 +234,7 @@ static ssize_t rf_flush(codec_t *codec, char *dst, size_t *dcount)
     if(rf->state == RFS_BUFFERING)
         dbg_err_if(rf_start(rf, 1));
 
-    dbg_err_if((c = rf_drain(rf, dst, *dcount)) < 0);
+    c = rf_drain(rf, dst, *dcount);
 
     /* fewer bytes than announced: the client would wait for the rest */
     if(rf->limited && rf->sent < rf->limit)
@@ -224,8 +244,9 @@ static ssize_t rf_flush(codec_t *codec, char *dst, size_t *dcount)
     if(c == 0 && rf->chunked && !rf->last_chunk)
     {
         rf->last_chunk = 1;
-        (void) rf_queue_chunk(rf, "", 0);
-        dbg_err_if((c = rf_drain(rf, dst, *dcount)) < 0);
+        rf->frame = "0\r\n\r\n";
+        rf->frame_left = 5;
+        c = rf_drain(rf, dst, *dcount);
     }
 
     if(c > 0)
@@ -245,8 +266,7 @@ static ssize_t rf_transform(codec_t *codec,
         const char *src, size_t src_sz)
 {
     response_filter_t *rf = (response_filter_t*)codec;
-    size_t max;
-    ssize_t c;
+    size_t max, c;
 
     dbg_err_if (codec == NULL);
     dbg_err_if (dst == NULL);
@@ -283,7 +303,7 @@ static ssize_t rf_transform(codec_t *codec,
     }
 
     /* send queued output first */
-    dbg_err_if((c = rf_drain(rf, dst, *dcount)) < 0);
+    c = rf_drain(rf, dst, *dcount);
     if(c > 0)
     {
         *dcount = c;
@@ -291,13 +311,7 @@ static ssize_t rf_transform(codec_t *codec,
     }
 
     if(rf->chunked)
-    {
-        /* encode the next block as a chunk and start sending it */
-        max = rf_queue_chunk(rf, src, src_sz);
-        dbg_err_if((c = rf_drain(rf, dst, *dcount)) < 0);
-        *dcount = c;
-        return max;
-    }
+        return rf_write_chunk(rf, dst, dcount, src, src_sz);
 
     /* the body is the whole Content-Length: drop anything after it */
     if(rf->limited && rf->sent >= rf->limit)
@@ -319,7 +333,7 @@ err:
     return -1;
 }
 
-/* once the header (and any pending chunk) is out, plain body bytes go to
+/* once the header is out, plain body bytes go to
  * the connection unchanged: the io can write them directly */
 static size_t rf_passthru(codec_t *codec, size_t src_sz)
 {
@@ -328,7 +342,7 @@ static size_t rf_passthru(codec_t *codec, size_t src_sz)
 
     if(rf->state != RFS_FLUSHING || rf->chunked || rf->no_body ||
             response_get_method(rf->rs) == HM_HEAD ||
-            (rf->head && rf->hoff < rf->hlen) || rf->coff < rf->clen)
+            (rf->head && rf->hoff < rf->hlen))
         return 0;
 
     if(rf->limited)
@@ -388,7 +402,7 @@ int response_filter_create(request_t *rq, response_t *rs, session_t *ss,
     dbg_err_if (rs == NULL);
     dbg_err_if (prf == NULL);
 
-    /* zero all but the (8 KB of) buffers */
+    /* zero the state and keep the body buffer and header allocation */
     if((rf = rf_spare) != NULL)
         rf_spare = NULL;
     else
@@ -406,7 +420,6 @@ int response_filter_create(request_t *rq, response_t *rs, session_t *ss,
     rf->codec.flush = rf_flush;
     rf->codec.free = rf_free;
     rf->codec.passthru = rf_passthru;
-    rf->ptr = rf->buf;
 
     *prf = (codec_t*)rf;
 

@@ -307,6 +307,9 @@ static int tls_set_protocol (SSL_CTX *c, tls_ctx_args_t *cargs)
         return 0;
     }
 
+    /* Stateless tickets already carry the session across workers. */
+    SSL_CTX_set_session_cache_mode(c, SSL_SESS_CACHE_OFF);
+
     /* this server's ticket secret (kept for klind's lifetime, as is the
        context), drawn before the workers fork */
     dbg_err_if ((st = OPENSSL_secure_zalloc(sizeof *st)) == NULL);
