@@ -69,7 +69,7 @@ sequenceDiagram
         P->>P: sse_wait() polls client socket and my_fd
         alt my_fd readable
             S-->>P: SSE_READY, page reads my_fd
-            P->>B: event, id and data lines
+            P->>B: event line (update) and data lines, no id line
         else timeout passes
             P->>B: ": ping" comment
         end
@@ -81,6 +81,11 @@ sequenceDiagram
 `sse_start()` writes a short `: klin` comment straight after the header,
 so the header actually leaves the server rather than sitting in a buffer
 until the first event.
+
+The example passes NULL as the event id, so its events carry no `id:`
+line, and a browser that reconnects has no `Last-Event-ID` to send. Give
+each event an id if the page needs to carry on where the browser left
+off.
 
 ## The calls
 
@@ -100,19 +105,22 @@ with a line break in it.) A send the client does not take within 30 s
 closes the connection, so a client that stops reading holds a worker for
 at most that long per send.
 
-On HTTP/1.1 the stream is chunked, and the connection can be reused when
-the page ends. On HTTP/1.0 the end of the stream closes the connection.
-TLS works the same way.
+On HTTP/1.1 the stream is chunked. When the page ends, the connection can
+carry another request only if keep-alive is on (`keep_alive`, the
+default), the client asked to keep it, `keep_alive_max` has not been
+reached and the server is not in the iterative model; otherwise klind
+closes it. On HTTP/1.0 the end of the stream closes the connection. TLS
+works the same way.
 
 ## Streams and workers
 
 **A stream holds its connection, and so a whole worker, for as long as it
 lasts.** In the prefork model the watchdog asks the parent for another
 worker after a second (as it does for any slow page), and the streaming
-worker exits when its stream ends. Size `prefork.max_child` for the
-number of streams you expect. The iterative model (`-d`, or `model
-iterative`) runs one process, which serves nothing else while a stream is
-open.
+worker exits when its connection ends, which may be after more requests on
+a kept-alive connection. Size `prefork.max_child` for the number of
+streams you expect. The iterative model (`-d`, or `model iterative`) runs
+one process, which serves nothing else while a stream is open.
 
 To stop streams taking every worker, `max_streams` caps the SSE and
 WebSocket connections open at once across all of a server's workers

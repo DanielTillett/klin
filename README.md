@@ -68,9 +68,10 @@ ioctls directly, with no bindings or IPC layer in between.
 
 The defaults are the ones I would want on any device exposed to a
 network. By default, TLS is 1.2 or 1.3 with forward-secret ciphers only.
-With the key in a file and the key manager on (the default except on
-Windows), the TLS private key lives in a separate process and never
-enters a worker. Workers run with resource limits and, on Linux, a seccomp
+The TLS private key stays in a separate process, out of the workers, when
+it has a `key_file` of its own (not shared with the certificate), the key
+manager is on (the default except on Windows) and the workers' user cannot
+read the file. Workers run with resource limits and, on Linux, a seccomp
 sandbox. The HTTP parser is strict and fuzzed, sessions are hardened and
 carry tokens against cross-site request forgery (CSRF), and there are
 access rules and HTTP authentication. Releases are reproducible and
@@ -97,8 +98,9 @@ You need CMake 3.24 or newer, a build tool (Ninja, BSD make or GNU make),
 GCC or Clang, OpenSSL 3, zlib, Git, and Python 3.9 or newer for
 `build/build.py`. Ubuntu 24.04 has them all; 22.04 ships CMake 3.22,
 which is too old. On Windows, follow the Ubuntu steps in an Ubuntu 24.04
-WSL shell. On macOS, install the tools with Homebrew and tell CMake where
-OpenSSL is:
+WSL shell. On macOS, `python3` comes with the Xcode command line tools
+(check that `python3 --version` says 3.9 or newer); install the rest with
+Homebrew and tell CMake where OpenSSL is:
 
 ```sh
 brew install cmake ninja openssl@3
@@ -196,10 +198,11 @@ parent for another, so the pool can double every second up to
 `prefork.max_child` (default 150). Workers beyond `start_child` exit after
 `prefork.idle_timeout` seconds (default 10) without a client, and every
 worker is replaced after `prefork.max_requests_per_child` connections
-(default 10000). In the setup shown, a worker never holds the TLS private
-key: it sends the handshake digest to the key manager and gets back a
-signature. A key embedded in `klind` is in every process's memory anyway;
-with the key manager on, `klind` warns about it
+(default 10000). A worker sends the handshake digest to the key manager
+and gets back a signature. With a key file separate from the certificate
+that the workers' user cannot read, that is all a worker gets: the TLS
+private key stays out of it. A key embedded in `klind` is in every
+process's memory anyway; with the key manager on, `klind` warns about it
 ([Key manager](doc/KEYMGR.md), [Sandbox](doc/SANDBOX.md),
 [Limits](doc/LIMITS.md)). The `fork` model forks one child per connection
 instead, and `iterative` serves one client at a time in one process. On
@@ -428,7 +431,7 @@ python3 build/build.py --sanitize --test
    `--sanitize`, any AddressSanitizer, LeakSanitizer or UBSan report
    fails the run.
 
-Each security topic in `doc/` ends with a "Tested" section. Test
+The security pages say what these tests check for each protection. Test
 certificates and listeners are temporary. The other test runners:
 
 | Command | What it checks |

@@ -31,17 +31,40 @@ cgi
 | `max_cpu` | 30 | Seconds of CPU time (RLIMIT_CPU): SIGXCPU, then SIGKILL a second later. |
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
-0 sets no limit. What a timeout looks like to the client depends on when
-it happens. If the script is killed before klind has read its header, the
-client gets 504 Gateway Timeout. That needs a header to parse: an `nph-`
-script's output is not parsed, so a timeout there, as in the middle of
-any script's output, stops the output where it is and closes the
-connection. The script runs in a process group of its own,
-and the kill goes to the script and that group. A child that moves to a
-group or session of its own (with setsid(2), say) escapes it.
+0 sets no limit. The script runs in a process group of its own, and when
+the timeout fires klind kills the script and that group. A child that
+moves to a group or session of its own (with setsid(2), say) escapes it.
 
-The timeout is wall-clock time, and it includes the time a slow client
-takes to read the output.
+klind checks the timeout only while the worker is waiting on a
+descriptor: writing the POST body to the script, reading the script's
+output, or writing that output to the client. So it is wall-clock time,
+and it includes the time a slow client takes to read the output. Once
+the output has ended, klind cancels the timeout and then
+waits for the script to exit with a plain blocking waitpid(2). A script
+that closes its standard output and carries on running holds the worker
+until it exits, and the timeout no longer covers it (`max_cpu` still
+does, if it is spinning).
+
+What a timeout looks like to the client depends on when it happens:
+
+| When the timeout fires | What the client gets |
+|---|---|
+| While klind is still reading the script's header | 504 Gateway Timeout, with no body |
+| After the header, or at any point for an `nph-` script (its output is not parsed) | The script's status and whatever output it had sent, then the connection is closed |
+| Never (the script ends its output in time) | The script's response, as normal |
+
+A 504 needs the timeout itself: a script that exits without a header
+klind can parse gets an error response, not a 504.
+
+Do not count on the client noticing a cut. klind closes the connection
+after it, but it frames what it has as usual. Output still in its
+4,096-byte buffer goes out with a Content-Length that matches it (the
+measured length replaces any the script gave), and a chunked body is
+ended normally. The client can tell only when more than the buffer had
+already gone out under a Content-Length the script set itself, and the
+body falls short of it. The server tests' own example gets a plain 200
+with the first line of output. An `nph-` script's output is passed on as
+it is, so its framing is the script's own.
 
 The limits are set in the script's process. For `max_memory` the soft and
 hard limits are the same, so the script cannot raise them; for `max_cpu`
@@ -111,7 +134,7 @@ A server with a `script_alias` lets its workers fork, chdir and execute
 call filter. Scripts that need a call outside it (an interpreter's own,
 for example) need `sandbox_allow`, or `sandbox no`.
 
-## Tested
+## What the server tests run
 
 test/run_server_tests.py runs on both server models, so prefork with the
 sandbox. It runs scripts that:

@@ -2,8 +2,10 @@
 
 The key manager keeps an HTTPS server's private key out of the processes
 that serve requests. It is on by default everywhere except native
-Windows, which has no key manager, so you only need to act if your key
-type is unsupported or you want the old behaviour back.
+Windows, which has no key manager. What you have to do is put the key in
+a file of its own and keep that file from the workers' user; turn the
+key manager off only if your key type is unsupported or you want the old
+behaviour back.
 
 ## Why it exists
 
@@ -14,10 +16,19 @@ and a stolen key outlives any fix: the attacker can impersonate the
 device until the certificate expires or is revoked.
 
 I wrote the key manager so that a compromised worker has no private key to
-steal. **With the key in a `key_file` outside the site and the key manager
-on, the worker never holds the key.** It can ask for signatures while it
-runs, but it cannot read the key, and the key does not leave with a memory
-dump or a core file of a worker. A key embedded in klind, or a server with
+steal. **The key stays out of the workers only with all three of these: a
+separate `key_file` outside the site, the key manager on, and file
+permissions that keep the key file from the workers' user.** Separate
+means not a PEM file that also holds the certificate: klind reads the
+certificate in the parent process, and with a combined file the key's
+bytes pass through memory that the workers inherit. The permissions
+matter because a worker that can read the file can simply open it.
+klind and the key manager read their files before dropping to `uid` and
+`gid`, so a key file only root can read works when klind starts as root.
+
+With all three, a worker can ask for signatures while it runs, but it
+cannot read the key, and the key does not leave with a memory dump or a
+core file of a worker. A key embedded in klind, or a server with
 `key_manager no`, is in every process (see [Limits](#limits)).
 
 At startup, before any worker is forked, klind starts one key manager
@@ -161,6 +172,12 @@ contain that key.
 
 ## Limits
 
+- A key in the same PEM file as the certificate (no `key_file`) still
+  goes to the key manager, but klind reads that file in the parent to load
+  the certificate, so the key's bytes pass through memory the workers
+  inherit. Give the key a file of its own.
+- A key file the workers' user can read is open to a compromised worker,
+  whatever the key manager does.
 - A key embedded in klind (a `key_file` inside the site, picked up by the
   import) is part of the program, so it is in every process's memory.
   With the key manager on, klind warns about this at startup; with
@@ -176,11 +193,11 @@ contain that key.
 - Native Windows has no key manager, because it needs fork(2) and UNIX
   sockets.
 
-## Tested
+## How the isolation is tested
 
-The server tests scan, after TLS requests, the memory of klind and every
-process it started (Linux, /proc) for the private key, and expect to
-find it in the key managers only. The setup is two servers sharing the
+`test/run_server_tests.py` scans, after TLS requests, the memory of klind
+and every process it started (Linux, /proc) for the private key, and
+expect to find it in the key managers only. The setup is two servers sharing the
 key, one of them with client certificates, which is the case that
 leaked. Run as an ordinary user, the tests also check that they cannot
 open the key managers' memory at all. Run as root, they can read every

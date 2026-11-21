@@ -56,11 +56,13 @@ a network kept out everywhere, put its rule first.
 
 ## What the path is
 
-Rules match the request's file name, without any path info and before
-routing, as authentication realms do; the figure in
-[Which path each check sees](ROUTES.md#which-path-each-check-sees) shows
-how that name is worked out. Patterns use fnmatch(3) with no flags, so `*`
-also matches `/`. IP rules are checked before authentication.
+Rules match the FILENAME, after index selection, without the PATH_INFO
+and before routing, as authentication realms do.
+[Which path each check sees](ROUTES.md#which-path-each-check-sees)
+defines those terms and shows how the FILENAME is worked out. Patterns
+use fnmatch(3) with no flags, so `*` also matches `/`. The rules applied
+are those of the vhost that serves the request, and they are checked
+before authentication.
 
 ## At connection time
 
@@ -88,14 +90,14 @@ an IP socket (a UNIX socket, or klin run as a CGI) is not checked.
 A bad entry, an unknown key or a rule with no `allow` or `deny` line stops
 klind at startup.
 
-## Tested
+## What the tests cover
 
-The server tests check rules per path, networks, the first match, and
-connections dropped at accept over IPv4. On a `tcp6://[::1]` listener
-(where the host has IPv6) they check that `::1` is matched as an IPv6
-address: allowed by `allow ::1`, refused by a rule for other networks.
-HTTP and HTTPS are served over IPv6, and an IPv4 client does not reach
-that listener.
+`test/run_server_tests.py` covers rules per path, networks, the first
+match, and connections dropped at accept over IPv4. Where the host has
+IPv6, it also starts HTTP and HTTPS servers on `tcp6://[::1]` and checks
+that `::1` is matched as an IPv6 address (let in by `allow ::1`, refused
+by a rule for other networks), and that an IPv4 client does not reach
+that listener. On a host without `::1` those IPv6 checks are skipped.
 
 See also: [AUTH](AUTH.md) for the next check a request meets,
 [ROUTES](ROUTES.md), [HARDENING](HARDENING.md).

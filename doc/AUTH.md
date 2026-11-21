@@ -8,9 +8,8 @@ with OpenSSL.
 
 ## Users
 
-klind refuses a plaintext password in the configuration and stops at
-startup; it takes only hashes made by the klin tool. The tool reads the
-password from the first line of stdin:
+Passwords are stored as hashes, and the klin tool makes them. It reads
+the password from the first line of stdin:
 
 ```sh
 $ echo 'wonder land' | klin -c passwd -r "Private Area" alice
@@ -35,6 +34,18 @@ user
 
 Users go in the `auth` block, or in a separate file (same syntax) named by
 `users_file` and read at startup.
+
+At startup klind looks only at the start of each `password`: a value
+that does not begin with `pbkdf2-sha256$` is taken for a plaintext
+password, and klind stops. The rest of the hash is checked only when a
+Basic login is verified, so a hash with the right prefix but a broken
+body starts cleanly and then fails every Basic login for that user. A
+hash made by another tool works if it has exactly the layout the klin
+tool writes: `pbkdf2-sha256$`, the iteration count (1 to 100,000,000),
+`$`, a 16-byte salt, `$` and a 32-byte PBKDF2-SHA256 key, salt and key
+both in standard Base64 with padding. A hash that differs in any of
+these, for example one using unpadded Base64 or `.` in place of `+`,
+fails every login.
 
 ## Configuration
 
@@ -63,10 +74,12 @@ auth
 }
 ```
 
-The realms are tried in order, and the first with a matching path
-applies. They match the request's file name, without path info and before
-routing, as the access rules ([ACCESS](ACCESS.md)) do; see
-[Which path each check sees](ROUTES.md#which-path-each-check-sees).
+The realms of the vhost that serves the request are tried in order, and
+the first with a matching path applies. They match the FILENAME, after
+index selection, without the PATH_INFO and before routing, as the access
+rules ([ACCESS](ACCESS.md)) do;
+[Which path each check sees](ROUTES.md#which-path-each-check-sees)
+defines those terms.
 
 Patterns use fnmatch(3) with no flags, so `*` also matches `/`.
 `/admin/*` covers `/admin/` and everything below it, but not `/admin`

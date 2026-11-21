@@ -1,9 +1,9 @@
 # Compiler and linker hardening
 
 Klin is built with the compiler and linker protections in the tables
-below, all on by default. You need the details when a toolchain
-misbehaves, when you are comparing performance, or when an auditor asks
-how the binary was built.
+below, all on by default. The details matter when a toolchain
+misbehaves, when you compare performance, or when an auditor asks how the
+binary was built.
 
 klind, klin, the libraries, LibU and the site's pages are all compiled
 with these flags, and the programs are linked with the linker flags.
@@ -57,7 +57,7 @@ by default. Together they took a stripped klind with doc/example-site
 embedded from 408,864 bytes to 290 KB (x86-64 Linux, GCC 15, Nov 2026).
 Neither changes the protections above.
 
-## Tested
+## How the build checks it
 
 The build checks (test/run_build_checks.py) read klind's ELF headers on
 Linux with readelf and fail unless it is PIE, has `GNU_RELRO` and
