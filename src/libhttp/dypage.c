@@ -23,6 +23,7 @@ int dypage_serve(dypage_args_t *args)
     response_t *rs;
     session_t *ss;
     io_t *oio;
+    int rc;
 
     dbg_return_if(args == NULL, ~0);
 
@@ -42,7 +43,8 @@ int dypage_serve(dypage_args_t *args)
     dbg_err_if((so = http_get_session_opt(http)) == NULL);
 
     /* parse URL encoded or POSTed data (POST must be read before) */
-    dbg_err_if(request_parse_data(rq));
+    if((rc = request_parse_data(rq)) != 0)
+        return rc;
 
     /* create/get the session */
     dbg_err_if(session_create(so, rq, rs, &args->ss));
