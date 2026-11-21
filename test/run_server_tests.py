@@ -22,6 +22,19 @@ import zlib
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def openssl_cli():
+    """The openssl tool of the OpenSSL klind is built with: OPENSSL_ROOT_DIR's
+    where set (on macOS /usr/bin/openssl is LibreSSL, which, for one, does
+    not resume TLS 1.3 sessions from a file), else the one on PATH."""
+    root = os.environ.get("OPENSSL_ROOT_DIR")
+    if root and os.access(Path(root) / "bin" / "openssl", os.X_OK):
+        return str(Path(root) / "bin" / "openssl")
+    return "openssl"
+
+
+OPENSSL = openssl_cli()
+
+
 def free_port():
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -1487,7 +1500,7 @@ def key_needles(key):
     """Byte strings that only a copy of the private key contains: a line of
     its PEM text, and part of a prime in both byte orders (OpenSSL keeps
     big numbers as little-endian words)."""
-    text = subprocess.run(["openssl", "pkey", "-in", str(key), "-text", "-noout"],
+    text = subprocess.run([OPENSSL, "pkey", "-in", str(key), "-text", "-noout"],
                           capture_output=True, text=True, check=True).stdout
     prime = re.search(r"prime1:\n((?:\s+[0-9a-f:]+\n)+)", text).group(1)
     p = bytes.fromhex(re.sub(r"[\s:]", "", prime)).lstrip(b"\0")
@@ -2342,7 +2355,7 @@ def run_session_checks(args, check, plain, client, files, limits, sessions, meml
 def make_client_ca(temp):
     """A test CA and a client certificate it signs (mutual TLS)."""
     def ssl_cmd(*args):
-        subprocess.run(["openssl", *args], check=True,
+        subprocess.run([OPENSSL, *args], check=True,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     ca, ca_key = temp / "ca.pem", temp / "ca-key.pem"
     ccert, ckey, csr = temp / "client.pem", temp / "client-key.pem", temp / "client.csr"
@@ -2394,7 +2407,7 @@ def run_tls_checks(check, secure, mtls, client_cert):
 
     # renegotiation (TLS 1.2: openssl s_client's R command) is refused
     # (not -quiet: it sends R as data); stdin stays open for the attempt
-    client = subprocess.Popen(["openssl", "s_client", "-connect", f"127.0.0.1:{secure}", "-tls1_2"],
+    client = subprocess.Popen([OPENSSL, "s_client", "-connect", f"127.0.0.1:{secure}", "-tls1_2"],
                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     client.stdin.write(b"R\n")
     client.stdin.flush()
@@ -2424,7 +2437,7 @@ def run_tls_checks(check, secure, mtls, client_cert):
     saved = Path(client_cert[0]).with_name("tls-session.pem")
 
     def visit(version, resume):
-        command = ["openssl", "s_client", "-connect", f"127.0.0.1:{mtls}", version,
+        command = [OPENSSL, "s_client", "-connect", f"127.0.0.1:{mtls}", version,
                    "-cert", str(client_cert[0]), "-key", str(client_cert[1]),
                    "-sess_in" if resume else "-sess_out", str(saved)]
         if not resume:
@@ -2476,16 +2489,18 @@ def run_worker_limit_checks(args, check, plain, limits, sanitized):
         return dict(kv.split("=") for kv in page(port).split())
 
     got = limits_of(plain)
+    # macOS refuses RLIMIT_AS, so klind does not set it there
+    no_as = sanitized or sys.platform == "darwin"
     check(got["nofile"] == "1024" and got["nproc"] == "66" and
-          got["as"] == ("-1" if sanitized else str(1024 * 1024 * 1024)),
+          got["as"] == ("-1" if no_as else str(1024 * 1024 * 1024)),
           f"Wrong default worker limits: {got}")
     got = limits_of(limits)
-    check(got["nofile"] == "64" and got["as"] == ("-1" if sanitized else str(256 * 1024 * 1024)) and
+    check(got["nofile"] == "64" and got["as"] == ("-1" if no_as else str(256 * 1024 * 1024)) and
           got["nproc"] != "70", f"Wrong configured worker limits: {got}")
     check(page(limits, b"files=20") == "opened 20", "A worker could not open 20 files under 64")
     check(page(limits, b"files=200").startswith("Too many open files"),
           f"worker_max_files not enforced: {page(limits, b'files=200')}")
-    if not sanitized:
+    if not no_as:
         check(page(limits, b"alloc=16") == "allocated", "A worker could not allocate 16 MB under 256")
         big = page(limits, b"alloc=512")
         check(big == "ENOMEM", f"worker_max_memory not enforced: {big!r}")
@@ -2673,7 +2688,9 @@ def run_file_checks(check, files, temp, cgi):
           f"CGI meta-variables missing: {sorted(variables)}")
 
     status, body, _ = get(b"/cgi-bin/limits.sh")
-    check(status == b"200" and body.strip() == b"cpu=1 as=65536 core=0",
+    # macOS refuses RLIMIT_AS, so a CGI has none there
+    as_limit = b"unlimited" if sys.platform == "darwin" else b"65536"
+    check(status == b"200" and body.strip() == b"cpu=1 as=" + as_limit + b" core=0",
           f"CGI limits not set: {status} {body!r}")
 
     # a script out of its directory through a link
@@ -2840,8 +2857,14 @@ def run_root_checks(check, daemon, env, temp):
         return None
 
     def stop(process):
-        uids = Path(f"/proc/{process.pid}/status").read_text().split("Uid:")[1].split()[:4]
-        gids = Path(f"/proc/{process.pid}/status").read_text().split("Gid:")[1].split()[:4]
+        """Kill 'process'; its user and group ids where /proc has them
+        (Linux), else None."""
+        uids = gids = None
+        status = Path(f"/proc/{process.pid}/status")
+        if status.exists():
+            text = status.read_text()
+            uids = text.split("Uid:")[1].split()[:4]
+            gids = text.split("Gid:")[1].split()[:4]
         process.kill()
         process.wait()
         return uids, gids
@@ -2858,7 +2881,7 @@ def run_root_checks(check, daemon, env, temp):
     check(process is not None, "klind did not start with uid and gid configured")
     if process is not None:
         uids, gids = stop(process)
-        check(uids == ["65534"] * 4 and gids == ["65534"] * 4,
+        check(uids is None or uids == ["65534"] * 4 and gids == ["65534"] * 4,
               f"klind did not drop every user and group id: {uids} {gids}")
     process = started("allow_root yes")
     check(process is not None, "allow_root yes did not let klind run as root")
@@ -2890,7 +2913,7 @@ def run_server_checks(args, env, output, daemon):
         run_bad_auth_checks(check, daemon, env, temp)
         run_root_checks(check, daemon, env, temp)
         cert, key = temp / "cert.pem", temp / "key.pem"
-        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
+        subprocess.run([OPENSSL, "req", "-x509", "-newkey", "rsa:2048", "-nodes",
                         "-keyout", str(key), "-out", str(cert), "-days", "1", "-subj", "/CN=localhost"],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         run_keymgr_start_checks(check, daemon, env, temp, cert, key)
@@ -2916,7 +2939,11 @@ def run_server_checks(args, env, output, daemon):
                 ("client", client, False, "client", SECURITY_HEADERS + "\n    " + ACCESS),
                 ("secure", secure, True, "client", auth),
                 ("files", files, False, f"file\n        file.path {sessions}",
-                 "index missing.kl1 pid.kl1\n    send_enc_deflate yes\n    " + files_config(temp)),
+                 # worker_max_procs 0: RLIMIT_NPROC counts all the processes
+                 # of the user running the tests (hundreds on a desktop),
+                 # and the CGIs here must fork
+                 "index missing.kl1 pid.kl1\n    send_enc_deflate yes\n    worker_max_procs 0\n    "
+                 + files_config(temp)),
                 ("memlog", memlog, False, "client",
                  "log\n    {\n        type memory\n    }\n    sandbox no"),
                 ("blocked", blocked, False, "memory", BLOCKED),

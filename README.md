@@ -100,12 +100,13 @@ You need CMake 3.24 or newer, a build tool (Ninja, BSD make or GNU make),
 GCC or Clang, OpenSSL 3, zlib, Git, and Python 3.9 or newer for
 `build/build.py`. Ubuntu 24.04 has them all; 22.04 ships CMake 3.22,
 which is too old. On Windows, follow the Ubuntu steps in an Ubuntu 24.04
-WSL shell. On macOS, `python3` comes with the Xcode command line tools
-(check that `python3 --version` says 3.9 or newer); install the rest with
-Homebrew and tell CMake where OpenSSL is:
+WSL shell. On macOS, the Xcode command line tools' `python3` is enough
+to build, but the tests need a Python with TLS 1.3, which Apple's (built
+on LibreSSL) lacks, so install Homebrew's too, with the rest, and tell
+CMake where OpenSSL is:
 
 ```sh
-brew install cmake ninja openssl@3
+brew install cmake ninja openssl@3 python
 export OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 ```
 
