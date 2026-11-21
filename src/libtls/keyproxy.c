@@ -106,6 +106,28 @@ typedef struct
 static pid_t kp_managers[KP_MAX_MANAGERS];
 static size_t kp_nmanagers;
 
+/* a datagram socket pair that takes a whole kp_hello_t: macOS caps a UNIX
+   datagram at its send buffer (net.local.dgram.maxdgram, 2048 bytes by
+   default), so raise the buffers where they are smaller than that */
+static int kp_socketpair(int sv[2])
+{
+    int i, want = (int) (2 * sizeof(kp_hello_t)), have;
+    socklen_t len;
+
+    if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv))
+        return -1;
+    for(i = 0; i < 2; ++i)
+    {
+        len = sizeof have;
+        if(getsockopt(sv[i], SOL_SOCKET, SO_SNDBUF, &have, &len) || have < want)
+            (void) setsockopt(sv[i], SOL_SOCKET, SO_SNDBUF, &want, sizeof want);
+        len = sizeof have;
+        if(getsockopt(sv[i], SOL_SOCKET, SO_RCVBUF, &have, &len) || have < want)
+            (void) setsockopt(sv[i], SOL_SOCKET, SO_RCVBUF, &want, sizeof want);
+    }
+    return 0;
+}
+
 /* ------------------------------------------------------------------------
  * the key manager process
  * ---------------------------------------------------------------------- */
@@ -362,7 +384,7 @@ static int kp_manager_start(EVP_PKEY *key, int sandbox, int *pchan)
     kp_hello_t hello;
 
     dbg_err_if(kp_nmanagers == KP_MAX_MANAGERS);
-    dbg_err_sif(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv));
+    dbg_err_sif(kp_socketpair(sv));
 
     dbg_err_sif((pid = fork()) < 0);
     if(pid == 0)
@@ -375,7 +397,8 @@ static int kp_manager_start(EVP_PKEY *key, int sandbox, int *pchan)
             _exit(1);
         memset(&hello, 0, sizeof hello);
         hello.ok = 1;
-        (void) send(sv[1], &hello, sizeof hello, 0);    /* ready */
+        if(send(sv[1], &hello, sizeof hello, 0) != (ssize_t) sizeof hello)
+            _exit(1);                                   /* ready, or not */
         kp_manager_loop(key, sv[1], parent);
         _exit(0);
     }
@@ -435,7 +458,7 @@ static int kp_manager_start_file(const char *path, int sandbox, int *pchan,
     int len;
 
     dbg_err_if(kp_nmanagers == KP_MAX_MANAGERS);
-    dbg_err_sif(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv));
+    dbg_err_sif(kp_socketpair(sv));
 
     dbg_err_sif((pid = fork()) < 0);
     if(pid == 0)
@@ -467,7 +490,8 @@ static int kp_manager_start_file(const char *path, int sandbox, int *pchan,
         kp_warm_up(key);
         if(sandbox && sandbox_keymgr())
             _exit(1);
-        (void) send(sv[1], hello, sizeof *hello, 0);    /* ready */
+        if(send(sv[1], hello, sizeof *hello, 0) != (ssize_t) sizeof *hello)
+            _exit(1);                                   /* ready, or not */
         kp_manager_loop(key, sv[1], parent);
         _exit(0);
     }
