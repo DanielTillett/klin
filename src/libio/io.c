@@ -212,13 +212,9 @@ static int io_rbuf_alloc(io_t *io)
     
     io->rbsz = IO_RD_BUFSZ; /* set the buffer size */
 
-    /* if a dup'd io_t already alloc'd a buffer then use it */
     io->rbuf = (char*)u_malloc(io->rbsz);
     dbg_err_if(io->rbuf == NULL);
     io->roff = 0;
-
-    io->ubuf = (char*)u_malloc(io->rbsz);
-    dbg_err_if(io->ubuf == NULL);
 
     return 0;
 err:
@@ -514,31 +510,44 @@ static ssize_t io_underflow(io_t *io)
 
     while(io->rcount == 0)
     {
+        int read_codecs = !TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs;
+
         if(io->ucount == 0)
-        {   /* fetch some bytes from the device and fill the rbuffer */
+        {
+            if(!read_codecs)
+            {
+                dbg_err_if((c = io->read(io, io->rbuf, io->rbsz)) < 0);
+                io->rcount = c;
+                io->roff = 0;
+                break;
+            }
+
+            if(io->ubuf == NULL)
+            {
+                io->ubuf = (char*)u_malloc(io->rbsz);
+                dbg_err_if(io->ubuf == NULL);
+            }
+
             dbg_err_if((c = io->read(io, io->ubuf, io->rbsz)) < 0);
             if(c == 0)
             {   /* eof, try to get some buffered (already transformed) bytes
                    from the codec */
-                if(!TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs)
-                {
-                    sz = io->rbsz;
-                    c = io_chain_flush_chunk(io, io->rbuf, &sz);
-                    dbg_err_if(c < 0);
-                    io->rcount += sz;
-                    io->roff = 0;
-                    if(c == 0)
-                        io->eof++;
-                }
+                sz = io->rbsz;
+                c = io_chain_flush_chunk(io, io->rbuf, &sz);
+                dbg_err_if(c < 0);
+                io->rcount = sz;
+                io->roff = 0;
+                if(c == 0)
+                    io->eof++;
                 break;
             }
-            io->ucount += c;
+            io->ucount = c;
         }
 
-        /* transform all data in the buffer (codecs of a write-only chain
-           do not apply) */
-        sz = io->rbsz - io->rcount;
-        if(io->wr_codecs)
+        /* Drain any raw bytes left by read codecs before refilling, even
+           if the chain has since been removed or made write-only. */
+        sz = io->rbsz;
+        if(!read_codecs)
         {
             c = U_MIN(sz, io->ucount);
             memcpy(io->rbuf, io->ubuf + io->uoff, c);
