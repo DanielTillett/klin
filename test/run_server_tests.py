@@ -2183,6 +2183,7 @@ def run_tls_checks(check, secure, mtls, client_cert):
     client.stdin.flush()
     time.sleep(2)
     client.stdin.close()
+    client.stdin = None     # closed: communicate() must not flush it (Python 3.12)
     out = client.communicate(timeout=20)[0].decode("latin-1")
     check("RENEGOTIATING" in out and "no renegotiation" in out,
           f"Renegotiation not refused: {out[-600:]}")

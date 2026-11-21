@@ -124,11 +124,14 @@ static int fs_open(void *h, request_t *rq, const char *fqn, struct stat *st)
 }
 static int io_fd_create(int fd, int flags, io_t **out)
 { (void)fd; (void)flags; *out = &file_input; return 0; }
-static int close(int fd) { (void)fd; return 0; }
+/* a name of its own: MinGW's headers declare close() already */
+static int regression_close(int fd) { (void)fd; return 0; }
+#define close regression_close
 static void response_close_connection(response_t *rs)
 { (void)rs; ++conn_closed; }
 
 #include "regression_functions.inc"
+#undef close
 
 static int checks, failures;
 #define CHECK(c) do { ++checks; if (!(c)) { \
