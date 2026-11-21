@@ -1,7 +1,7 @@
 KLIN TODO
 ----------
 
-Reviewed for Klin 4.0.0 (18 Nov 2026). Items are in priority order within
+Reviewed for Klin 4.0.0 (21 Nov 2026). Items are in priority order within
 each section. Completed work is recorded in the ChangeLog.
 
 
@@ -12,9 +12,10 @@ PLANNED: SECURITY AND CORRECTNESS
   session IDs make symlink attacks impractical today, but /tmp is shared.
 * Session locking: concurrent requests in the same session can overwrite
   each other's session data (lost updates).
-* Disable core dumps in klind (setrlimit RLIMIT_CORE), with a configuration
-  option to re-enable them for debugging; dumps can contain session keys and
-  user data.
+* Disable core dumps in klind and its workers (setrlimit RLIMIT_CORE), with
+  a configuration option to re-enable them for debugging; dumps can contain
+  session keys and user data. The TLS key manager and CGI scripts already
+  have none.
 * HTML-escaped output: <%= expr %> prints its value unescaped, so pages that
   echo request data are open to cross-site scripting unless the author
   escapes by hand. Add an escaping output helper (io_html_printf) and an
@@ -33,9 +34,11 @@ PLANNED: FEATURES AND TESTING
 * Streaming file uploads: a per-chunk upload callback, so large uploads do
   not have to be held in memory or a temporary file (important on small
   devices).
-* Code coverage reporting in CI, to show what the test suites miss.
-* Longer fuzzing campaigns (the parsers and the page translator have a
-  fuzz target; CI runs a short smoke test).
+* Code coverage reporting in CI for the test suites (ClusterFuzzLite
+  reports the fuzzers' coverage only), to show what the tests miss.
+* Longer fuzzing campaigns: ClusterFuzzLite fuzzes half an hour a day per
+  sanitizer; OSS-Fuzz would run far longer (the ClusterFuzzLite files are
+  written to serve an OSS-Fuzz application, doc/FUZZING).
 * Platform coverage: *BSD is untested; native Windows (MinGW) builds and
   serves in the single-process model only, with a smoke test rather than the
   full server tests; MSVC needs LibU ported. C++ pages (.klx) are not

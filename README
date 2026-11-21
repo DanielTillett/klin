@@ -16,6 +16,69 @@ Project home: https://github.com/DanielTillett/klin
 Original KoanLogic project (no longer maintained): https://github.com/koanlogic/klone
 
 
+WHY KLIN
+--------
+
+Many devices need a web interface but cannot carry a general-purpose web
+stack: a router, an industrial controller, a laboratory or test
+instrument, a camera or a sensor gateway. Klin is built for that case.
+
+* One self-contained program. The server, its configuration and the
+  whole site (pages, images, scripts, style sheets) are compiled into a
+  single executable, klind. There is no interpreter, no separate web
+  server and nothing to unpack at install time, and the embedded site
+  cannot be changed on the device. It runs from a read-only file system.
+* Small. A stripped klind for x86-64 Linux is about 0.7 MB, and it needs
+  only libc, OpenSSL 3 and zlib (both optional at build time). Pages are
+  compiled C, so a request costs no interpreter start-up or garbage
+  collection.
+* Pages in C. A page is HTML with C code in it (<% ... %>), so it can
+  call a device's own libraries, drivers and ioctls directly, with no
+  bindings or IPC layer between the web interface and the hardware.
+* Secure defaults for a device exposed to a network: TLS 1.2 and 1.3
+  with forward-secret ciphers only; the TLS private key held by a separate
+  process; workers under a seccomp sandbox with resource limits; a
+  strict, fuzzed HTTP parser; hardened sessions with CSRF tokens; access
+  rules and HTTP authentication; reproducible, signed releases with an
+  SBOM. Each protection is documented with the setting that changes it.
+* Current web features: REST routes and JSON, request validation,
+  Server-Sent Events and WebSockets, keep-alive, ETags and ranges.
+* Portable C (C99) with a CMake build that needs no GNU make: Linux,
+  macOS, and Windows (MinGW, single process); BSD-licensed.
+* KLone's successor. Klin keeps KLone's page format and configuration and
+  accepts its old names throughout 4.x, so a KLone 3.x site moves over
+  with few changes (RENAMED FROM KLONE).
+
+It is less suited to sites whose content changes at run time (a CMS or a
+blog), to teams that want a scripting language for their pages, or to
+large-scale web serving, where a general-purpose server behind a load
+balancer is the usual choice.
+
+
+DOCUMENTATION
+-------------
+
+This README covers building, running, testing and what changed from
+KLone. The manual pages are in doc/man: klind(8) the daemon, klind.conf(5)
+its configuration, klin(1) the page translator and site tool. The other
+topics are in doc/:
+
+    ACCESS      IP access rules           LIMITS      request and worker limits
+    AUTH        HTTP authentication       RELEASES    releases, signing, CI rules
+    CGI         CGI scripts               ROUTES      REST routes
+    CONVENTIONS code conventions          SANDBOX     seccomp sandbox
+    CRYPTO      encryption API            SESSIONS    sessions and CSRF
+    FILES       files from the disk       SSE         Server-Sent Events
+    FUZZING     fuzzing, static analysis  SYSTEMD     the hardened systemd unit
+    HARDENING   compiler hardening        TLS         TLS settings, tickets
+    HEADERS     security headers          VALIDATE    request validation
+    JSON        JSON reader and writer    WEBSOCKET   WebSockets
+    KEYMGR      the TLS key manager
+
+doc/example-site is a small site to start from. SECURITY.md says how to
+report a vulnerability; ChangeLog lists every change; TODO what is planned.
+
+
 QUICK START (LINUX / WSL / MACOS)
 ---------------------------------
 
@@ -122,13 +185,13 @@ BUILD-AND-TEST RUNNER
 
 How the runner works:
 
-* LibU is cloned at the exact commit pinned in build/dependencies.json. Existing checkouts must match those
-  commits and have no tracked modifications (CRLF-only differences are
-  tolerated).
-* Sources are copied, with line endings normalized, into
-  .build/<mode>/source and built out of tree in .build/<mode>/cmake. Your
-  checkout is never configured or compiled in place, and nothing is
-  installed on the system.
+* LibU is cloned at the exact commit pinned in build/dependencies.json.
+  Existing checkouts must match that commit and have no tracked
+  modifications (CRLF-only differences are tolerated).
+* Sources are copied as they are (.gitattributes checks text out with LF
+  on every platform) into .build/<mode>/source and built out of tree in
+  .build/<mode>/cmake. Your checkout is never configured or compiled in
+  place, and nothing is installed on the system.
 * Only one build may use a given .build/<mode> directory at a time; a
   second concurrent build of the same mode is refused.
 * build-info.json records the dependency commits, a normalized source
@@ -272,20 +335,29 @@ TESTING
 
 --test runs, in order:
 
-1. The regression suite (95 checks), which compiles selected production
-   functions verbatim as C99, with warnings treated as errors, and runs them
-   under the sanitizers. LibU and network collaborators are test doubles;
-   production MD5 is linked directly.
-2. The full-server tests (81 checks), run twice: once in single-process
-   mode and once in the normal prefork model. They temporarily embed the
+1. The unit tests (ctest).
+2. The regression suite (about a hundred checks), which compiles selected
+   production functions verbatim as C99, with warnings treated as errors,
+   and runs them under the sanitizers. LibU and network collaborators are
+   test doubles; production MD5 is linked directly.
+3. The full-server tests (about 500 checks), run twice: once in
+   single-process mode and once in the prefork model. They embed the
    test-only site in test/site, start klind on temporary localhost ports
-   and check static and HEAD responses, dynamic pages, malformed headers and
-   URIs, TLS 1.2 and 1.3 negotiation and rejection of TLS 1.0 and 1.1, cookie
-   flags, and memory and client-side session persistence over HTTP and
-   HTTPS. Under --sanitize, any AddressSanitizer, LeakSanitizer or UBSan
-   report fails the run. Afterwards the build's original site is restored.
+   (IPv4, and IPv6 where the host has it) and check, among others: static
+   files, pages, HEAD, ranges and ETags; malformed headers and URIs,
+   request smuggling and limits; keep-alive; TLS versions, ciphers,
+   renegotiation, client certificates and session tickets; sessions and
+   CSRF; access rules, authentication, routes, validation, SSE and
+   WebSockets; files, symbolic links and CGI scripts; the sandbox, the key
+   manager (whose memory no worker may read) and worker limits; and
+   configurations klind must refuse at startup. As root (WSL) they also
+   check dropping root, blind_chroot and the key manager run as nobody.
+   Under --sanitize, any AddressSanitizer, LeakSanitizer or UBSan report
+   fails the run.
 
-Test certificates and listeners are temporary.
+The security topics in doc/ (ACCESS, CGI, FILES, KEYMGR, LIMITS, RELEASES,
+SANDBOX, SESSIONS, SYSTEMD, TLS) end with what their tests check. Test
+certificates and listeners are temporary.
 
 The regression suite also runs without a full build, on Windows or Linux,
 with Python 3 and Clang:
@@ -313,12 +385,26 @@ check every workflow's pins and permissions (doc/RELEASES; needs PyYAML):
 
     python3 test/run_release_checks.py [--no-build]
 
-Continuous integration (.github/workflows/build.yml) runs on every push and
-pull request: the release and sanitizer builds and tests with CMake and
-Ninja on Linux (and on macOS weekly and by hand), the fuzz test, the
-build-system and release checks, and a build and test with BSD make (bmake)
-while any GNU make on the PATH is made to fail, proving GNU make is not
-needed. Build logs are uploaded.
+klind under the hardened systemd unit (Linux, as root):
+
+    sudo python3 test/run_systemd_test.py --build .build/release/cmake
+
+Continuous integration (GitHub Actions, .github/workflows) runs on every
+push and pull request:
+
+    build.yml          release and sanitizer builds and tests on Linux;
+                       the fuzz test, build-system, release and systemd
+                       checks; BSD make (bmake) with GNU make made to
+                       fail; native Windows (MinGW): build, HTTP and
+                       HTTPS, regressions; macOS weekly and by hand
+    analysis.yml       clang-tidy
+    codeql.yml         CodeQL (security-extended queries)
+    cflite_pr.yml      ClusterFuzzLite on the code a pull request changes
+
+and on a schedule: ClusterFuzzLite batch fuzzing with corpus pruning and
+coverage (daily), CodeQL and OpenSSF Scorecard (weekly), Coverity Scan
+(weekly, once its token is set), and Dependabot for the actions. Release
+drafts come from a pushed tag (doc/RELEASES). Build logs are uploaded.
 
 
 RENAMED FROM KLONE
@@ -355,11 +441,44 @@ names changed (klind.conf).
 SECURITY AND COMPATIBILITY CHANGES
 ----------------------------------
 
+Klin 4.0.0 is stricter than KLone 3.1.0 by default. These new defaults
+may change how an existing deployment behaves; each has a setting (the
+ChangeLog lists every change):
+
+    what changed                              to change it
+    TLS 1.2 ciphers: forward-secret AEAD      tls_ciphers (doc/TLS)
+      only; old clients with CBC-only or
+      RSA key exchange are refused
+    the TLS private key is held by a          key_manager no (doc/KEYMGR)
+      separate process (RSA and EC keys)
+    workers run under a seccomp sandbox,      sandbox no, sandbox_allow
+      with argument checks (sockets, W^X      (doc/SANDBOX)
+      memory, signals)
+    worker limits: 1024 MB, 1024 files,       worker_max_memory,
+      max_child + 64 processes                worker_max_files,
+                                              worker_max_procs; 0: off
+                                              (doc/LIMITS)
+    header limits, a header deadline,         max_header_*, idle_timeout,
+      connections per client address,         max_conn_per_ip, max_streams
+      SSE/WebSocket streams                   (doc/LIMITS)
+    symbolic links are followed only inside   follow_symlinks (doc/FILES)
+      the document root
+    CGI: 60 s, 30 s CPU, 512 MB; klind's      the cgi block: timeout,
+      environment and the Authorization       max_cpu, max_memory, pass_env,
+      field are not passed                    pass_headers (doc/CGI)
+    security headers on every response        security_headers (doc/HEADERS)
+    a session id the client makes up is       none: use session_regenerate_id()
+      not taken on                            at login (doc/SESSIONS)
+    klind does not keep root credentials      uid and gid, or allow_root yes
+                                              (doc/SYSTEMD)
+    settings out of range stop klind at       max_child 1 to 896, verify_depth
+      startup                                 0 to 100 (klind.conf(5))
+
 TLS
 
-* TLS 1.2 is the minimum protocol version; TLS 1.0 and 1.1 are rejected.
-  TLS compression is disabled. The minimum is fixed in code, not
-  configurable.
+* TLS 1.2 is the minimum protocol version; TLS 1.0 and 1.1 are rejected
+  and cannot be turned back on (tls_min_version 1.3 raises the minimum).
+  TLS compression and renegotiation are disabled.
 * OpenSSL 3 is required. Contexts are owned opaque objects accessed through
   public APIs.
 * Ephemeral 512-bit RSA and the built-in 1024-bit DH group are gone. Without
@@ -389,8 +508,8 @@ HTTP request handling
   (chunked request bodies are not supported), invalid field names, control
   characters in field values, folded headers, unterminated headers, and
   decoded NUL bytes in URI paths.
-* Limits: 256 header fields, 8192 bytes per header line, 65536 bytes of
-  headers in total.
+* Limits (configurable, doc/LIMITS): 100 header fields, 8192 bytes per
+  header line, 32768 bytes of headers in total.
 * The query string is split off before the path is URL-decoded, so an
   escaped '?' (%3F) and a literal '+' in the path are preserved.
 
@@ -460,7 +579,10 @@ KNOWN LIMITATIONS
   code builds without warnings (GCC, Clang, Apple Clang).
 * "Expect: 100-continue" is not answered; clients send the body after their
   own timeout.
-* Fuzzing is a short smoke test; longer campaigns are still worthwhile.
+* Fuzzing runs for half an hour a day per sanitizer (ClusterFuzzLite);
+  the project is not in OSS-Fuzz, whose campaigns are much longer.
+* Under the sandbox, a CGI script cannot signal its own process group
+  with kill 0 (doc/SANDBOX).
 
 
 REMOVED IN 4.0.0
