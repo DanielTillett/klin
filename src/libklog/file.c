@@ -153,7 +153,7 @@ static int klog_file_append (klog_file_t *klf, const char *id, int level,
         const char *ln)
 {
     time_t now;
-    char *ct;
+    char ct[KLOG_TS_SZ];
 
     dbg_return_if (ln == NULL, ~0);
     dbg_return_if (id == NULL, ~0);
@@ -161,8 +161,7 @@ static int klog_file_append (klog_file_t *klf, const char *id, int level,
     dbg_return_if (klf->wfp == NULL, ~0);
 
     dbg_err_if ((now = time(NULL)) == (time_t) -1);
-    ct = ctime((const time_t *) &now);
-    ct[24] = '\0';
+    klog_timestamp(now, ct);
 
     /* append line to wrk page */
     fprintf(klf->wfp, "[%s] %s <%s>: %s\n", 
@@ -225,6 +224,23 @@ err:
     return ~0;
 }
 
+/* fopen(fn, append ? "a" : "w"), but a new file is created readable by its
+   owner and group only rather than as the umask allows */
+static FILE *klog_file_fopen (const char *fn, int append)
+{
+    int fd;
+    FILE *fp;
+
+    fd = open(fn, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0640);
+    if (fd < 0)
+        return NULL;
+
+    if ((fp = fdopen(fd, append ? "a" : "w")) == NULL)
+        (void) close(fd);
+
+    return fp;
+}
+
 static int klog_file_head_dump (klog_file_t *klf)
 {
     FILE *hfp = NULL;
@@ -234,7 +250,7 @@ static int klog_file_head_dump (klog_file_t *klf)
 
     dbg_err_if (u_path_snprintf(hf, U_FILENAME_MAX, U_PATH_SEPARATOR, "%s.%s", 
                                 klf->basename, "head"));
-    dbg_err_if ((hfp = fopen(hf, "w")) == NULL);
+    dbg_err_if ((hfp = klog_file_fopen(hf, 0)) == NULL);
     dbg_err_if (fwrite(klf, sizeof(klog_file_t), 1, hfp) != 1);
     U_FCLOSE(hfp);
 
@@ -287,7 +303,7 @@ static int klog_file_shift_page (klog_file_t *klf)
     U_FCLOSE(klf->wfp);
     dbg_err_if (u_path_snprintf(wf, U_FILENAME_MAX, U_PATH_SEPARATOR, "%s.%d", 
         klf->basename, (klf->wpageid + 1)%klf->npages));
-    dbg_err_if ((klf->wfp = fopen(wf, "w")) == NULL);
+    dbg_err_if ((klf->wfp = klog_file_fopen(wf, 0)) == NULL);
 
     klf->offset = 0;                                /* reset offset counter */
     klf->wpageid = (klf->wpageid + 1) % klf->npages;  /* increment page id */
@@ -305,7 +321,7 @@ static int klog_file_open_page (klog_file_t *klf)
 
     dbg_err_if (u_path_snprintf(wf, U_FILENAME_MAX, U_PATH_SEPARATOR, "%s.%d", 
                                 klf->basename, klf->wpageid));
-    dbg_err_if ((klf->wfp = fopen(wf, "a")) == NULL);
+    dbg_err_if ((klf->wfp = klog_file_fopen(wf, 1)) == NULL);
     
     return 0;
 err:
