@@ -814,7 +814,8 @@ static void test_crypto(void)
 /* ctime(t) without its newline, the reference for klog_timestamp() */
 static void ctime_ref(time_t t, char ref[KLOG_TS_SZ])
 {
-    const char *ct = ctime(&t);
+    char buf[26];
+    const char *ct = ctime_r(&t, buf);
 
     snprintf(ref, KLOG_TS_SZ, "%.24s", ct ? ct : "?");
 }
