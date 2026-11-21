@@ -141,6 +141,7 @@ err:
  */
 int codec_gzip_create(int op, codec_t **piz)
 {
+    enum { DEFLATE_WBITS = 13, DEFLATE_MEM_LEVEL = 6 };
     codec_gzip_t *iz = NULL;
 
     dbg_return_if (piz == NULL, ~0);
@@ -162,8 +163,8 @@ int codec_gzip_create(int op, codec_t **piz)
         iz->op = deflate;
         iz->opEnd = deflateEnd;
         dbg_err_if(deflateInit2(&iz->zstr, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
-                    op == ZLIB_COMPRESS ? MAX_WBITS : -MAX_WBITS, 8,
-                    Z_DEFAULT_STRATEGY));
+                    op == ZLIB_COMPRESS ? DEFLATE_WBITS : -DEFLATE_WBITS,
+                    DEFLATE_MEM_LEVEL, Z_DEFAULT_STRATEGY) != Z_OK);
         break;
     case GZIP_UNCOMPRESS:
     case ZLIB_UNCOMPRESS:

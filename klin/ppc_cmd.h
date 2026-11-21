@@ -21,7 +21,7 @@ enum {
     /* in-memory sessions ppc commands                              */
     PPC_CMD_MSES_SAVE,          /* save a session                   */
     PPC_CMD_MSES_GET,           /* get session data                 */
-    PPC_CMD_MSES_DELOLD,        /* delete the oldest ession         */
+    PPC_CMD_MSES_DELOLD,        /* reserved (former eviction command) */
     PPC_CMD_MSES_REMOVE,        /* remove a session                 */
 
     /* logging ppc commands                                         */

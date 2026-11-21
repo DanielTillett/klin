@@ -1069,26 +1069,21 @@ int u_getline(io_t *io, u_string_t *ln)
 {
     enum { BUFSZ = 1024 };
     char buf[BUFSZ];
-    ssize_t len, rc;
+    ssize_t len;
 
     dbg_return_if (io == NULL, ~0);
     dbg_return_if (ln == NULL, ~0);
     
-    u_string_clear(ln);
+    dbg_err_if(u_string_clear(ln));
 
-    while((rc = len = io_gets(io, buf, BUFSZ)) > 0)
+    while((len = io_gets(io, buf, sizeof buf)) > 0)
     {
-        dbg_err_if(u_string_append(ln, buf, --len));
-        if(!u_isnl(buf[len]))
-            continue; /* line's longer the bufsz (or eof);get next line chunk */
-        else
-            break;
+        if(buf[len - 1] == '\n')
+            return u_string_append(ln, buf, len - 1) ? ~0 : 0;
+        dbg_err_if(u_string_append(ln, buf, len));
     }
-
-    dbg_if(rc < 0); /* io_gets error */
-
 err:
-    return (rc <= 0 ? ~0 : 0);
+    return ~0;
 }
 
 /**

@@ -503,11 +503,7 @@ static int supemb_serve_dynamic(request_t *rq, response_t *rs, embpage_t *e)
     args.fun = e->fun;
     args.opaque = NULL;
 
-    dbg_err_if(dypage_serve(&args));
-
-    return 0;
-err:
-    return ~0;
+    return dypage_serve(&args);
 }
 
 static int supemb_serve(request_t *rq, response_t *rs)
@@ -533,8 +529,7 @@ static int supemb_serve(request_t *rq, response_t *rs)
         dbg_err_if(supemb_serve_static(rq, rs, (embfile_t*)e));
         break;
     case ET_PAGE:
-        dbg_err_if(supemb_serve_dynamic(rq, rs, (embpage_t*)e));
-        break;
+        return supemb_serve_dynamic(rq, rs, (embpage_t*)e);
     default:
         dbg_err_if("unknown res type");
     }

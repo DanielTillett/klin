@@ -11,6 +11,7 @@
 #define _KLIN_VAR_PRV_H_
 
 #include <u/libu.h>
+#include <klin/var.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +26,9 @@ struct var_s
     size_t size;
     void *opaque;
 };
+
+/* Take ownership of a u_malloc'd value with a trailing NUL on success. */
+int var_bin_adopt(const char *name, char *data, size_t size, var_t **pv);
 
 #ifdef __cplusplus
 }

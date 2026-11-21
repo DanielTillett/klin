@@ -64,13 +64,11 @@ void* var_get_opaque(var_t *v)
     return v->opaque;
 }
 
-int var_bin_create(const char *name, const unsigned char *data, size_t size, 
-        var_t **pv)
+static int var_create_named(const char *name, var_t **pv)
 {
     var_t *v = NULL;
 
     dbg_return_if (name == NULL, ~0);
-    dbg_return_if (data == NULL, ~0);
     dbg_return_if (pv == NULL, ~0);
 
     v = u_zalloc(sizeof(var_t));
@@ -78,7 +76,6 @@ int var_bin_create(const char *name, const unsigned char *data, size_t size,
 
     dbg_err_if(u_string_create(name, strlen(name), &v->sname));
 
-    dbg_err_if(var_set_bin_value(v, data, size));
 
     *pv = v;
 
@@ -87,6 +84,34 @@ err:
     if(v)
         var_free(v);
     return ~0;
+}
+
+int var_bin_adopt(const char *name, char *data, size_t size, var_t **pv)
+{
+    dbg_return_if(data == NULL, ~0);
+    if(var_create_named(name, pv))
+        return ~0;
+
+    (*pv)->data = data;
+    (*pv)->size = size;
+    return 0;
+}
+
+int var_bin_create(const char *name, const unsigned char *data, size_t size,
+        var_t **pv)
+{
+    var_t *v;
+
+    dbg_return_if(data == NULL || pv == NULL, ~0);
+    if(var_create_named(name, &v))
+        return ~0;
+    if(var_set_bin_value(v, data, size))
+    {
+        var_free(v);
+        return ~0;
+    }
+    *pv = v;
+    return 0;
 }
 
 int var_create(const char* name, const char *value, var_t**pv)

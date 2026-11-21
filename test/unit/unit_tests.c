@@ -13,15 +13,18 @@
 
 #include "klin_conf.h"
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include <u/libu.h>
+#include <klin/emb.h>
 #include <klin/field.h>
 #include <klin/header.h>
 #include <klin/io.h>
+#include <klin/ioprv.h>
 #include <klin/timer.h>
 #include <klin/translat.h>
 #include <klin/json.h>
@@ -30,13 +33,25 @@
 #include <klin/crypto.h>
 #include <klin/klog.h>
 #include <klin/klogprv.h>
+#include <klin/context.h>
+#include <klin/vhost.h>
+#include "../../src/libhttp/http_s.h"
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include "../../src/klind/server_s.h"
 #ifdef SSL_OPENSSL
 #include <klin/auth.h>
+#endif
+#ifdef HAVE_LIBZ
+#include <klin/cgzip.h>
+#include <zlib.h>
 #endif
 
 /* the syslog facility LibU logs with: the program defines it */
 int facility = LOG_LOCAL0;
+static context_t test_context;
+context_t *ctx = &test_context;
 
 static int checks, failures;
 
@@ -48,6 +63,100 @@ static int checks, failures;
                     __LINE__, #expr);                                       \
         }                                                                   \
     } while(0)
+
+/* Fill the read buffer while leaving raw input for the next refill. */
+static ssize_t expand_byte(codec_t *codec, char *dst, size_t *dcount,
+        const char *src, size_t sz)
+{
+    (void) codec;
+    (void) sz;
+    memset(dst, *src, *dcount);
+    return 1;
+}
+
+static void test_io_read_codecs(void)
+{
+    char data[8192], out[4096];
+    io_t *io = NULL, *dup = NULL;
+    codec_t *codec = u_zalloc(sizeof *codec);
+
+    memset(data, 'a', 4096);
+    memset(data + 4096, 'b', 4096);
+    data[4096] = 'c';
+    CHECK(codec && io_mem_create(data, sizeof data, 0, &io) == 0);
+    if(!codec || !io)
+        goto done;
+
+    CHECK(io_read(io, out, 1) == 1 && out[0] == 'a' && io->ubuf == NULL);
+    CHECK(io_dup(io, &dup) == 0 && dup == io);
+    codec->transform = expand_byte;
+    CHECK(io_codec_add_tail(dup, codec) == 0);
+    if(!io_has_codecs(io))
+        goto done;
+    codec = NULL;
+
+    CHECK(io_read(dup, out, 4095) == 4095 &&
+            memcmp(out, data + 1, 4095) == 0 && io->ubuf == NULL);
+    CHECK(io_read(dup, out, sizeof out) == sizeof out && out[4095] == 'c' &&
+            io->ubuf != NULL && io->ucount == 4095);
+    CHECK(io_codecs_discard(io) == 0);
+    CHECK(io_read(dup, out, sizeof out) == 4095 &&
+            memcmp(out, data + 4097, 4095) == 0 && io->ucount == 0);
+
+done:
+    codec_free(codec);
+    if(dup)
+        io_free(dup);
+    if(io)
+        io_free(io);
+}
+
+#ifdef HAVE_LIBZ
+static void test_deflate_windows(void)
+{
+    char data[32768], decoded[sizeof data + 1];
+    unsigned char encoded[sizeof data + 128];
+    uint32_t random = 1;
+    size_t i;
+    int j;
+
+    /* The second half can only match the first using a distance over 8 KB. */
+    for(i = 0; i < sizeof data / 2; ++i)
+    {
+        random = random * UINT32_C(1664525) + UINT32_C(1013904223);
+        data[i] = (char) (random >> 24);
+        data[i + sizeof data / 2] = data[i];
+    }
+
+    for(j = 0; j < 2; ++j)
+    {
+        z_stream z = {0};
+        codec_t *codec = NULL;
+        size_t n = sizeof decoded;
+        int rc;
+
+        rc = deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+                j ? MAX_WBITS : -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
+        CHECK(rc == Z_OK);
+        if(rc != Z_OK)
+            continue;
+        z.next_in = (Bytef *)data;
+        z.avail_in = sizeof data;
+        z.next_out = encoded;
+        z.avail_out = sizeof encoded;
+        CHECK(deflate(&z, Z_FINISH) == Z_STREAM_END && z.total_out < 18000);
+        CHECK(codec_gzip_create(j ? ZLIB_UNCOMPRESS : GZIP_UNCOMPRESS, &codec) == 0);
+        if(codec)
+        {
+            CHECK(codec->transform(codec, decoded, &n, (char *)encoded,
+                        z.total_out) == (ssize_t) z.total_out &&
+                    n == sizeof data && memcmp(decoded, data, n) == 0);
+            codec_free(codec);
+        }
+        deflateEnd(&z);
+    }
+}
+#endif
 
 /* load 'text' into a new header with header_load_ex(); return its result */
 static int load(const char *text, size_t len, header_t **ph)
@@ -901,12 +1010,565 @@ static void test_klog(void)
     (void) rmdir(dir);
 }
 
+struct vars_visit
+{
+    size_t count;
+    size_t stop;
+};
+
+static int visit_var(var_t *v, void *arg)
+{
+    struct vars_visit *visit = arg;
+
+    CHECK(var_get_name(v)[0] == (visit->count % 2 ? 'b' : 'a'));
+    return ++visit->count == visit->stop;
+}
+
+static void test_large_vars(void)
+{
+    enum { N = 10000 };
+    vars_t *vars = NULL;
+    struct vars_visit visit = { 0, N + 1 };
+    size_t i;
+    char arg[32];
+    const char *value;
+
+    CHECK(vars_create(&vars) == 0);
+    if(!vars)
+        return;
+
+    for(i = 0; i < N; ++i)
+    {
+        snprintf(arg, sizeof arg, "%c=%u", i % 2 ? 'b' : 'a', (unsigned)i);
+        CHECK(vars_add_urlvar(vars, arg, NULL) == 0);
+    }
+
+    CHECK(vars_count(vars) == N);
+    CHECK(vars_countn(vars, "A") == N / 2);
+    value = vars_geti_value(vars, "A", N / 2 - 1);
+    CHECK(value && !strcmp(value, "9998"));
+    CHECK(vars_geti(vars, "a", N / 2) == NULL);
+    vars_foreach(vars, visit_var, &visit);
+    CHECK(visit.count == N);
+
+    visit.count = 0;
+    visit.stop = 7;
+    vars_foreach(vars, visit_var, &visit);
+    CHECK(visit.count == 7);
+    vars_free(vars);
+}
+
+static int test_http_init(http_t *http, const char *max_args)
+{
+    vhost_t *vhost = NULL;
+
+    if(u_config_create(&http->config) ||
+            (max_args && u_config_add_key(http->config, "max_args", max_args)) ||
+            vhost_list_create(&http->vhosts) || vhost_create(&vhost))
+        return ~0;
+
+    vhost->host = "localhost";
+    vhost->config = http->config;
+    return vhost_list_add(http->vhosts, vhost);
+}
+
+static void test_http_term(http_t *http)
+{
+    if(http->vhosts)
+        vhost_list_free(http->vhosts);
+    if(http->config)
+        u_config_free(http->config);
+}
+
+static void check_request_args(http_t *http, const char *method,
+        const char *query, const char *type, const char *body,
+        int status, size_t get, size_t post, size_t uploads)
+{
+    request_t *rq = NULL;
+    io_t *io = NULL;
+    char headers[8192];
+    int length;
+
+    if(body)
+        length = snprintf(headers, sizeof headers,
+                "%s /?%s HTTP/1.1\r\nHost: localhost\r\nContent-Type: %s\r\n"
+                "Content-Length: %zu\r\n\r\n%s", method, query, type,
+                strlen(body), body);
+    else
+        length = snprintf(headers, sizeof headers,
+                "%s /?%s HTTP/1.1\r\nHost: localhost\r\n\r\n", method, query);
+
+    if(length < 0 || (size_t)length >= sizeof headers ||
+            request_create(http, &rq) ||
+            io_mem_create(headers, length, 0, &io))
+    {
+        CHECK(!"create request fixture");
+        goto end;
+    }
+    request_bind(rq, io);
+    if(request_parse_header(rq, NULL, NULL))
+    {
+        CHECK(!"parse request header");
+        goto end;
+    }
+    CHECK(request_parse_data(rq) == status);
+    CHECK(request_parse_data(rq) == status);
+    CHECK(vars_count(request_get_args(rq)) == get + post);
+    CHECK(vars_count(request_get_getargs(rq)) == get);
+    CHECK(vars_count(request_get_postargs(rq)) == post);
+    CHECK(vars_count(request_get_uploads(rq)) == uploads);
+    CHECK(!timerm_armed());
+
+end:
+    if(rq)
+        request_free(rq);
+}
+
+static void test_request_arg_limit(void)
+{
+    static const char urlencoded[] = "application/x-www-form-urlencoded";
+    static const char multipart[] = "multipart/form-data; boundary=X";
+    static const char form[] =
+        "--X\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nvalue\r\n"
+        "--X\r\nContent-Disposition: form-data; name=\"u\"; filename=\"test.txt\"\r\n"
+        "Content-Type: text/plain\r\n\r\nfile\r\n--X--\r\n";
+    char many[3 * 1001 + 1];
+    http_t http = { 0 }, limited = { 0 };
+    size_t i;
+
+    if(test_http_init(&http, NULL) || test_http_init(&limited, "2"))
+    {
+        CHECK(!"initialize request fixtures");
+        goto end;
+    }
+    for(i = 0; i < 1001; ++i)
+        memcpy(many + 3 * i, "a=&", 3);
+    many[3 * 1001] = '\0';
+    check_request_args(&http, "GET", many, NULL, NULL,
+            HTTP_STATUS_BAD_REQUEST, 1000, 0, 0);
+    check_request_args(&http, "POST", "", urlencoded, many,
+            HTTP_STATUS_BAD_REQUEST, 0, 1000, 0);
+    many[3 * 1000] = '\0';
+    check_request_args(&http, "GET", many, NULL, NULL, 0, 1000, 0, 0);
+    check_request_args(&http, "POST", "", urlencoded, many, 0, 0, 1000, 0);
+
+    check_request_args(&limited, "POST", "a=1", urlencoded, "a=2",
+            0, 1, 1, 0);
+    check_request_args(&limited, "POST", "a=1", urlencoded, "a=2&a=3",
+            HTTP_STATUS_BAD_REQUEST, 1, 1, 0);
+    check_request_args(&limited, "POST", "", multipart, form, 0, 0, 1, 1);
+    check_request_args(&limited, "POST", "a=1", multipart, form,
+            HTTP_STATUS_BAD_REQUEST, 1, 1, 0);
+
+end:
+    test_http_term(&http);
+    test_http_term(&limited);
+}
+
+static void check_large_form(http_t *http, const char *type,
+    const char *body, size_t body_len, const char *value, size_t value_len)
+{
+    static const char query[] = "f=from+URI";
+    char wire[20000];
+    request_t *rq = NULL;
+    io_t *io = NULL;
+    vars_t *args, *post;
+    var_t *v;
+    const char *get;
+    int n;
+
+    n = snprintf(wire, sizeof wire, "POST /?%s HTTP/1.1\r\nHost: localhost\r\n"
+            "Content-Type: %s\r\nContent-Length: %zu\r\n\r\n", query, type,
+            body_len);
+    if(n < 0 || (size_t)n >= sizeof wire || body_len > sizeof wire - n ||
+            request_create(http, &rq) ||
+            io_mem_create(wire, n + body_len, 0, &io))
+    {
+        CHECK(!"create large form request");
+        goto end;
+    }
+    memcpy(wire + n, body, body_len);
+    request_bind(rq, io);
+    if(request_parse_header(rq, NULL, NULL) || request_parse_data(rq))
+    {
+        CHECK(!"parse large form request");
+        goto end;
+    }
+    CHECK(request_parse_data(rq) == 0);
+    CHECK(request_get_query_string(rq) &&
+            !strcmp(request_get_query_string(rq), query));
+    get = vars_geti_value(request_get_getargs(rq), "f", 0);
+    CHECK(get && !strcmp(get, "from URI"));
+
+    args = request_get_args(rq);
+    post = request_get_postargs(rq);
+    CHECK(vars_count(args) == 2 && vars_count(post) == 1);
+    v = vars_get(post, "f");
+    CHECK(v && vars_geti(args, "f", 1) == v);
+    CHECK(v && var_get_value_size(v) == value_len &&
+            !memcmp(var_get_value(v), value, value_len) &&
+            var_get_value(v)[value_len] == '\0');
+
+end:
+    if(rq)
+        request_free(rq);
+}
+
+static void test_large_forms(void)
+{
+    static const char mp_head[] =
+        "--xyz\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\n";
+    static const char mp_tail[] = "\r\n--xyz--\r\n";
+    enum { N = 9500 };
+    char value[N], encoded[4 + N + 3], multipart[sizeof mp_head +
+        N + sizeof mp_tail];
+    http_t http = { 0 };
+
+    if(test_http_init(&http, NULL))
+    {
+        CHECK(!"initialize large form fixture");
+        goto end;
+    }
+
+    memset(value, 'x', sizeof value);
+    value[0] = ' ';
+    value[N - 1] = '&';
+    memcpy(encoded, "%66=+", 5);
+    memcpy(encoded + 5, value + 1, N - 2);
+    memcpy(encoded + N + 3, "%26&", 4);
+    check_large_form(&http, "application/x-www-form-urlencoded", encoded,
+        sizeof encoded, value, sizeof value);
+
+    /* The field spans several parser buffers and includes a binary NUL. */
+    value[4096] = '\0';
+    memcpy(multipart, mp_head, sizeof mp_head - 1);
+    memcpy(multipart + sizeof mp_head - 1, value, sizeof value);
+    memcpy(multipart + sizeof mp_head - 1 + sizeof value,
+        mp_tail, sizeof mp_tail - 1);
+    check_large_form(&http, "multipart/form-data; boundary=xyz", multipart,
+        sizeof multipart - 2, value, sizeof value);
+
+end:
+    test_http_term(&http);
+}
+
+static int save_test_session(session_t *ss, const char *id, const char *value)
+{
+    strcpy(ss->filename, id);
+    if(session_set(ss, "v", value))
+        return ~0;
+    return ss->save(ss);
+}
+
+static void test_memory_session_eviction(void)
+{
+    http_t http = { 0 };
+    session_opt_t so = { 0 };
+    request_t *rq = NULL;
+    response_t *rs = NULL;
+    session_t *ss = NULL;
+    atom_t *atom;
+    size_t small;
+
+    if(test_http_init(&http, NULL) || request_create(&http, &rq) ||
+            response_create(&http, &rs) || atoms_create(&so.atoms) ||
+            session_mem_create(&so, rq, rs, &ss))
+    {
+        CHECK(!"initialize memory session fixture");
+        goto end;
+    }
+    so.max_count = 2;
+    CHECK(save_test_session(ss, "a", "x") == 0);
+    if(atoms_get(so.atoms, "a", &atom))
+    {
+        CHECK(!"find first saved session");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    small = atom->size;
+    CHECK(small > 0);
+    CHECK(save_test_session(ss, "b", "x") == 0);
+
+    /* Replacing the oldest at the count limit keeps the other session. */
+    CHECK(save_test_session(ss, "a", "y") == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+    CHECK(atoms_get(so.atoms, "b", &atom) == 0);
+    if(atoms_get(so.atoms, "a", &atom))
+    {
+        CHECK(!"find replaced session");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    CHECK(save_test_session(ss, "c", "x") == 0);
+    CHECK(atoms_get(so.atoms, "a", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "c", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+
+    so.max_count = 0;
+    so.mem_limit = 2 * small;
+    if(atoms_get(so.atoms, "b", &atom))
+    {
+        CHECK(!"find session to enlarge at the memory limit");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    CHECK(save_test_session(ss, "b", "xxx") == 0);
+    CHECK(atoms_get(so.atoms, "c", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "b", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small + 2);
+
+    CHECK(save_test_session(ss, "d", "x") == 0);
+    CHECK(atoms_get(so.atoms, "b", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+    CHECK(save_test_session(ss, "d", "too-large-for-the-session-store") != 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+
+    /* Idle sessions that are never requested again are swept on a save. */
+    so.mem_limit = 0;
+    so.max_age = 120;
+    if(atoms_get(so.atoms, "d", &atom))
+    {
+        CHECK(!"find session to age");
+        goto end;
+    }
+    atom->arg = (void *)(time(NULL) - 121);
+    CHECK(save_test_session(ss, "live", "x") == 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) != 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+    CHECK(save_test_session(ss, "new", "x") == 0);
+    CHECK(atoms_get(so.atoms, "live", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+
+end:
+    if(ss)
+    {
+        ss->removed = 1;
+        session_free(ss);
+    }
+    if(so.atoms)
+        atoms_free(so.atoms);
+    if(rq)
+        request_free(rq);
+    if(rs)
+        response_free(rs);
+    test_http_term(&http);
+}
+
+/* Run the store end of a worker's PPC connection in a separate process. */
+static int serve_test_session_ppc(ppc_t *ppc, int fd)
+{
+    char data[PPC_MAX_DATA_SIZE];
+    unsigned char cmd;
+    ssize_t n;
+
+    while((n = ppc_read(ppc, fd, &cmd, data, sizeof data)) > 0)
+    {
+        if(ppc_dispatch(ppc, fd, cmd, data, n))
+            return EXIT_FAILURE;
+    }
+    return n == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+static void test_memory_session_ppc(void)
+{
+    http_t http = { 0 };
+    server_t server = { 0 };
+    backend_t backend = { 0 };
+    session_opt_t so = { 0 };
+    request_t *rq = NULL;
+    response_t *rs = NULL;
+    session_t *ss = NULL;
+    int pair[2] = { -1, -1 }, status;
+    pid_t pid = -1;
+    const char *loaded;
+    char large[6400], oversized[PPC_MAX_DATA_SIZE + 1];
+    size_t stale_size;
+
+    ctx->server = &server;
+    if(test_http_init(&http, NULL) || request_create(&http, &rq) ||
+            response_create(&http, &rs) || ppc_create(&server.ppc) ||
+            session_mem_module_init(NULL, &so) ||
+            session_mem_create(&so, rq, rs, &ss) ||
+            save_test_session(ss, "id", "inherited") ||
+            socketpair(AF_UNIX, SOCK_STREAM, 0, pair))
+    {
+        CHECK(!"initialize memory session PPC fixture");
+        goto end;
+    }
+
+    if((pid = fork()) < 0)
+    {
+        CHECK(!"fork memory session PPC peer");
+        goto end;
+    }
+    if(pid == 0)
+    {
+        close(pair[0]);
+        _exit(serve_test_session_ppc(server.ppc, pair[1]));
+    }
+    close(pair[1]);
+    pair[1] = -1;
+    ctx->pipc = pair[0];
+    ctx->backend = &backend;
+    backend.model = SERVER_MODEL_PREFORK;
+    stale_size = atoms_size(so.atoms);
+
+    memset(large, 'x', sizeof large - 1);
+    large[sizeof large - 1] = '\0';
+    CHECK(save_test_session(ss, "id", large) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == stale_size);
+
+    /* An oversized save leaves the previous record and PPC stream intact. */
+    memset(oversized, 'y', sizeof oversized - 1);
+    oversized[sizeof oversized - 1] = '\0';
+    CHECK(save_test_session(ss, "id", oversized) != 0);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) == 0);
+    loaded = session_get(ss, "v");
+    CHECK(loaded && !strcmp(loaded, large));
+    CHECK(ss->remove(ss) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == stale_size);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) != 0);
+
+    /* Fork workers still read and mutate their local copy. */
+    backend.model = SERVER_MODEL_FORK;
+    CHECK(save_test_session(ss, "id", "fork value") == 0);
+    CHECK(session_clean(ss) == 0);
+    CHECK(ss->load(ss) == 0);
+    loaded = session_get(ss, "v");
+    CHECK(loaded && !strcmp(loaded, "fork value"));
+    CHECK(ss->remove(ss) == 0);
+    CHECK(atoms_count(so.atoms) == 0);
+
+end:
+    ctx->pipc = 0;
+    ctx->backend = NULL;
+    ctx->server = NULL;
+    if(pair[0] >= 0)
+        close(pair[0]);
+    if(pair[1] >= 0)
+        close(pair[1]);
+    if(pid > 0)
+        CHECK(waitpid(pid, &status, 0) == pid &&
+                WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
+    if(ss)
+    {
+        ss->removed = 1;
+        session_free(ss);
+    }
+    if(so.atoms)
+        atoms_free(so.atoms);
+    if(server.ppc)
+        ppc_free(server.ppc);
+    if(rq)
+        request_free(rq);
+    if(rs)
+        response_free(rs);
+    test_http_term(&http);
+}
+
+static void test_embedded_resources(void)
+{
+    enum { PAGES = 64 };
+    embres_t pages[PAGES] = {0}, *res = NULL;
+    char names[PAGES][16];
+    int seen[PAGES] = {0};
+    char **list = NULL;
+    u_buf_t *buf = NULL;
+    io_t *io = NULL;
+    unsigned char contents[4096] = "embedded test";
+    embfile_t file = {
+        .res = { .filename = "/file", .type = ET_FILE },
+        .size = sizeof(contents), .data = contents, .file_size = sizeof(contents)
+    };
+    int i, index;
+#ifdef HAVE_LIBZ
+    unsigned char compressed[sizeof(contents) + 128];
+    unsigned long compressed_size = sizeof(compressed);
+#endif
+
+    CHECK(emb_init() == 0);
+    CHECK(emb_list(&list) != 0 && list == NULL);
+    for(i = 0; i < PAGES; i++)
+    {
+        snprintf(names[i], sizeof(names[i]), "/page%d", i);
+        pages[i].filename = names[i];
+        pages[i].type = ET_PAGE;
+        CHECK(emb_register(&pages[i]) == 0);
+    }
+    CHECK(emb_register(&pages[0]) != 0);
+    for(i = 0; i < PAGES; i++)
+        CHECK(emb_lookup(names[i], &res) == 0 && res == &pages[i]);
+    CHECK(emb_open(names[0], &io) != 0 && io == NULL);
+    CHECK(emb_list(&list) == 0 && list != NULL);
+    if(list)
+    {
+        for(i = 0; i < PAGES && list[i]; i++)
+        {
+            index = -1;
+            CHECK(sscanf(list[i], "/page%d", &index) == 1);
+            CHECK(index >= 0 && index < PAGES);
+            if(index >= 0 && index < PAGES)
+            {
+                CHECK(seen[index]++ == 0);
+                CHECK(list[i] != names[index] && !strcmp(list[i], names[index]));
+            }
+        }
+        CHECK(i == PAGES && list[i] == NULL);
+        emb_list_free(list);
+    }
+    for(i = 0; i < PAGES; i++)
+        CHECK(emb_unregister(&pages[i]) == 0);
+    CHECK(emb_lookup(names[0], &res) != 0);
+    CHECK(emb_unregister(&pages[0]) != 0);
+
+    CHECK(emb_register(&file.res) == 0);
+    CHECK(emb_to_ubuf(file.res.filename, &buf) == 0 && buf != NULL);
+    if(buf)
+    {
+        CHECK(u_buf_size(buf) == sizeof(contents));
+        CHECK(u_buf_len(buf) == sizeof(contents)
+                && !memcmp(u_buf_ptr(buf), contents, sizeof(contents)));
+        u_buf_free(buf);
+        buf = NULL;
+    }
+#ifdef HAVE_LIBZ
+    CHECK(compress(compressed, &compressed_size, contents, sizeof(contents)) == Z_OK);
+    file.comp = EMB_COMP_ZLIB;
+    file.size = compressed_size;
+    file.data = compressed;
+    CHECK(emb_to_ubuf(file.res.filename, &buf) == 0 && buf != NULL);
+    if(buf)
+    {
+        CHECK(u_buf_size(buf) == sizeof(contents));
+        CHECK(u_buf_len(buf) == sizeof(contents)
+                && !memcmp(u_buf_ptr(buf), contents, sizeof(contents)));
+        u_buf_free(buf);
+    }
+#endif
+    CHECK(emb_unregister(&file.res) == 0);
+    CHECK(emb_term() == 0);
+}
+
 int main(void)
 {
+    test_io_read_codecs();
+#ifdef HAVE_LIBZ
+    test_deflate_windows();
+#endif
     test_header_fields();
     test_header_limits();
+    test_large_vars();
+    test_request_arg_limit();
+    test_large_forms();
+    test_memory_session_eviction();
+    test_memory_session_ppc();
     test_field_reuse();
     test_timer();
+    test_embedded_resources();
     test_translate();
     test_json_parse();
 #ifdef SSL_OPENSSL

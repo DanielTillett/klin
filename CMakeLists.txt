@@ -590,10 +590,13 @@ endif()
 # ---------------------------------------------------------------------------
 if(KLIN_BUILD_TESTS AND UNIX)
     enable_testing()
-    add_executable(klin_unit_tests test/unit/unit_tests.c)
+    set(_unit_server_sources ${_klind})
+    list(REMOVE_ITEM _unit_server_sources ${_src}/klind/entry.c ${_src}/klind/main.c)
+    add_executable(klin_unit_tests test/unit/unit_tests.c
+        ${_unit_server_sources} site/register-def.c)
     target_link_options(klin_unit_tests PRIVATE ${KLIN_LINK_OPTIONS})
     klin_link_group(_unit_libs ${_klind_libs} klin_trans)
-    target_link_libraries(klin_unit_tests PRIVATE klin_settings ${_unit_libs}
+    target_link_libraries(klin_unit_tests PRIVATE klin_settings klin_webapp ${_unit_libs}
         ${KLIN_SYSTEM_LIBS})
     add_test(NAME unit COMMAND klin_unit_tests)
     set_tests_properties(unit PROPERTIES LABELS unit TIMEOUT 60)

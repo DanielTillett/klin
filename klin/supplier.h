@@ -26,6 +26,7 @@ typedef struct supplier_s
     void (*term)(void);
     int (*is_valid_uri)(http_t *h, request_t *rq, const char *file, size_t len,
             void **handle, time_t *mtime);
+    /* 0 on success, an HTTP status for a request error, negative on failure */
     int (*serve)(request_t *, response_t*);
 } supplier_t;
 

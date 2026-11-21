@@ -1,0 +1,12 @@
+<%!
+    #include <string.h>
+%><%
+    char body[4096 + 5];
+
+    memset(body, 'x', sizeof body);
+    if(io_set_write_buffer_size(out, 1) == 0)
+    {
+        io_write(out, "abc", 3);
+        io_write(out, body, sizeof body);
+    }
+%>

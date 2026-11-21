@@ -11,6 +11,7 @@ block of klind.conf.
 | `max_header_line` | 8192 | 431 (bytes of one field, with its CRLF) |
 | `max_header_size` | 32768 | 431 (bytes of the whole header) |
 | (the request line) | 8192 | 414 URI Too Long (not configurable) |
+| `max_args` | 1000 | 400 (query tokens and multipart fields or uploads combined) |
 | `post_maxsize` | 5 MB | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | the connection is closed |
 
@@ -80,6 +81,19 @@ processes of the user, so give klind a user of its own. Sanitizer builds
 set no memory limit (AddressSanitizer reserves terabytes of address
 space). klind itself and the key manager keep their own limits; the
 iterative model (-d) has no workers.
+
+## In-memory sessions
+
+`memory.max_count` and `memory.limit` default to 0 (unbounded). The
+store sweeps idle sessions on saves, at most once per minute, using the
+configured session idle timeout. In the prefork model the parent owns the
+store.
+
+Fork and prefork workers send serialized memory sessions in PPC frames
+with an 8 KiB payload limit. The session header leaves 7,928 bytes
+of serialized data on 64-bit Linux. A save over this per-session limit
+fails and logs the maximum allowed size. The iterative model stores
+sessions directly.
 
 ## Tested
 

@@ -83,7 +83,7 @@ err:
 int vars_free(vars_t *vs)
 {
     var_t *v;
-    int t;
+    void *it;
 
     if(vs)
     {
@@ -91,7 +91,7 @@ int vars_free(vars_t *vs)
         if((vs->flags & VARS_FLAG_FOREIGN) == 0)
         {
             /* free all variables */
-            for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+            u_list_foreach(vs->list, v, it)
                 var_free(v);
         }
 
@@ -179,11 +179,11 @@ size_t vars_countn(vars_t *vs, const char *name)
 {
     var_t *v;
     size_t c = 0;
-    int t;
+    void *it;
 
     dbg_return_if (vs == NULL || name == NULL, 0);
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(strcasecmp(u_string_c(v->sname), name) == 0)
             c++;
@@ -209,7 +209,8 @@ int vars_add_urlvar(vars_t *vs, const char *cstr, var_t **pv)
 {
     enum { NAMESZ = 256, VALSZ = 4096 };
     char sname[NAMESZ], svalue[VALSZ];
-    char *val, *str = NULL, *name = sname, *value = svalue;
+    const char *eq, *val;
+    char *name = sname, *value = svalue;
     var_t *var = NULL;
     ssize_t vsz;
     size_t val_len, nam_len;
@@ -218,15 +219,10 @@ int vars_add_urlvar(vars_t *vs, const char *cstr, var_t **pv)
     dbg_return_if (cstr == NULL, ~0);
     /* pv may be NULL */
         
-    /* dup the string so we can modify it */
-    dbg_err_sif ((str = u_strdup(cstr)) == NULL);
-
-    /* zero-term the name part and set the value pointer */
-    dbg_err_if ((val = strchr(str, '=')) == NULL);
-    *val++ = '\0'; 
-
+    dbg_err_if ((eq = strchr(cstr, '=')) == NULL);
+    nam_len = eq - cstr;
+    val = eq + 1;
     val_len = strlen(val);
-    nam_len = strlen(str);
 
     /* if the buffer on the stack is too small alloc a bigger one */
     if (nam_len >= NAMESZ)
@@ -234,10 +230,10 @@ int vars_add_urlvar(vars_t *vs, const char *cstr, var_t **pv)
 
     /* if the buffer on the stack is too small alloc a bigger one */
     if (val_len >= VALSZ)
-        dbg_err_if ((value = u_zalloc(1 + val_len)) == NULL);
+        dbg_err_if ((value = u_malloc(1 + val_len)) == NULL);
 
     /* url-decode var name */
-    dbg_err_if (u_urlncpy_s(name, nam_len + 1, str, nam_len, URLCPY_DECODE) <= 0);
+    dbg_err_if (u_urlncpy_s(name, nam_len + 1, cstr, nam_len, URLCPY_DECODE) <= 0);
 
     /* url-decode var value */
     if (val_len)
@@ -249,9 +245,13 @@ int vars_add_urlvar(vars_t *vs, const char *cstr, var_t **pv)
         vsz = 1;
     }
 
-    /* u_dbg("name: [%s]  value: [%s]", name, value); */
-
-    dbg_err_if (var_bin_create(name, (unsigned char *) value, vsz, &var));
+    if(value == svalue)
+    {
+        dbg_err_if(var_bin_create(name, (unsigned char *)value, vsz, &var));
+    } else {
+        dbg_err_if(var_bin_adopt(name, value, vsz, &var));
+        value = NULL;
+    }
 
     /* push into the var list */
     dbg_err_if (vars_add(vs, var));
@@ -266,15 +266,12 @@ int vars_add_urlvar(vars_t *vs, const char *cstr, var_t **pv)
     if (name && name != sname)
         u_free(name);
 
-    u_free(str);
-
     return 0;
 err:
     if (value && value != svalue)
         u_free(value);
     if (name && name != sname)
         u_free(name);
-    u_free(str);
     if (var)
         var_free(var);
     return ~0;
@@ -330,12 +327,12 @@ err:
 var_t *vars_geti(vars_t *vs, const char *var_name, size_t i)
 {
     var_t *v;
-    int t;
+    void *it;
 
     dbg_goto_if (vs == NULL, notfound);
     dbg_goto_if (var_name == NULL, notfound);
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(strcasecmp(u_string_c(v->sname), var_name) == 0)
         {
@@ -510,12 +507,12 @@ const char *vars_get_value(vars_t *vs, const char *name)
 void vars_foreach(vars_t *vs, int (*cb)(var_t *, void *), void *arg)
 {
     var_t *v;
-    int t;
+    void *it;
 
     dbg_ifb (vs == NULL) return;
     dbg_ifb (cb == NULL) return;
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(cb(v, arg))
             break;

@@ -27,6 +27,7 @@ static request_t *fuzz_request(io_t *io)
     rq->idle_timeout = REQUEST_DEFAULT_IDLE_TIMEOUT;
     rq->post_timeout = REQUEST_DEFAULT_POST_TIMEOUT;
     rq->post_maxsize = FUZZ_MAX;
+    rq->max_args = REQUEST_DEFAULT_MAX_ARGS;
     rq->max_fields = REQUEST_DEFAULT_MAX_FIELDS;
     rq->max_line = REQUEST_DEFAULT_MAX_LINE;
     rq->max_header = REQUEST_DEFAULT_MAX_HEADER;
