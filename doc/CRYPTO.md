@@ -1,8 +1,8 @@
 # Cryptography and TLS
 
-This page is for people writing C against Klin's crypto and TLS layer,
-or porting it. It lists the one interface all cryptography goes through,
-the files allowed to touch OpenSSL, and why OpenSSL is the only backend.
+All of Klin's cryptography goes through one small C interface, and only
+six files may touch OpenSSL. Read this if you write C against that layer
+or want to port it to another library.
 
 ## One door to the crypto library
 
@@ -78,3 +78,7 @@ If one is needed then, it will be mbedTLS (Apache 2.0 licence), not
 wolfSSL (GPL or a commercial licence). It would be written against this
 interface: `crypto.c` and the TLS layer above it, with the TLS key manager
 either ported to mbedTLS's external-key hooks or turned off.
+
+See also: [TLS](TLS.md) for server settings, [KEYMGR](KEYMGR.md) for the
+key manager's provider, and [SESSIONS](SESSIONS.md) for client-side
+sessions.

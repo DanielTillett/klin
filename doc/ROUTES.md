@@ -1,8 +1,8 @@
 # Routes
 
-A `routes` block in a server or vhost maps methods and path patterns to
-the page that serves them. You need it for REST-style APIs, where one page
-answers `/api/users/42` and `/api/users/43` alike.
+One page should be able to answer `/api/users/42` and `/api/users/43`
+alike. A `routes` block in a server or virtual host (vhost) does that: it
+maps methods and path patterns to the page that serves them.
 
 ```conf
 routes
@@ -29,8 +29,6 @@ routes
 
 ## The three settings
 
-Each `route` has three settings.
-
 | Setting | What it takes |
 | --- | --- |
 | `path` | Segments separated by `/`. A `{name}` segment matches one non-empty segment. A `{name*}` segment, which must be last, matches the rest of the path, slashes included, and may be empty. Names are letters, digits and `_`. |
@@ -43,15 +41,20 @@ for `/api/items/{id}` and fall through to an ordinary 404.
 
 ## How a request is matched
 
-The path matched is the decoded and normalised request path. Routes are
-tried in the order they are written, and the first one whose path and
-method both match serves the request. The figure below shows the
-decision, including the case that surprises people: a path that matches
-only routes for other methods.
+The path a route is matched against is the request path, URL-decoded and
+normalised, after index selection, and whole: if the first part of it
+names an existing page, the rest (the PATH_INFO) is still included. Index
+selection means a path ending in `/` that has an index page is matched
+with the index page's name appended, so a route for `/api/` never sees a
+request for `/api/` if `/api/index.kl1` exists.
+
+Routes are tried in the order they are written, and the first one whose
+path and method both match serves the request. A path that matches only
+routes for other methods is the case that surprises people:
 
 ```mermaid
 flowchart TD
-    A["decoded request path"] --> B{"next route:<br/>path matches?"}
+    A["request path<br/>(decoded, after index selection)"] --> B{"next route:<br/>path matches?"}
     B -- no --> C{"more routes?"}
     B -- yes --> D{"method matches?"}
     D -- yes --> E["serve the route's page<br/>with its parameters"]
@@ -75,17 +78,19 @@ would be without a `routes` block.
 ## Reading the parameters
 
 The page reads a parameter with `request_get_route_param(request, "id")`.
-The value is already URL-decoded. That has one consequence worth knowing:
-an encoded slash (`%2F`) is a plain slash by the time matching happens, so
-it ends a `{name}` segment rather than becoming part of it.
+The value is already URL-decoded, so an encoded slash (`%2F`) is a plain
+slash by the time matching happens. It ends a `{name}` segment rather
+than becoming part of it.
 
-## Routes and authentication
+## Routes, authentication and validation
 
-Authentication realms ([AUTH](AUTH.md)) match the path the client asked
-for, before routing. Protect `/api/*` and every route under it is
-protected, whichever page ends up serving it. Request validation
-([VALIDATE](VALIDATE.md)) also uses the path the client asked for, but
-runs after routing, so it can check the `{name}` values a route found.
+Access rules ([ACCESS.md](ACCESS.md)) and authentication realms
+([AUTH.md](AUTH.md)) run before routing and match the path the client
+asked for, after index selection but without any PATH_INFO. Protect
+`/api/*` and every route under it is protected, whichever page ends up
+serving it. Request validation ([VALIDATE.md](VALIDATE.md)) matches the
+same whole path that routes do, but runs after routing, so it can check
+the `{name}` values a route found.
 
 ## Mistakes klind refuses
 
@@ -94,4 +99,5 @@ first request. That covers a relative path or page, a bad parameter
 (including a name of 64 characters or more), a `{name*}` that is not
 last, and an unknown method.
 
-See [JSON](JSON.md) for reading request bodies and writing JSON responses.
+Next: [JSON.md](JSON.md) for reading request bodies and writing JSON
+responses, and [VALIDATE.md](VALIDATE.md) for checking route parameters.

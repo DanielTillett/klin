@@ -1,8 +1,8 @@
 # TLS settings
 
-This page covers what an HTTPS server accepts on the wire: protocol
-versions, ciphers, session resumption and client certificates. You need
-it when a client cannot connect, or when you want a stricter policy than
+An HTTPS server accepts TLS 1.2 and 1.3 with forward-secret AEAD ciphers
+(authenticated encryption with associated data) and nothing older. Read
+on when a client cannot connect, or when you want a stricter policy than
 the default.
 
 An https server block (klind.conf(5), SSL/TLS) needs only `cert_file`,
@@ -13,7 +13,7 @@ else has a secure default.
 ## Protocols
 
 Klin speaks TLS 1.2 and 1.3, and OpenSSL picks TLS 1.3 whenever the
-client has it. The table below shows what happens to each version.
+client has it:
 
 | Protocol | Default | With `tls_min_version 1.3` |
 |---|---|---|
@@ -36,8 +36,8 @@ renegotiation" alert.
 
 ## Ciphers
 
-The simple rule is forward-secret key exchange and AEAD ciphers only.
-For TLS 1.2 Klin uses Mozilla's "intermediate" list, in the server's
+The simple rule is forward-secret key exchange (ECDHE or DHE, ephemeral
+Diffie-Hellman) and AEAD ciphers only. For TLS 1.2 Klin uses Mozilla's "intermediate" list, in the server's
 order, so the best cipher both sides share wins:
 
 ```text
@@ -65,13 +65,14 @@ A list OpenSSL cannot use stops klind at startup. With the key manager
 whatever `tls_ciphers` says, because the key manager signs but never
 decrypts.
 
-The figure below shows how a handshake ends up with its protocol and
-cipher.
+A handshake ends up with its protocol and cipher like this:
 
 ```mermaid
 flowchart TD
     A["ClientHello"] --> B{"Client offers<br/>TLS 1.3?"}
-    B -- yes --> C["TLS 1.3<br/>suite from tls_ciphersuites"]
+    B -- yes --> G{"Shared suite in<br/>tls_ciphersuites?"}
+    G -- yes --> C["TLS 1.3<br/>suite from tls_ciphersuites"]
+    G -- no --> X
     B -- no --> D{"tls_min_version 1.3?"}
     D -- yes --> X["Handshake refused"]
     D -- no --> E{"Client offers TLS 1.2 and a<br/>cipher in tls_ciphers?"}
@@ -134,20 +135,24 @@ crl_opts     CHECK_ALL               # optional: the whole chain
 ```
 
 With `require`, a client without a valid certificate fails the handshake.
-With `optional`, it is let in too and your pages decide what to do with
-it. `ca_file` is required for both, and klind will not start without it.
+With `optional`, a client may leave its certificate out and still connect,
+and your pages decide what to do with it. If it does present one, that
+certificate must still pass verification, or the handshake fails. `ca_file`
+is required for both, and klind will not start without it.
 
 `verify_depth` is the number of intermediate CAs allowed between the
 client's certificate and a CA in `ca_file`. The default of 1 allows one;
 0 means the client's certificate must be signed directly by a CA in
 `ca_file`. It must be a number from 0 to 100, or klind stops at startup.
 
-A `crl_file` on its own checks the client's own certificate. Add
+A `crl_file` (certificate revocation list) on its own checks the client's
+own certificate. Add
 `crl_opts CHECK_ALL` to check every certificate in the chain.
 
 ## Not supported
 
-Klin does not do OCSP stapling. Browsers do not rely on it, and
+Klin does not do OCSP stapling (attaching the CA's signed revocation
+status to the handshake). Browsers do not rely on it, and
 short-lived certificates are a better way to limit how long a stolen key
 stays useful.
 
@@ -165,3 +170,6 @@ test/run_server_tests.py checks that:
 - that client's TLS 1.2 and 1.3 sessions are resumed by any worker, with a
   ticket of the previous period too, and not once the key has changed
   twice.
+
+See also: [KEYMGR](KEYMGR.md) for where the private key lives, and
+[SANDBOX](SANDBOX.md) for what a worker may do once the handshake is done.

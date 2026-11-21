@@ -1,20 +1,19 @@
 # Fuzzing and static analysis
 
-This page lists Klin's fuzz targets, how to run them on your own machine,
-how ClusterFuzzLite runs them in CI, and the static analysers that check
-the code. You need it when you add a parser, chase a fuzzer crash or read a
-code-scanning alert.
+Every parser that reads what a client sends has a fuzz target, and three
+static analysers check the C code. You need this when you add a parser,
+chase a fuzzer crash or read a code-scanning alert.
 
-The figure below shows how the pieces fit together. The same targets in
-`fuzz/` are built two ways: by `test/run_fuzz.py` for a short smoke run
-(locally and in the Build and test workflow), and by ClusterFuzzLite for
-longer runs. The static analysers work on the source directly.
+The same targets in `fuzz/` are built two ways: by `test/run_fuzz.py` for
+a short smoke run (locally and in the Build and test workflow), and by
+ClusterFuzzLite for longer runs. The static analysers work on the source
+directly.
 
 ```mermaid
 flowchart LR
     F["fuzz/ targets<br/>and seeds"] --> L["test/run_fuzz.py<br/>local, and build.yml"]
     F --> CF[".clusterfuzzlite/<br/>Dockerfile, build.sh"]
-    CF --> PR["cflite_pr.yml<br/>each pull request"]
+    CF --> PR["cflite_pr.yml<br/>pull requests"]
     CF --> BA["cflite_batch.yml<br/>daily"]
     BA <--> CO["cflite-corpus branch"]
     PR -. reads .-> CO
@@ -27,9 +26,8 @@ flowchart LR
 
 ## Fuzz targets
 
-`fuzz/` has one libFuzzer target per parser that reads what a client
-sends. The list lives in `fuzz/targets.txt`, and the table below says what
-each target exercises.
+`fuzz/` has one libFuzzer target per parser. The list lives in
+`fuzz/targets.txt`:
 
 | Target | What it feeds and checks |
 | --- | --- |
@@ -59,17 +57,18 @@ seeds, and put its name in `fuzz/targets.txt`.
 python3 test/run_fuzz.py [--runs N] [--target NAME ...]
 ```
 
-This builds every target with clang, libFuzzer, ASan and UBSan into
-`.build/fuzz` and runs each one N times (default 10000) from its seeds. CI
-runs it with `--runs 20000` on every push and pull request. A crash is left
-as `.build/fuzz/<target>-crash-*`, and you can reproduce it with:
+This builds every target with clang, libFuzzer, ASan and UBSan
+(AddressSanitizer and UndefinedBehaviorSanitizer) into `.build/fuzz` and
+runs each one N times (default 10000) from its seeds. The Linux release
+job of the Build and test workflow runs it with `--runs 20000`. A crash is
+left as `.build/fuzz/<target>-crash-*`, and you can reproduce it with:
 
 ```sh
 .build/fuzz/fuzz/fuzz_<target> .build/fuzz/<target>-crash-...
 ```
 
 To do the same build by hand, configure with `-DKLIN_FUZZ=ON`, `CC=clang`
-and the sanitizers in `CFLAGS` (for example
+and the sanitisers in `CFLAGS` (for example
 `-fsanitize=address,undefined,fuzzer-no-link`). `KLIN_FUZZ_ENGINE` is the
 engine's link flag (`-fsanitize=fuzzer`).
 
@@ -80,7 +79,7 @@ for ClusterFuzzLite, which runs them from GitHub Actions on two schedules:
 
 | Workflow | When | What runs |
 | --- | --- | --- |
-| `cflite_pr.yml` | every pull request that changes more than documentation | ASan and UBSan, 5 minutes each, in code-change mode (only the targets the change reaches) |
+| `cflite_pr.yml` | every pull request, unless it changes only `doc/`, `*.md`, ChangeLog, TODO or `_config.yml` | ASan and UBSan, 5 minutes each, in code-change mode (only the targets the change reaches) |
 | `cflite_batch.yml` | daily | ASan and UBSan, 30 minutes each, then corpus pruning and a coverage report |
 
 A crash shows up as a failed job, with the crash input and stack trace as
@@ -103,18 +102,18 @@ keeps them in its own repository and clones the source instead of using
 
 ## Static analysis
 
-Three analysers check the C code. CodeQL and clang-tidy are required
-checks on pull requests to master; Coverity is not.
+CodeQL and clang-tidy are required checks on pull requests to master;
+Coverity is not.
 
 CodeQL (`.github/workflows/codeql.yml`) runs the security-extended
 queries on every push to master, on pull requests and weekly. Its results
 are code-scanning alerts.
 
 clang-tidy (`analysis.yml`, `.clang-tidy`) runs the clang static
-analyser, the bugprone checks and some CERT checks over `src/`. Findings
-are listed in the job summary and kept as an artifact. The analyser's core,
-unix, security and valist checks fail the job; the rest are reported only.
-To run the same thing locally:
+analyser, the bugprone checks and some CERT (SEI CERT C coding standard)
+checks over `src/`. Findings are listed in the job summary and kept as an
+artifact. The analyser's core, unix, security and valist checks fail the
+job; the rest are reported only. To run the same thing locally:
 
 ```sh
 CC=clang cmake -S . -B .build/tidy -G Ninja \
@@ -143,3 +142,7 @@ These are the real bugs the fuzzers have turned up so far:
   That is undefined behaviour, and UBSan's `-fsanitize=function` stops on
   it.
 - A JSON `-0` did not round-trip.
+
+See also: [RELEASES](RELEASES.md#workflows) for every workflow and when it
+runs, and [CONTRIBUTING](../CONTRIBUTING.md) for the checks to run before a
+pull request.

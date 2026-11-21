@@ -1,10 +1,7 @@
 # CGI scripts
 
-This page covers running CGI scripts from klind: where they may live,
-the limits they run under, and what they see of the request and of
-klind's environment.
-
-CGI scripts run only in a build with `-DKLIN_ENABLE_SUP_CGI=ON` (not
+klind can run Common Gateway Interface (CGI) scripts, under time, CPU and
+memory limits and with a pared-down environment. They run only in a build with `-DKLIN_ENABLE_SUP_CGI=ON` (not
 available on Windows). They run from the directories a `cgi` block names,
 or through the handler of a file extension:
 
@@ -29,7 +26,7 @@ cgi
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `timeout` | 60 | Seconds of wall-clock time the script may run. It is then killed (SIGKILL), with whatever it started. |
+| `timeout` | 60 | Seconds of wall-clock time the script may run. It is then killed (SIGKILL), with its process group. |
 | `max_cpu` | 30 | Seconds of CPU time (RLIMIT_CPU): SIGXCPU, then SIGKILL a second later. |
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
@@ -37,7 +34,8 @@ cgi
 it happens. Before the script has sent its header, the client gets 504
 Gateway Timeout. In the middle of its output, the output stops there and
 the connection is closed. The script runs in a process group of its own,
-so everything it started is killed with it.
+and the kill goes to the script and that group. A child that moves to a
+group or session of its own (with setsid(2), say) escapes it.
 
 The catch with the timeout is that it is wall-clock time, including the
 time a slow client takes to read the output.
@@ -113,3 +111,6 @@ sandbox. It runs scripts that:
   and the sleep they started is gone too);
 - spin on the CPU (killed after `max_cpu`, before the timeout);
 - are reached through a link out of the script directory (404).
+
+See also: [FILES](FILES.md) for where scripts may live,
+[SANDBOX](SANDBOX.md), [LIMITS](LIMITS.md).

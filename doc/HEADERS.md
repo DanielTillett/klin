@@ -1,12 +1,9 @@
 # Security headers
 
 klind adds a set of security headers to every response, pages and error
-pages alike. This page lists them, their defaults, and how to change them
-when a site needs something different.
-
-Each header can be changed or left out per server or vhost in a
-`security_headers` block. The value you give replaces the default, and
-`no` leaves the header out:
+pages alike. Each can be changed or left out per server or virtual host
+in a `security_headers` block. The value you give replaces the default,
+and `no` leaves the header out:
 
 ```conf
 security_headers
@@ -31,10 +28,9 @@ Content-Security-Policy has no default. A useful policy depends on the
 scripts, styles and frames each site uses, and a wrong one breaks pages.
 Start with something like `default-src 'self'; frame-ancestors 'self'`.
 
-Strict-Transport-Security is sent over HTTPS only. Add
-`; includeSubDomains` only if every subdomain serves HTTPS. Set it to `no`
-while you are testing a certificate, because browsers remember it for the
-whole max-age.
+For Strict-Transport-Security, add `; includeSubDomains` only if every
+subdomain serves HTTPS. Set it to `no` while you are testing a
+certificate, because browsers remember it for the whole max-age.
 
 A page can still change a header with `response_set_field()` or remove it
 with `response_del_field()`, because the headers are set before the page
@@ -45,3 +41,6 @@ runs.
 These headers are new in Klin 4.0.0. A site that relied on being framed by
 another origin needs `x_frame_options no`, and a `frame-ancestors` policy
 in its Content-Security-Policy.
+
+See also: [TLS](TLS.md) before you turn on a long
+Strict-Transport-Security max-age, [HARDENING](HARDENING.md).

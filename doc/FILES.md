@@ -1,12 +1,8 @@
 # Files from the file system
 
-This page explains how klind serves files that are not built into it:
-which build options turn the feature on, how a request path becomes a
-file, and how symbolic links are handled.
-
-Pages built into klind (the embedded site) are always served. Files from
-the file system are served by two optional suppliers: the file system one
-(static files) and the CGI one ([CGI](CGI.md)). Both are left out of a
+Pages built into klind (the embedded site) are always served. Anything
+on the file system needs one of two optional suppliers: the file system
+one (static files) or the CGI one ([CGI](CGI.md)). Both are left out of a
 build unless you ask for them:
 
 ```sh
@@ -32,9 +28,8 @@ A request path is decoded (`%xx`), then normalised: backslashes become
 slashes, `.` and `..` segments are resolved and repeated slashes are
 reduced, all before the path is used. A NUL (`%00`) is refused with 400.
 The path is then appended to the `dir_alias` target whose prefix it
-matches, or to `dir_root`, and a file is looked for only there.
-
-The figure below shows the path from request to open file.
+matches, or to `dir_root`, and the file is opened under the
+`follow_symlinks` policy:
 
 ```mermaid
 flowchart TD
@@ -43,10 +38,15 @@ flowchart TD
     C -- "yes" --> E400["400 Bad Request"]
     C -- "no" --> D["normalise: backslash to slash,<br/>resolve . and .., merge repeated slashes"]
     D --> F["append to the matching<br/>dir_alias target, or dir_root"]
-    F --> G{"open under that directory<br/>with the follow_symlinks policy"}
+    F --> P{"follow_symlinks?"}
+    P -- "inside or no" --> G{"open under that<br/>directory, segment<br/>by segment"}
+    P -- "yes" --> Y{"open the path,<br/>links followed<br/>wherever they lead"}
     G -- "outside it, or not found" --> E404["404 Not Found"]
-    G -- "not a regular file" --> E404
-    G -- "regular file" --> S["served"]
+    Y -- "not found" --> E404
+    G -- "opened" --> R{"regular file?"}
+    Y -- "opened" --> R
+    R -- "no" --> E404
+    R -- "yes" --> S["served"]
 ```
 
 A request path is never looked up from the file system's root. Before
@@ -75,10 +75,11 @@ With `no`, no link is followed below that directory.
 With `yes`, links are followed wherever they lead. That was the behaviour
 before 4.0.
 
-The file is opened one path segment at a time from the directory, with
-`O_NOFOLLOW` for each segment, after the links are resolved (for
-`inside`). A link swapped in between the check and the open is not
-followed, so the file opened is always under the directory. Only regular
+With `inside` and `no`, the file is opened one path segment at a time
+from the directory, with `O_NOFOLLOW` for each segment, after the links
+are resolved (for `inside`). A link swapped in between the check and the
+open is not followed, so the file opened is always under the directory.
+With `yes` the path is opened as it is. Under every policy only regular
 files are served; a FIFO, a device or a directory is not found. CGI
 scripts are checked the same way when the request comes in, and the
 script is then run by its path.
@@ -99,7 +100,7 @@ directory may be a symbolic link, junction or other reparse point
   cover by its long name);
 - device names (CON, NUL, COM1, ...).
 
-**This code is not tested.** The Windows CI job builds klind and serves
+**This code is not tested.** The Windows continuous integration (CI) job builds klind and serves
 embedded pages, but does not build the file-system supplier or run these
 path checks.
 
@@ -112,3 +113,6 @@ none is served. It also checks a raw /etc/passwd with `If-Modified-Since`
 (404, not 304), the three policies on links inside and outside the
 directory, a FIFO, the path info of a virtual host's own file, and
 `serve_files no` and `run_cgi no`.
+
+See also: [CGI](CGI.md) for scripts, [LIMITS](LIMITS.md),
+[SANDBOX](SANDBOX.md).

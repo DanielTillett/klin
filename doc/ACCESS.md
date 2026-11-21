@@ -1,8 +1,8 @@
 # IP access control
 
-An `access` block in a server or vhost lets clients in, or refuses them,
-by their IP address. Use it to keep an admin page or a status page to
-your own network.
+An `access` block in a server or virtual host (vhost) lets clients in, or
+refuses them, by their IP address. Use it to keep an admin page or a
+status page to your own network.
 
 ```conf
 access
@@ -37,13 +37,12 @@ a path matches every path. Within that rule, the first `allow` or `deny`
 line naming the client's address wins, and a client that no line names is
 allowed. That is the whole rule. A refused request gets 403 Forbidden.
 
-The figure below shows the decision for one request.
-
 ```mermaid
 flowchart TD
-    A["request for a path"] --> B{"next rule:<br/>path matches,<br/>or no path?"}
-    B -- "no" --> B
-    B -- "no rules left" --> OK["served"]
+    A["request for a path"] --> R{"rules left?"}
+    R -- "no" --> OK["continue to authentication<br/>and routing"]
+    R -- "yes" --> B{"next rule: path matches,<br/>or no path?"}
+    B -- "no" --> R
     B -- "yes" --> C{"first allow or deny<br/>line naming the client"}
     C -- "allow" --> OK
     C -- "deny" --> NO["403 Forbidden"]
@@ -55,11 +54,16 @@ in 192.0.2.0/24 asking for `/admin/` is decided by the first rule, not the
 third: it is refused there only because `deny all` names it. If you want
 a network kept out everywhere, put its rule first.
 
-Paths are the decoded request path the client asked for, before routes
-and aliases, as for authentication realms. A path ending in `/` that has
-an index page is checked with the index page's name appended, so
-`/admin/` is checked as `/admin/index.kl1`. IP rules are checked before
-authentication.
+## What the path is
+
+Rules match the request's file name: the decoded, normalised path the
+client asked for, after the index page is chosen and without any path
+info. Aliases and routes do not change it, and authentication realms
+match the same name. So `/admin/` that has an index page is checked as
+`/admin/index.kl1`, and `/status.kl1/extra` is checked as `/status.kl1`
+(the page exists, so `/extra` is path info).
+Patterns use fnmatch(3) with no flags, so `*` also matches `/`. IP rules
+are checked before authentication.
 
 ## At connection time
 
@@ -78,7 +82,7 @@ flowchart LR
     C -- "no" --> H
 ```
 
-## The catch: proxies
+## Behind a proxy
 
 The address is the socket's peer. Behind a proxy or load balancer it is
 the proxy's, and `X-Forwarded-For` is not used. A client that is not on
@@ -95,3 +99,6 @@ connections dropped at accept over IPv4. On a `tcp6://[::1]` listener
 address: allowed by `allow ::1`, refused by a rule for other networks.
 HTTP and HTTPS are served over IPv6, and an IPv4 client does not reach
 that listener.
+
+See also: [AUTH](AUTH.md) for the next check a request meets,
+[ROUTES](ROUTES.md), [HARDENING](HARDENING.md).

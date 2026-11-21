@@ -1,11 +1,9 @@
 # Sandbox
 
 klind's worker processes and the TLS key manager ([KEYMGR](KEYMGR.md))
-run in a sandbox that limits what the kernel lets them do. This page
-explains what is allowed, what kills the process, and how to let a page
-make a system call the sandbox refuses.
-
-The sandbox is on by default. The idea is simple: a worker parses
+run in a sandbox that limits what the kernel lets them do. It is on by
+default, and when a page needs a system call the sandbox refuses, you
+name that call in `sandbox_allow`. The idea is simple: a worker parses
 untrusted input all day, so if one is compromised, the attacker should
 find themselves in a process that can serve files and talk on sockets
 and very little else. I would leave it on for any device that faces a
@@ -22,15 +20,15 @@ www
 
 ## Who gets what
 
-The table below shows what each process may do. klind itself is not
-sandboxed, because it forks workers, reaps them and writes logs.
+klind itself is not sandboxed, because it forks workers, reaps them and
+writes logs. Each process gets this much (Linux defaults):
 
-| | klind (parent) | worker | worker that runs CGI | key manager |
+| Linux defaults | klind (parent) | worker | worker that runs CGI | key manager |
 |---|---|---|---|---|
 | seccomp filter (Linux) | none | worker list | worker list + fork, exec, wait | short list |
 | new sockets | unrestricted | UNIX, IPv4, IPv6 | UNIX, IPv4, IPv6 | none (uses its control socket) |
 | W+X memory | unrestricted | refused | refused | mmap unchecked, no mprotect |
-| may signal | unrestricted | itself only | anyone but klind, the key managers, its group and everyone | nobody |
+| may signal | unrestricted | itself only | anyone but klind, the key managers, klind's process group and broadcast (`-1`) | nobody |
 | resource limits | its own | `worker_max_memory`, `worker_max_files`, `worker_max_procs` | the same | `RLIMIT_CORE` 0 |
 | undumpable | no | no | no | yes (Linux) |
 
@@ -45,7 +43,8 @@ terabytes of address space.
 
 A worker is sandboxed after the `child_init` hook, so a web app can open
 what it needs first, and before it serves anything. The sandbox is a
-seccomp-bpf filter, set with `PR_SET_NO_NEW_PRIVS` so that a setuid
+seccomp-bpf filter (a small BPF program the kernel runs on every system
+call), set with `PR_SET_NO_NEW_PRIVS` so that a setuid
 program cannot raise privileges. It sorts system calls into three
 groups.
 
@@ -66,8 +65,8 @@ SIGSYS, and klind starts a new worker.
 Anything else fails with EPERM, so code that tries something unusual
 gets an error instead of dying.
 
-The figure below shows the order in which a worker's filter decides.
-The key manager's filter is the same without the argument checks.
+A worker's filter decides in this order (the key manager's is the same
+without the argument checks):
 
 ```mermaid
 flowchart TD
@@ -100,8 +99,8 @@ otherwise:
   code is still mapped from files (libraries, CGI programs).
 - `kill` and `tgkill` let a worker signal itself only.
 
-The catch is CGI. A worker that runs CGI scripts kills them by process
-group at their timeout, and the scripts signal their own processes, so
+CGI needs a wider rule. A worker that runs CGI scripts kills them by
+process group at their timeout, and the scripts signal their own processes, so
 such a worker may signal any process except klind, the key managers, its
 own process group (klind's: `kill 0` or `-pgid`) and every process
 (`-1`). Without that rule, a compromised worker could kill the key
@@ -180,3 +179,6 @@ The server tests check, on Linux, that:
   work without the sandbox;
 - an IPv6 socket and a signal to itself work;
 - a worker that runs CGI scripts cannot signal klind either.
+
+See also: [KEYMGR](KEYMGR.md), [LIMITS](LIMITS.md) for the worker resource
+limits, and [CGI](CGI.md).

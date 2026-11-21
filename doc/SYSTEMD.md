@@ -1,11 +1,10 @@
 # Running klind under systemd
 
-This page covers the systemd unit that ships with Klin, what it locks down
-and how klind gives up root once it has started. You need it when you
-deploy klind on a Linux host rather than embedding it in firmware with its
-own init.
+On a Linux host, run klind from the hardened systemd unit that ships with
+Klin. The unit fences klind in, and klind gives up root as soon as its
+sockets are open. Firmware with its own init doesn't need any of this.
 
-`contrib/systemd/klind.service` is a hardened unit for klind. Copy it to
+The unit is `contrib/systemd/klind.service`. Copy it to
 `/etc/systemd/system/`, set the paths in `ExecStart`, then run:
 
 ```sh
@@ -25,7 +24,7 @@ klind starts as root so that it can bind ports below 1024, read a TLS key
 that only root can read, and chroot. Once the listening sockets are open it
 chroots (if `chroot` is set) and drops to the `uid` and `gid` in
 klind.conf. The TLS key manager ([KEYMGR](KEYMGR.md)) drops to the same
-user and group. The figure below shows the order.
+user and group, in this order:
 
 ```mermaid
 sequenceDiagram
@@ -81,9 +80,9 @@ left is the price of starting as root (`User=`, `CAP_SET*`,
 `CAP_SYS_CHROOT`, `@privileged`) and of being a network server
 (`PrivateNetwork=`, `AF_INET`/`AF_INET6`).
 
-The catch is that CGI scripts run inside the same unit. A script that needs
-to write somewhere, or to JIT-compile (which `MemoryDenyWriteExecute`
-blocks), needs a drop-in. Run `systemctl edit klind` and add, for example:
+CGI scripts run inside the same unit, so they get the same restrictions. A
+script that needs to write somewhere, or to compile code just in time
+(which `MemoryDenyWriteExecute` blocks), needs a drop-in. Run `systemctl edit klind` and add, for example:
 
 ```conf
 [Service]
@@ -118,3 +117,7 @@ checks that it serves. It then checks that the main process runs as 65534
 with no capabilities, with `no_new_privs` set and a seccomp filter in
 place, and that `systemd-analyze security` stays at 3.0 or below. The
 server suite checks the root refusal when it is run as root.
+
+See also: [LIMITS](LIMITS.md) for the per-worker limits, [SANDBOX](SANDBOX.md)
+for the seccomp filter each worker enters, and [KEYMGR](KEYMGR.md) for the
+key manager.

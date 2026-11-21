@@ -1,9 +1,9 @@
 # HTTP authentication
 
-Pages can be protected with HTTP authentication, Basic (RFC 7617) or
-Digest (RFC 7616), set up per server or vhost in an `auth` block. A path
-in a realm is served only to a user of the realm who has one of its
-roles. Authentication needs a build with OpenSSL.
+A page in an authentication realm is served only to a user who has one
+of the realm's roles. Klin does this with HTTP authentication, Basic
+(RFC 7617) or Digest (RFC 7616), set up per server or virtual host (vhost)
+in an `auth` block. Authentication needs a build with OpenSSL.
 
 ## Users
 
@@ -51,8 +51,9 @@ auth
     realm
     {
         name    Private Area            # shown to the user
-        path    /admin/*                # fnmatch(3) patterns of the
-        path    /report.kl1             # request path; may repeat
+        path    /admin                  # fnmatch(3) patterns of the
+        path    /admin/*                # request path; may repeat
+        path    /report.kl1
         scheme  digest                  # digest (default), basic or any
         roles   admin                   # any of these; none: any user
         md5     no                      # also offer MD5 Digest
@@ -60,14 +61,16 @@ auth
 }
 ```
 
-The request path is matched against the realms in order, and the first
-realm with a matching path applies. The path is decoded and normalised
-and taken before aliases and routes. A path ending in `/` that has an
-index page is matched with the index page's name appended (`/admin/` as
-`/admin/index.kl1`).
+The realms are tried in order, and the first with a matching path
+applies. They match the same name as the access rules
+([ACCESS](ACCESS.md)): the decoded, normalised path after the index page
+is chosen, without path info, and before aliases and routes. So `/admin/`
+with an index page is matched as `/admin/index.kl1`.
 
-The catch is the trailing slash. `"/admin/*"` covers `/admin/` and
-everything below it, but not `/admin`. Use `"/admin*"` for both.
+Patterns use fnmatch(3) with no flags, so `*` also matches `/`.
+`/admin/*` covers `/admin/` and everything below it, but not `/admin`
+itself, which is why the example lists both. Don't shorten them to
+`/admin*`: that also matches `/administrator` and `/admin-old.kl1`.
 
 The answer is 401 with the challenges when the credentials are missing or
 wrong, and 403 when they are right but the user has none of the realm's
@@ -76,8 +79,8 @@ it in `REMOTE_USER`.
 
 ## A Digest exchange
 
-The figure below shows a browser's first request for a page in a Digest
-realm, then the retry after the nonce has expired.
+Here is a browser's first request for a page in a Digest realm, then the
+retry after the nonce has expired:
 
 ```mermaid
 sequenceDiagram
@@ -113,7 +116,7 @@ clients that lack SHA-256.
 Digest nonces are signed with a key drawn when klind starts (before the
 prefork workers fork, so every worker accepts the others' nonces), and
 expire after `nonce_lifetime`. The client is then told `stale=true` and
-retries without asking the user. The trade-off is replay: nonce counts are
+retries without asking the user. The trade-off is replay. Nonce counts are
 not tracked across prefork workers, so a captured Digest request can be
 replayed until its nonce expires. Over plain HTTP the page content is also
 readable. Use HTTPS for anything that matters.
@@ -126,3 +129,6 @@ A configuration error in a realm or user (a plaintext password, a realm
 without a path, an unknown scheme, a `users_file` that cannot be read)
 stops klind at startup rather than leaving pages unprotected. I would
 rather a device refuse to start than serve its admin pages to anyone.
+
+See also: [ACCESS](ACCESS.md) for IP rules, checked first,
+[SESSIONS](SESSIONS.md) for logins kept in a session, [TLS](TLS.md).

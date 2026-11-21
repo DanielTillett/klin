@@ -1,8 +1,7 @@
 # Contributing to Klin
 
 Thank you for helping. Bug reports, fixes, tests and documentation are all
-welcome, and this page says how to get a change from your machine into
-master.
+welcome. Here is how to get a change from your machine into master.
 
 **Security problems:** do not open an issue. Report them privately as
 [SECURITY.md](SECURITY.md) describes.
@@ -23,24 +22,20 @@ entry.
 
 ## The path to master
 
-The figure below shows the route a change takes. master only accepts
-changes through a pull request, and only once the required checks pass on
-a branch that is up to date with master.
+master only accepts changes through a pull request, once these required
+checks pass:
 
-```mermaid
-flowchart LR
-    B["branch from master"] --> L["local: build.py --test<br/>and the other checks"]
-    L --> P["open a pull request"]
-    P --> R["required checks<br/>linux (release), linux (sanitize),<br/>bsd-make, windows,<br/>analyze, clang-tidy"]
-    R -- fail --> L
-    R -- pass --> M["rebase or squash<br/>into master"]
-```
+| Check | Workflow |
+| --- | --- |
+| `linux (release)`, `linux (sanitize)`, `bsd-make`, `windows` | Build and test |
+| `analyze` | CodeQL |
+| `clang-tidy` | Static analysis |
 
-The required checks come from three workflows. `linux (release)`,
-`linux (sanitize)`, `bsd-make` and `windows` are jobs in Build and test,
-`analyze` is CodeQL, and `clang-tidy` is Static analysis. ClusterFuzzLite
-also fuzzes every pull request that changes code, but it is not a required
-check. Review conversations must be resolved before the merge. See
+The branch must also be up to date with master, so rebase or merge master
+into it if master has moved, and review conversations must be resolved
+before the merge, which is a rebase or a squash. ClusterFuzzLite also fuzzes pull requests, except those
+that change only documentation (`doc/`, `*.md`, ChangeLog, TODO,
+`_config.yml`), but it is not a required check. See
 [doc/RELEASES.md](doc/RELEASES.md#workflows) for what each workflow runs.
 
 ## Building and testing
@@ -50,14 +45,15 @@ install. Then, from the repository:
 
 ```sh
 python3 build/build.py --test               # release build, all tests
-python3 build/build.py --sanitize --test    # ASan, LSan and UBSan
+python3 build/build.py --sanitize --test    # Address, Leak and UB sanitisers
 python3 test/run_build_checks.py            # the CMake build itself
 python3 test/run_fuzz.py --runs 20000       # every fuzz target (Linux, clang)
 ```
 
 The simple rule is that a change is ready when these pass with no new
-compiler warnings. Continuous integration runs them, and more (BSD make,
-Windows, CodeQL, clang-tidy, fuzzing), on every pull request.
+compiler warnings. Continuous integration runs them on every pull request,
+and more besides: BSD make, Windows, CodeQL, clang-tidy, and ClusterFuzzLite
+for changes that touch more than documentation.
 
 ## Writing the change
 
@@ -78,8 +74,13 @@ changes, why, and how you tested it. Keep commits focused, with a commit
 message that says what changed and why.
 
 If you touch a workflow, pin actions to commit SHAs and give jobs only the
-permissions they need. `test/run_release_checks.py` checks this (see
-[doc/RELEASES.md](doc/RELEASES.md)).
+permissions they need. `test/run_release_checks.py` checks the pins and
+that every job names its permissions (see
+[doc/RELEASES.md](doc/RELEASES.md#workflows) for all the rules).
 
 By contributing, you agree that your contribution is licensed under the
-project's [BSD 3-Clause License](https://github.com/DanielTillett/klin/blob/master/LICENSE).
+project's [BSD 3-Clause License](LICENSE).
+
+See also: [doc/CONVENTIONS.md](doc/CONVENTIONS.md) for the coding rules,
+[doc/FUZZING.md](doc/FUZZING.md) for fuzz targets, and
+[SECURITY.md](SECURITY.md) for reporting a vulnerability.
