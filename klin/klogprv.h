@@ -26,6 +26,10 @@ int klog_open_syslog (klog_t *kl, int fac, int logopt);
 int klog_open_file (klog_t *kl, const char *base, size_t npages, size_t nlines);
 const char *klog_to_str (int lev);
 
+/* a timestamp as ctime(3) writes it, without the newline */
+#define KLOG_TS_SZ  32
+void klog_timestamp (time_t t, char ts[KLOG_TS_SZ]);
+
 #ifdef __cplusplus
 }
 #endif 

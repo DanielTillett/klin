@@ -433,6 +433,31 @@ static int klind_daemon(int nochdir)
 }
 #endif  /* HAVE_FORK */
 
+/* write the PID to pid_file, created readable by all and writable by its
+ * owner only (LibU's u_savepid() leaves the mode to the umask) */
+static int klind_savepid(const char *pid_file)
+{
+    int fd;
+    FILE *fp;
+
+    if((fd = open(pid_file, O_WRONLY | O_CREAT | O_TRUNC, 0644)) == -1)
+        return -1;
+
+    if((fp = fdopen(fd, "w")) == NULL)
+    {
+        (void) close(fd);
+        return -1;
+    }
+
+    if(fprintf(fp, "%ld\n", (long) getpid()) < 0)
+    {
+        (void) fclose(fp);
+        return -1;
+    }
+
+    return fclose(fp) == 0 ? 0 : -1;
+}
+
 int main(int argc, char **argv)
 {
     int rc = 0;
@@ -456,7 +481,7 @@ int main(int argc, char **argv)
 
     /* save the PID in a file */
     if(ctx->pid_file)
-        dbg_err_if(u_savepid(ctx->pid_file));
+        dbg_err_sif(klind_savepid(ctx->pid_file));
 
     /* jump to the main loop */
     rc = app_run();

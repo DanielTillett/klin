@@ -282,10 +282,10 @@ static void print_static_page_block(io_t *out, lang_c_ctx_t *ctx)
     io_printf(out, ";\n"
         "   e.data = (const unsigned char*)data;\n"
         "   e.size = sizeof(data);          \n"
-        "   e.file_size = %u;               \n"
+        "   e.file_size = %lu;              \n"
         "   e.mime_type = ",
          /* file_size will be == to size if the file is not compressed */
-        ctx->ti->file_size);
+        (unsigned long) ctx->ti->file_size);
     print_c_string(out, u_guess_mime_type(ctx->ti->uri));
     io_printf(out, ";\n"
         "   e.mtime = %lu;                  \n"

@@ -91,7 +91,7 @@ static int klog_getln_mem (klog_t *kl, size_t nth, char ln[])
 {
     size_t i = nth;
     klog_mem_msg_t *cur; 
-    char *ct;
+    char ct[KLOG_TS_SZ];
     klog_mem_t *klm;
 
     dbg_return_if (kl == NULL, ~0);
@@ -108,8 +108,7 @@ static int klog_getln_mem (klog_t *kl, size_t nth, char ln[])
             break;
     }
     
-    ct = ctime((const time_t *) &cur->timestamp);
-    ct[24] = '\0';
+    klog_timestamp(cur->timestamp, ct);
 
     /* 
      * line format is:

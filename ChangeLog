@@ -97,6 +97,13 @@ Klin 4.0.0:
 	  (u_cipher_encrypt/decrypt wrote whatever OpenSSL produced and
 	  ignored the size of dst). Data that may not fit is now refused
 	  before anything is written (found by ClusterFuzzLite)
+	- klog: file logs create their pages and head file mode 0640 (they
+	  were left to the umask; existing files keep their mode), and
+	  timestamps no longer use ctime(3)'s shared buffer, which could
+	  also return NULL; klind -p writes the PID file mode 0644 itself
+	  instead of through LibU's u_savepid(); the translator prints an
+	  embedded file's size with %lu (it passed a size_t to %u) (found
+	  by CodeQL)
 	- key manager (doc/KEYMGR.md): it is undumpable (PR_SET_DUMPABLE 0, no
 	  core dumps), so a worker of the same user cannot read the key from
 	  its memory when klind runs as that user from the start (systemd
