@@ -37,7 +37,46 @@ The top level parameter
 \fBserver_list\fR
 lists the klin instances by name. For each name listed here there exists a corresponding server block labeled with the same name.
 .PP
-For the sake of simplicity, the available options are grouped into four categories: those of general applicability (GENERAL), those common to both HTTP and HTTPS servers (SERVER), those specific to HTTP over SSL/TLS sessions (SSL/TLS) and those concerning activity logging (LOG).
+For the sake of simplicity, the available options are grouped into five categories: those of the whole klind process, set at the top level outside any server block (TOP LEVEL), those of general applicability (GENERAL), those common to both HTTP and HTTPS servers (SERVER), those specific to HTTP over SSL/TLS sessions (SSL/TLS) and those concerning activity logging (LOG).
+.SS "TOP LEVEL"
+.PP
+These parameters are read from the top level of the file only; set in a server block they have no effect.
+.TP
+\fBserver_list\fR
+The names of the server blocks to run, separated by blanks. This parameter is
+\fImandatory\fR.
+.TP
+\fBchroot\fR
+Set the directory where the running server resides. It requires no additional files to exist in jail: the chroot call is made after server initialization (log setup, backend configuration, bind/listen) but before forking and dropping of privileges.
+.TP
+\fBblind_chroot\fR
+A variant of the
+\fBchroot\fR
+directive which, additionally, unlinks the server root directory, making the chance for a hijacked/malfunctioning server to access the file system very unlikely. klind creates a directory of mode 0100 under the chroot directory, checks it and enters it through the same descriptor (a link or another directory put in its place is refused), and has it removed once inside. It can be useful in combination with in\-memory logging or syslog remote logging to achieve a very high level of bounding.
+.TP
+\fBuid\fR
+Set the real and effective user ID of the running server.
+.TP
+\fBgid\fR
+Set the real, effective group IDs and the saved set\-group\-ID of the running server.
+.TP
+\fBallow_root\fR
+A boolean which specifies if the server is allowed to run with root credentials (i.e. user ID 0 or group ID 0). Started as root, klind refuses to run unless both
+\fBuid\fR
+and
+\fBgid\fR
+are set to non\-root IDs (a
+\fBchroot\fR
+alone is not enough) or
+\fBallow_root\fR
+is
+\fByes\fR. See doc/SYSTEMD.md for a hardened systemd unit.
+.TP
+\fBmax_child\fR
+Set the maximum number of worker processes of klind as a whole, all servers together (each server is also bounded by its own \fBprefork.max_child\fR or \fBfork.max_child\fR). The default value is 300; it must be from 1 to FD_SETSIZE less 128 (896 on Linux), since klind watches one channel per worker with select(2).
+.TP
+\fBlog\fR
+The log device of the klind process (see LOG), which takes the messages of servers without a log device of their own.
 .SS "GENERAL"
 .TP
 \fBtype\fR
@@ -98,7 +137,7 @@ Maximum number of arguments per request (default 1000, minimum 1). The query str
 Connections served at once from one client address (default 32; 0: no limit). Beyond it a new connection is closed as soon as it is accepted, before any TLS handshake.
 .TP
 \fBworker_max_memory\fR, \fBworker_max_files\fR, \fBworker_max_procs\fR
-Resource limits of each worker process: MB of address space (default 1024), open files (default 1024) and processes of its user (default the server's max_child plus 64). 0 leaves a limit unchanged. See doc/LIMITS.md.
+Resource limits of each worker process: MB of address space (default 1024), open files (default 1024) and processes of its user (default \fBprefork.max_child\fR, or \fBfork.max_child\fR with the fork model, plus 64: 214 by default). 0 leaves a limit unchanged. See doc/LIMITS.md.
 .TP
 \fBmax_streams\fR
 Server-sent event and WebSocket connections open at once on this server (default 100; 0: no limit), so that they cannot take every worker. Beyond it \fBsse_start\fR() and \fBws_accept\fR() answer 503 with Retry-After.
@@ -170,6 +209,24 @@ Security headers sent with every response: \fBx_content_type_options\fR
 \fImax\-age=31536000\fR, HTTPS only). The value \fIno\fR leaves a header
 out. See doc/HEADERS.md.
 .TP
+\fBsend_enc_deflate\fR
+A boolean: \fIyes\fR sends a static file stored deflated in the build (\fB\-DKLIN_IMPORT_ARGS=\-z\fR) as it is, with \fIContent\-Encoding: deflate\fR, to a client that accepts \fIdeflate\fR; otherwise klind inflates it as it sends it. The default is \fIno\fR. See doc/PAGES.md.
+.TP
+\fBaccess_log\fR
+A log subsection (see LOG) for the access log of this server or virtual host: one line per request, much as in the Combined Log Format, after a prefix. Besides the parameters of a log device it takes
+\fBprefix\fR
+(the text that starts each line, default
+\fI[access]\fR),
+\fBlog\fR
+(file name patterns, as for
+\fBfnmatch\fR(3): when given, only the requests that match one are logged) and
+\fBdontlog\fR
+(patterns of requests not to log). A virtual host without an
+\fBaccess_log\fR
+uses the server's, and
+\fBaccess_log no\fR
+turns it off for that virtual host. By default nothing is logged. See etc/klind\-accesslog.conf.
+.TP
 \fBtemp_dir\fR
 Set the base directory where temporary resources (e.g. uploaded files) are created.  When provided, the system default is overridden.  Currently, this value has per-backend scope.
 .SS "SERVER"
@@ -192,35 +249,6 @@ The top level directory under which this server's instance keeps the site data. 
 is done, it is mapped to
 \fIsup://${dir_root}/dir/page.kl1\fR. The default value is
 \fI/\fR.
-.TP
-\fBchroot\fR
-Set the directory where the running server resides. It requires no additional files to exist in jail: the chroot call is made after server initialization (log setup, backend configuration, bind/listen) but before forking and dropping of privileges.
-.TP
-\fBblind_chroot\fR
-A variant of the
-\fBchroot\fR
-directive which, additionally, unlinks the server root directory, making the chance for a hijacked/malfunctioning server to access the file system very unlikely. klind creates a directory of mode 0100 under the chroot directory, checks it and enters it through the same descriptor (a link or another directory put in its place is refused), and has it removed once inside. It can be useful in combination with in\-memory logging or syslog remote logging to achieve a very high level of bounding.
-.TP
-\fBuid\fR
-Set the real and effective user ID of the running server.
-.TP
-\fBgid\fR
-Set the real, effective group IDs and the saved set\-group\-ID of the running server.
-.TP
-\fBallow_root\fR
-A boolean which specifies if the server is allowed to run with root credentials (i.e. user ID 0 or group ID 0). Started as root, klind refuses to run unless both
-\fBuid\fR
-and
-\fBgid\fR
-are set to non\-root IDs (a
-\fBchroot\fR
-alone is not enough) or
-\fBallow_root\fR
-is
-\fByes\fR. See doc/SYSTEMD.md for a hardened systemd unit.
-.TP
-\fBmax_child\fR
-Set the maximum number of child processes per server (i.e. total number of running backend child processes) available at run\-time. The default value is 300; it must be from 1 to FD_SETSIZE less 128 (896 on Linux), since klind watches one channel per worker with select(2).
 .TP
 \fBerror.\fR\fB\fIhttp_errno\fR\fR
 Select the file which will be displayed on the given HTTP error event (\fIhttp_errno\fR
@@ -254,6 +282,16 @@ Symbolic links in files served from the file system and in CGI scripts:
 .TP
 \fBserve_files\fR, \fBrun_cgi\fR
 \fIno\fR turns off the file system or the CGI supplier for this server or virtual host (default \fIyes\fR, when built in). See doc/FILES.md.
+.TP
+\fBcgi.script_alias \fR\fB\fIurl\fR\fR\fB \fR\fB\fIdir\fR\fR
+Runs the executable files under
+\fIdir\fR
+as CGI scripts for request paths that start with
+\fIurl\fR, e.g.
+\fIscript_alias /cgi\-bin /srv/www/cgi\-bin\fR
+in a
+\fBcgi\fR
+block; it may be repeated. Virtual hosts do not inherit it. It needs a build with \-DKLIN_ENABLE_SUP_CGI=ON, and a server with one lets its workers fork and execute programs (doc/SANDBOX.md). See doc/CGI.md.
 .TP
 \fBcgi.timeout\fR, \fBcgi.max_cpu\fR, \fBcgi.max_memory\fR
 Limits of a CGI script: seconds before it is killed (default 60; 504 if it sent nothing), seconds of CPU time (default 30) and MB of address space (default 512). 0 sets none. See doc/CGI.md.
@@ -344,12 +382,16 @@ uses TLS. Session identifiers contain 128 bits from a cryptographic random sourc
 \fBsession_regenerate_id\fR().
 .TP
 \fBencrypt\fR
-A boolean specifying whether the session data should be encrypted before being sent to the client. Encryption is always enabled for
+A boolean specifying whether the session data should be encrypted before it is stored (default \fIno\fR). For
+\fImemory\fR
+and
+\fIfile\fR
+sessions it is AES\-256\-CBC with a key drawn when klind starts, so encrypted file sessions cannot be read after a restart. Encryption is always enabled for
 \fIclient\fR
-sessions, whatever this directive says: AES\-256\-GCM, which also authenticates the data, the session id and its time.
+sessions, whatever this directive says: AES\-256\-GCM, which also authenticates the data, the session id and its time. See doc/SESSIONS.md.
 .TP
 \fBcompress\fR
-A boolean specifying whether the session data should be compressed before being pushed to the client. The default is
+A boolean specifying whether the session data should be compressed before it is stored (any session type). The default is
 \fIno\fR.
 .TP
 \fBmemory.limit\fR
