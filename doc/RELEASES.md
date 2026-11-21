@@ -1,9 +1,8 @@
 # Releases and workflows
 
 A Klin release is built, checked and signed by a GitHub Actions workflow,
-with no signing key for anyone to keep, and published by hand. Cutting
-one, the workflows that guard the repository and checking a release you
-have downloaded are below.
+with no signing key for anyone to keep, and published by hand. If you
+downloaded a release, [Signing](#signing) shows how to check it.
 
 ## Release files
 
@@ -115,7 +114,7 @@ gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
 
 `SHA256SUMS` on its own shows only that the files match the list, not
 who made them: anyone who can replace the files can replace the list
-too. The attestations give authenticity. The first two commands check
+too. The attestations give authenticity. The first two attestation commands check
 the provenance of the tarball and of the SBOM, and the third the SBOM
 attestation for the tarball. `--signer-workflow` and `--source-ref`
 check that it was the release workflow that signed the file, and for

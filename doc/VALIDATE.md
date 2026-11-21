@@ -121,16 +121,15 @@ validation, the status from that is returned instead, and no rule runs.
 
 ### Paths
 
-A `params` block matches the path saved just before routing: the
-FILENAME plus any PATH_INFO, after index selection (`/` is matched as
-`/index.kl1` when that is the index page). A route or alias that replaces
-the path later does not change what validation sees. Access rules and
-realms see only the FILENAME;
-[Which path each check sees](ROUTES.md#which-path-each-check-sees)
-defines these terms and shows both. The first block whose path and
-method match applies, and a request that no block matches is not
-validated at all. Methods are compared without regard to case and may
-be separated by blanks or commas.
+A `params` block matches the path saved just before routing: the FILENAME
+plus any PATH_INFO, after index selection (`/` is matched as `/index.kl1`
+when that is the index page). A route or alias that replaces the path
+later does not change what validation sees. Access rules and realms see
+only the FILENAME; [Which path each check
+sees](ROUTES.md#which-path-each-check-sees) defines these terms and shows
+both. The first block whose path and method match applies, and a request
+that no block matches is not validated at all. Methods are compared
+without regard to case and may be separated by blanks or commas.
 
 ### Sources
 

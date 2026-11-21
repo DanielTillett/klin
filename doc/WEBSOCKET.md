@@ -108,7 +108,7 @@ The other calls work on an accepted connection.
 | `ws_recv(ws, &type, &data, &len)` | Returns 0 with a whole message, `WS_TEXT` (checked to be UTF-8) or `WS_BINARY`, NUL-terminated and valid until the next call. Returns `WS_AGAIN` when only control frames or part of a message came (wait again), and `WS_CLOSED` when the connection ended. Pings are answered, and a close from the client is answered with its own code (1000 if it gave none). |
 | `ws_send(ws, type, data, len)` | Sends a text or binary message. Text must be UTF-8. |
 | `ws_ping(ws)` | Sends a ping, to keep an idle connection open through proxies. |
-| `ws_close(ws, code, reason)` | Sends a close frame and waits for the client's: 2 s for a frame to start arriving, then up to 30 s to read it. |
+| `ws_close(ws, code, reason)` | Sends a close frame (30 s to write it), then waits for the client's, checking a 2 s limit between reads; each frame read has its own 30 s deadline. |
 | `ws_set_max_message(ws, bytes)` | The largest message accepted, 1 MB by default. A larger one closes the connection with 1009. |
 | `ws_free(ws)` | Frees the connection object. The connection itself is closed when the page ends. |
 

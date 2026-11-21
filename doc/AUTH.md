@@ -77,9 +77,8 @@ auth
 The realms of the vhost that serves the request are tried in order, and
 the first with a matching path applies. They match the FILENAME, after
 index selection, without the PATH_INFO and before routing, as the access
-rules ([ACCESS](ACCESS.md)) do;
-[Which path each check sees](ROUTES.md#which-path-each-check-sees)
-defines those terms.
+rules ([ACCESS](ACCESS.md)) do; [Which path each check
+sees](ROUTES.md#which-path-each-check-sees) defines those terms.
 
 Patterns use fnmatch(3) with no flags, so `*` also matches `/`.
 `/admin/*` covers `/admin/` and everything below it, but not `/admin`

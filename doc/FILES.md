@@ -11,10 +11,9 @@ cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
 
 **A build without them cannot serve or run anything from the file
 system**, whatever the configuration says (your own page code can still
-open files). That is the way to turn them
-off entirely, and on a device that only serves its embedded pages it is
-what I would do. A build with them can still turn them off for a server or
-a virtual host:
+open files). That is the way to turn them off entirely, and on a device
+that only serves its embedded pages it is what I would do. A build with
+them can still turn them off for a server or a virtual host:
 
 ```conf
 serve_files     no      # no static files from the file system

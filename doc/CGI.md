@@ -27,7 +27,7 @@ cgi
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `timeout` | 60 | Seconds of wall-clock time the script may run. It is then killed (SIGKILL), with its process group. |
+| `timeout` | 60 | Seconds of wall-clock time, checked while klind waits on the script or the client (below). When it fires, the script and its process group are killed (SIGKILL). |
 | `max_cpu` | 30 | Seconds of CPU time (RLIMIT_CPU): SIGXCPU, then SIGKILL a second later. |
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
@@ -40,18 +40,19 @@ descriptor: writing the POST body to the script, reading the script's
 output, or writing that output to the client. So it is wall-clock time,
 and time spent waiting on a slow client counts towards it. The timeout
 kills only the script, though. The client's connection stays open, and a
-write that is waiting on it carries on waiting. Once the output has
-ended, klind cancels the timeout, then sends what is left in its buffer
-and waits for the script to exit with a plain blocking waitpid(2).
+write that is waiting on it carries on waiting, and so does a read of
+the rest of a POST body, which klind relays from the client's socket.
+Once the output has ended, klind cancels the timeout and waits for the
+script to exit with a plain blocking waitpid(2); only then does it send
+what is left in its buffer.
 
 The simple rule is that `timeout` bounds the script, not the client.
-Nothing in klind limits how long a write to a slow client may take
+Nothing on the CGI path limits how long a write to a slow client may take
 (`idle_timeout`, `keep_alive_timeout` and `post_timeout` cover only
-reading the request), so a client that reads slowly holds the worker
-for as long as it keeps reading. A script
-that closes its standard output and carries on running also holds the
-worker until it exits, and the timeout no longer covers it (`max_cpu`
-still does, if it is spinning).
+reading the request), so a client that reads slowly holds the worker for
+as long as it keeps reading. A script that closes its standard output and
+carries on running also holds the worker until it exits, and the timeout
+no longer covers it (`max_cpu` still does, if it is spinning).
 
 What a timeout looks like to the client depends on when it happens:
 
@@ -64,15 +65,15 @@ What a timeout looks like to the client depends on when it happens:
 A 504 needs the timeout itself: a script that exits without a header
 klind can parse gets an error response, not a 504.
 
-Do not count on the client noticing a cut. klind closes the connection
-after it, but it frames what it has as usual. Output still in its
-4,096-byte buffer goes out with a Content-Length that matches it (the
-measured length replaces any the script gave), and a chunked body is
-ended normally. The client can tell only when more than the buffer had
-already gone out under a Content-Length the script set itself, and the
-body falls short of it. The server tests' own example gets a plain 200
-with the first line of output. An `nph-` script's output is passed on as
-it is, so its framing is the script's own.
+A client usually cannot tell a cut response from a complete one. klind
+closes the connection after the cut, but it frames what it has as usual.
+Output still in its 4,096-byte buffer goes out with a Content-Length that
+matches it (the measured length replaces any the script gave), and a
+chunked body is ended normally. The client can tell only when more than
+the buffer had already gone out under a Content-Length the script set
+itself, and the body falls short of it. The server tests' own example gets
+a plain 200 with the first line of output. An `nph-` script's output is
+passed on as it is, so its framing is the script's own.
 
 The limits are set in the script's process. For `max_memory` the soft and
 hard limits are the same, so the script cannot raise them; for `max_cpu`

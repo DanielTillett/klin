@@ -36,14 +36,15 @@ CMake build without GNU make, OpenSSL 3 with TLS 1.2 or newer, hardened
 HTTP parsing and sessions, a sandbox, and regression, full-server and fuzz
 tests. Coming from KLone? Read [Upgrading](doc/UPGRADING.md) first.
 
-**Contents:** [Why Klin](#why-klin) · [Quick
-start](#quick-start-linux-wsl-macos) · [How it works](#how-it-works) ·
-[Documentation](#documentation) · [Building with
-CMake](#building-with-cmake) · [Build-and-test
-runner](#build-and-test-runner) · [Running a site](#running-a-site) ·
-[Testing](#testing) · [Upgrading from KLone](#upgrading-from-klone) ·
-[Known limitations](#known-limitations) · [Contributing](CONTRIBUTING.md)
-· [Security policy](SECURITY.md)
+**Contents:** [Why Klin](#why-klin) ·
+[Quick start](#quick-start-linux-wsl-macos) ·
+[How it works](#how-it-works) · [Documentation](#documentation) ·
+[Building with CMake](#building-with-cmake) ·
+[Build-and-test runner](#build-and-test-runner) ·
+[Running a site](#running-a-site) · [Testing](#testing) ·
+[Upgrading from KLone](#upgrading-from-klone) ·
+[Known limitations](#known-limitations) · [Contributing](CONTRIBUTING.md) ·
+[Security policy](SECURITY.md)
 
 
 ## Why Klin
@@ -203,13 +204,12 @@ worker is replaced after `prefork.max_requests_per_child` connections
 and gets back a signature. With a key file separate from the certificate
 that the workers' user cannot read, and no other server loading it with
 `key_manager no` ([the conditions](doc/KEYMGR.md#why-it-exists)), that is
-all a worker gets: the TLS private key stays out of it. A key embedded
-in `klind` is in every
-process's memory anyway; with the key manager on, `klind` warns about it
-([Key manager](doc/KEYMGR.md), [Sandbox](doc/SANDBOX.md),
-[Limits](doc/LIMITS.md)). The `fork` model forks one child per connection
-instead, and `iterative` serves one client at a time in one process. On
-Windows, `klind` serves in a single process.
+all a worker gets: the TLS private key stays out of it. A key embedded in
+`klind` is in every process's memory anyway; with the key manager on,
+`klind` warns about it ([Key manager](doc/KEYMGR.md),
+[Sandbox](doc/SANDBOX.md), [Limits](doc/LIMITS.md)). The `fork` model
+forks one child per connection instead, and `iterative` serves one client
+at a time in one process. On Windows, `klind` serves in a single process.
 
 Inside a worker, a request passes a fixed series of checks before any
 page code runs:
@@ -245,12 +245,11 @@ Start with [Writing a site](doc/PAGES.md). The manual pages are in
 
 **Building a site:** [Writing a site](doc/PAGES.md),
 [Routes](doc/ROUTES.md) (REST), [JSON](doc/JSON.md),
-[Validation](doc/VALIDATE.md) of request parameters,
-[SSE](doc/SSE.md) (Server-Sent Events), [WebSocket](doc/WEBSOCKET.md),
-[Sessions](doc/SESSIONS.md) and CSRF tokens,
-[Authentication](doc/AUTH.md) (Basic and Digest),
-[Files](doc/FILES.md) from the disk, [CGI](doc/CGI.md) scripts and
-[Crypto](doc/CRYPTO.md), the encryption API.
+[Validation](doc/VALIDATE.md) of request parameters, [SSE](doc/SSE.md)
+(Server-Sent Events), [WebSocket](doc/WEBSOCKET.md),
+[Sessions](doc/SESSIONS.md) and CSRF tokens, [Authentication](doc/AUTH.md)
+(Basic and Digest), [Files](doc/FILES.md) from the disk, [CGI](doc/CGI.md)
+scripts and [Crypto](doc/CRYPTO.md), the encryption API.
 
 **Running and securing:** [TLS](doc/TLS.md) protocols, ciphers and
 tickets, the [Key manager](doc/KEYMGR.md) for the TLS private key, the
@@ -419,7 +418,7 @@ python3 build/build.py --sanitize --test
 1. The unit tests (ctest).
 2. The regression suite, about a hundred checks. It compiles selected
    production functions verbatim as C99, with warnings treated as errors,
-   and runs them under the sanitizers. LibU and network collaborators are
+   and runs them under the sanitisers. LibU and network collaborators are
    test doubles; production MD5 is linked directly.
 3. The full-server tests, about 500 checks, run twice: once in the
    single-process model and once in the prefork model. They embed the test
@@ -466,7 +465,7 @@ that changed or was removed.
 
 - Klin is built and tested on Linux (including WSL), with Ninja and with
   BSD make, and on macOS 15 (Apple Silicon, Apple Clang, Homebrew OpenSSL
-  3). The BSDs are untested. macOS has no LeakSanitizer, so the sanitizer
+  3). The BSDs are untested. macOS has no LeakSanitizer, so the sanitiser
   build there checks memory errors and undefined behaviour only.
 - Native Windows builds with MinGW-w64 (MSYS2 UCRT64: gcc, cmake, ninja,
   openssl, zlib, libsystre) and runs only the single-process model: no
@@ -483,7 +482,7 @@ that changed or was removed.
   code builds without warnings on GCC, Clang and Apple Clang.
 - "Expect: 100-continue" is not answered, so clients send the body after
   their own timeout.
-- Fuzzing runs for half an hour a day per sanitizer (ClusterFuzzLite). The
+- Fuzzing runs for half an hour a day per sanitiser (ClusterFuzzLite). The
   project is not in OSS-Fuzz, whose campaigns are much longer.
 - Under the sandbox, a CGI script cannot signal its own process group with
   `kill 0` ([SANDBOX](doc/SANDBOX.md)).

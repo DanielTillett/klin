@@ -19,8 +19,12 @@ I wrote the key manager so that a compromised worker has no private key to
 steal. **The key stays out of the workers only with all four of these: a
 separate `key_file` outside the site, the key manager on, file
 permissions that keep the key file from the workers' user, and no other
-server in the same klind loading that key with `key_manager no`.**
-Separate means not a PEM file that also holds the certificate: klind
+server in the same klind loading that key with `key_manager no`.** Even
+then, the protection of the key manager's memory from other processes
+of the same user is Linux only (see [Limits](#limits)). The rules apply
+to every copy of the key: if two servers use it, both need it in a
+separate file. Separate means not a PEM file that also holds the
+certificate: klind
 reads the certificate in the parent process, and with a combined file
 the key's bytes pass through memory that the workers inherit. The
 permissions matter because a worker that can read the file can simply
@@ -36,16 +40,16 @@ cannot read the key, and the key does not leave with a memory dump or a
 core file of a worker. A key embedded in klind, or a server with
 `key_manager no`, is in every process (see [Limits](#limits)).
 
-At startup, before any worker is forked, klind starts one key manager
-per HTTPS server. With the key in an external `key_file`, the key manager
-is a small process of its own that reads the file itself and tells klind
-only the public key, so klind never decodes the private key, and workers
-and klind itself hold only a proxy key. A key embedded in the site is
-different: klind decodes it first and then forks the key manager with
-that copy, so the key stays in klind's memory and every worker inherits
-it. With an external `key_file` (prefork, key manager on, the file
-unreadable by the workers' user and loaded by no `key_manager no`
-server), the key stays on one side of a socket:
+At startup, before any worker is forked, klind starts one key manager per
+HTTPS server that has `key_manager` on. With the key in an external
+`key_file`, the key manager is a small process of its own that reads the
+file itself and tells klind only the public key, so klind never decodes
+the private key, and workers and klind itself hold only a proxy key. A key
+embedded in the site is different: klind decodes it first and then forks
+the key manager with that copy, so the key stays in klind's memory and
+every worker inherits it. With an external `key_file` (prefork, key
+manager on, the file unreadable by the workers' user and loaded by no
+`key_manager no` server), the key stays on one side of a socket:
 
 ```mermaid
 flowchart LR
@@ -164,17 +168,21 @@ libraries all offer ECDHE, so in practice this costs nothing.
 
 If a key manager exits, klind stops. With an external `key_file`
 nothing else holds the key, so no handshake could succeed, and klind
-treats an embedded key the same way. A key manager also exits within a
+treats an embedded key the same way. klind exits with status 0 in this
+case, so the shipped systemd unit (`Restart=on-failure`) does not
+restart it: the service stays down until someone starts it. If you want
+it back automatically, set `Restart=always` in a drop-in
+([SYSTEMD](SYSTEMD.md)); systemd still does not restart a service you
+stopped yourself. A key manager also exits within a
 second of klind exiting: it checks for its parent once a second.
 
 ### The leak that settled it
 
 During 4.0 development, klind decoded the key itself and handed it over.
 OpenSSL's decoder leaves copies of the key in ordinary freed memory, and
-every worker inherited that memory. I saw it
-with two servers sharing a key file, the second with a `ca_file`. Now the
-key manager reads an external key file itself, so klind's memory does not
-contain that key.
+every worker inherited that memory. I saw it with two servers sharing a
+key file, the second with a `ca_file`. Now the key manager reads an
+external key file itself, so klind's memory does not contain that key.
 
 ## Limits
 
@@ -196,6 +204,9 @@ contain that key.
   sessions of a compromised worker.
 - Protection of its memory from processes of the same user is Linux only.
   Elsewhere it gets no core file, nothing more.
+- Another server in the same klind that loads the same key with
+  `key_manager no` decodes it in the parent, and every worker inherits
+  that copy.
 - Native Windows has no key manager, because it needs fork(2) and UNIX
   sockets.
 
