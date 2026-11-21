@@ -96,7 +96,7 @@ test/run_release_checks.py checks (with samples of each mistake, which it
 must refuse) and continuous integration runs:
 
   - actions are pinned to a full commit SHA, with the version as a comment
-  ("# v4.4.0"), so a moved or compromised tag cannot change what runs;
+  ("# v7.0.1"), so a moved or compromised tag cannot change what runs;
   - "permissions: {}" at the top, and each job names the permissions it
   needs (most only contents: read; writes are commented);
   - actions/checkout does not keep the token in .git/config
