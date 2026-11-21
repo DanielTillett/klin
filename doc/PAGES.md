@@ -430,12 +430,21 @@ is a small example.
 
 With `-DKLIN_ENABLE_HOOKS=ON`, klind calls a `hooks_setup()` function you
 provide. It registers functions to run when the server starts and stops,
-when each worker starts and stops, and once for each request: after its
-page has run, or before the error page when the request fails
+when each worker starts and stops, and once for each request
 (`klin/hook.h`: `hook_server_init()`, `hook_child_init()`,
 `hook_request()` and others). A worker's `child_init` hook runs before its
 sandbox ([SANDBOX.md](SANDBOX.md)), so use it to open whatever the pages
 will need.
+
+The request hook does not always run at the same point. When the request
+reaches its page or file, the hook runs after the supplier has served it,
+whether that worked or failed, and before the response is finished; if it
+failed, the error page comes after the hook, unless the page had already
+sent its header. When the request is refused before that (a malformed
+request, an access rule, a realm, a 405 from routing, a failed
+validation), the hook runs just before the error page. A connection that
+closes, or sits idle until it times out, before sending any byte of a
+request gets no hook at all.
 
 ## Where next
 

@@ -85,34 +85,50 @@ than becoming part of it.
 
 Access rules, authentication realms, routes and validation do not all
 match the same path, and the difference decides what a pattern actually
-protects. Klin takes the path part of the request target (everything
-before `?`), URL-decodes and normalises it, then looks for an existing
-page or file. If the whole path is one, or none of its prefixes is, the
-whole path is the FILENAME and there is no PATH_INFO. If only a prefix
-ending before a `/` exists, the longest such prefix is the FILENAME and
-the rest is the PATH_INFO. For a vhost other than the first, the split is
-redone against that vhost's files once the `Host` header is known. Step
-by step, with what each check is given:
+protects. This section is the reference for the three terms the other
+pages use: FILENAME, PATH_INFO and index selection.
+
+Klin takes the path part of the request target (everything before `?`),
+URL-decodes and normalises it, then looks for an existing page or file.
+If the whole path is one, or none of its prefixes is, the whole path is
+the FILENAME and there is no PATH_INFO. If only a prefix ending before a
+`/` exists, the longest such prefix is the FILENAME and the rest is the
+PATH_INFO. For a vhost other than the first, the split is redone against
+that vhost's files once the `Host` header is known.
+
+Index selection comes next, and only under three conditions: no page
+supplier resolved the path, the FILENAME ends in `/`, and the vhost has a
+usable index page (the first name in its `index` setting that exists,
+otherwise the first of the built-in names such as `/index.kl1` and
+`/index.html` that exists). The index page's name is then appended to the
+FILENAME. Otherwise the FILENAME is left as it is.
+
+Access rules and realms then see the FILENAME. Before routing, Klin saves
+the FILENAME plus the PATH_INFO, and that saved path is what validation
+matches later, even if a route has since replaced the request's path with
+its page. Step by step:
 
 ```mermaid
 flowchart TD
-    A["request target<br/>/path?query"] --> B["path before ? decoded<br/>and normalised"]
-    B --> C{"whole path an existing<br/>page or file?"}
+    A["path before ? of the target,<br/>decoded and normalised"] --> C{"whole path an existing<br/>page or file?"}
     C -- yes --> E["FILENAME = whole path<br/>no PATH_INFO"]
     C -- no --> D{"a shorter prefix<br/>exists?"}
     D -- no --> E
     D -- "yes, the longest" --> F["FILENAME = that prefix<br/>PATH_INFO = the rest"]
-    E --> G["FILENAME ends in /:<br/>index page appended"]
+    E --> G{"no supplier resolved it,<br/>ends in /, usable index?"}
     F --> G
-    G --> H["access rules, then auth realms:<br/>FILENAME only"]
-    H --> I["routes:<br/>FILENAME + PATH_INFO"]
-    I --> J["validation: FILENAME + PATH_INFO<br/>as the client sent it"]
+    G -- yes --> G2["index selection:<br/>index page appended to FILENAME"]
+    G -- no --> H
+    G2 --> H["access rules, then auth realms:<br/>FILENAME only"]
+    H --> S["FILENAME + PATH_INFO saved"]
+    S --> I["routes match FILENAME + PATH_INFO<br/>and may replace the path"]
+    I --> J["validation matches<br/>the saved path"]
     J --> K["page runs"]
 ```
 
-Validation is given the path as it stood before routing, so it matches
-what the client asked for, not the route's page. A few requests show the
-difference:
+Because validation uses the saved path, it matches what the client asked
+for (decoded, normalised and after index selection), not the route's
+page. A few requests show the difference:
 
 | Request, and what exists in the site | FILENAME (access rules, realms) | FILENAME + PATH_INFO (routes, validation) |
 | --- | --- | --- |
@@ -124,23 +140,27 @@ difference:
 ## Protecting routes
 
 Access rules ([ACCESS.md](ACCESS.md)) and authentication realms
-([AUTH.md](AUTH.md)) run before routing and match the FILENAME of the
-path the client asked for. Routing rewrites the request to the route's
-page only afterwards, so a realm written for the page's own path
-(`/api/user.kl1`) does nothing for a request to `/api/users/42`.
+([AUTH.md](AUTH.md)) run before routing and match the FILENAME. Routing
+rewrites the request to the route's page only afterwards, so a realm
+written for the page's own path (`/api/user.kl1`) does nothing for a
+request to `/api/users/42`.
 
 To protect a set of routes under `/api/`, give the realm or access rule
-two patterns, `/api` and `/api/*`. The patterns are fnmatch(3) without
-special treatment of `/`, so `/api/*` covers the FILENAME however much of
-the path was split off as PATH_INFO, as long as the existing prefix is
-below `/api/`. `/api` covers the last row of the table, where something
-called `/api` takes the rest of the path. Keep the pages your routes
-point to under the same prefix too: a client can request a page directly
-by its own path, and the realm then sees that path, not the route's.
+two patterns, `/api` and `/api/*`. This advice assumes two things: the
+rule is in the vhost that serves the request, and it is the first rule
+(or realm) whose pattern matches, because only that one is consulted.
+The patterns are fnmatch(3) without special treatment of `/`, so
+`/api/*` covers the FILENAME however much of the path was split off as
+PATH_INFO, as long as the existing prefix is below `/api/`. `/api`
+covers the last row of the table, where something called `/api` takes
+the rest of the path. Keep the pages your routes point to under the same
+prefix too: a client can request a page directly by its own path, and
+the realm then sees that path, not the route's.
 
-Request validation ([VALIDATE.md](VALIDATE.md)) matches the same whole
-path that routes do, but runs after routing, so it can check the
-`{name}` values a route found.
+Request validation ([VALIDATE.md](VALIDATE.md)) matches the path saved
+before routing, which is the same FILENAME plus PATH_INFO that routes
+match. It runs after routing, so it can check the `{name}` values a route
+found.
 
 ## Mistakes klind refuses
 

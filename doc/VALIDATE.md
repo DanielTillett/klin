@@ -3,11 +3,14 @@
 Klin can check request parameters before a page sees them, with the rules
 written once in the configuration rather than repeated in every page.
 
-Validation checks the parameters you name in the `params` block that
-matches a request. Query and form arguments you do not name are dropped
-by default, but with `unknown allow` they reach the page unchecked, and a
-request that no `params` block matches is not checked at all. List every
-page that takes input, and name every parameter it reads.
+Validation checks the values of the parameters you name, with a
+validator, in the `params` block that matches a request. Anything else
+reaches the page without a value check: a named parameter with no
+validator (only its presence can be required), route parameters and
+headers you do not name, and, under `unknown allow`, query and form
+arguments you do not name (by default those are dropped). A request that
+no `params` block matches is not checked at all. List every page that
+takes input, and give every parameter it reads a validator.
 
 ## The configuration
 
@@ -77,14 +80,16 @@ Each validator has a name and exactly one type.
 
 A `param` with no `validator` is still useful. It names the parameter, so
 the parameter survives the `unknown` rule, and `required yes` still
-applies to it.
+applies to it. Its value, though, reaches the page unchecked.
 
 ## Where validation runs
 
 Validation runs late in request handling: after access control,
-authentication and routing, and just before the page. A failed check
-ends in one of two ways: a 400, or the bad value is removed before the
-page runs. In order:
+authentication and routing, and just before the page. Once a block
+matches, the query string and form body are parsed first, and a body
+that cannot be read ends the request before any rule runs. A failed rule
+then ends in one of two ways: a 400, or the bad value is removed before
+the page runs. In order:
 
 ```mermaid
 flowchart TD
@@ -92,14 +97,15 @@ flowchart TD
     B --> C["routes<br/>(may answer 405)"]
     C --> D{"a params block matches<br/>path and method?"}
     D -- no --> P["page runs, nothing checked"]
-    D -- yes --> E["parse query string<br/>and POST form body"]
-    E --> F{"every rule passes?"}
+    D -- yes --> E{"query string and<br/>POST form body parse?"}
+    E -- no --> Y["error status from parsing<br/>(no rule runs)"]
+    E -- yes --> F{"every rule passes?"}
     F -- "no: required missing,<br/>bad header, or<br/>on_invalid reject" --> X["400 Bad Request<br/>(page never runs)"]
     F -- "no: bad query, form or<br/>route value, on_invalid drop" --> G["bad value removed"]
-    F -- yes --> H["apply unknown:<br/>drop, reject or allow"]
+    F -- yes --> H["apply unknown to query<br/>and form arguments"]
     G --> H
     H -- "reject, and an unnamed argument" --> X
-    H --> Q["page runs: checked values,<br/>plus unnamed ones<br/>under unknown allow"]
+    H --> Q["page runs: values that passed,<br/>plus unvalidated ones<br/>(see above)"]
 ```
 
 A failure answers through klind's normal error path, so an `error.400`
@@ -107,22 +113,22 @@ page in the configuration is shown if you have one. Two body problems
 are caught earlier, while the header is read, and never reach
 validation: a POST without a Content-Length gets 400, and a body larger
 than `post_maxsize` gets 413. If reading the form body fails during
-validation, the status from that is returned instead.
+validation, the status from that is returned instead, and no rule runs.
 
 ## The rules in detail
 
 ### Paths
 
-A `params` block matches the same path as routes do: the request path
-the client asked for, decoded and normalised, after index selection (`/`
-is matched as `/index.kl1` when that is the index page), with any
-PATH_INFO included, and before routes and aliases replace it. That is
-not the path access rules and realms see;
-[Which path each check sees](ROUTES.md#which-path-each-check-sees) shows
-both. The first block whose path and method
-match applies, and a request that no block matches is not validated at
-all. Methods are compared without regard to case and may be separated by
-blanks or commas.
+A `params` block matches the path saved just before routing: the
+FILENAME plus any PATH_INFO, after index selection (`/` is matched as
+`/index.kl1` when that is the index page). A route or alias that replaces
+the path later does not change what validation sees. Access rules and
+realms see only the FILENAME;
+[Which path each check sees](ROUTES.md#which-path-each-check-sees)
+defines these terms and shows both. The first block whose path and
+method match applies, and a request that no block matches is not
+validated at all. Methods are compared without regard to case and may
+be separated by blanks or commas.
 
 ### Sources
 

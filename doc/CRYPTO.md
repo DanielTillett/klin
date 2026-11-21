@@ -1,8 +1,8 @@
 # Cryptography and TLS
 
 All of Klin's cryptography goes through one small C interface, and only
-six of Klin's own files may touch OpenSSL. Read this if you write C against that layer
-or want to port it to another library.
+six of Klin's own files may touch OpenSSL. This page describes both, for
+anyone writing C against that layer or porting it to another library.
 
 ## One door to the crypto library
 

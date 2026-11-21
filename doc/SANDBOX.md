@@ -171,7 +171,7 @@ development, and any server with `sandbox no`. Workers on other
 architectures and systems run unfiltered too (above). CGI scripts are
 filtered only as far as the worker's filter goes.
 
-## Tested
+## What the server tests check
 
 The server tests check, on Linux, that:
 

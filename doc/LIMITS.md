@@ -1,22 +1,23 @@
 # Request limits
 
 klind refuses requests that are too big, too slow or ambiguous, and each
-refusal has a status code and a setting that moves the line. Read this
-before you put klind on a network you don't control, or when a client
-reports a 413, 414 or 431 you didn't expect.
+refusal has a status code and a setting that moves the line. When a
+client reports a 400, 413, 414 or 431 you didn't expect, the limit
+behind it is here, and so are the worker limits that apply under prefork
+and fork.
 
 Every setting here goes in a server block of klind.conf
 ([klind.conf(5)](man/klind.conf.5)).
 
 ## Where each limit applies
 
-A request passes through a series of stages, and each stage has its own
-cap. In order, with the setting at each step and what a client gets
-for going past it: Arguments are parsed, and `max_args`
-and the form-body deadline apply, only when something needs them: a
-`params` block ([VALIDATE](VALIDATE.md)) that matches the request, or an
-active page. A static file, or a CGI script with no matching `params`
-block, skips that stage.
+A request passes through a series of stages, each with its own cap. The
+chart follows them in order, with the setting at each step and what a
+client gets for going past it. Arguments are parsed, and `max_args` and
+the form-body deadline apply, only when something needs them: a `params`
+block ([VALIDATE](VALIDATE.md)) that matches the request, or an active
+page. A static file, or a CGI script with no matching `params` block,
+skips that stage.
 
 ```mermaid
 flowchart TD
@@ -25,7 +26,7 @@ flowchart TD
     B --> C["First request line and header<br/>deadline: idle_timeout (10 s)"]
     C -->|"line over 8192 bytes"| R414["414"]
     C -->|"max_header_fields, _line, _size"| R431["431"]
-    C -->|"bad framing or field"| R400["400 or 501"]
+    C -->|"bad framing or field,<br/>target of 4096 bytes or more"| R400["400 or 501"]
     C -->|"Content-Length over post_maxsize"| R413["413"]
     C --> S{"Matching params block<br/>or active page?"}
     S -- "no (static file or CGI)" --> E
@@ -40,9 +41,13 @@ flowchart TD
 ```
 
 A refusal at the header stage (the 414, 431, 400 or 501 and 413 boxes)
-ends the connection. A later error, such as the 400 for too many
-arguments or a form body the parser cannot read, gets an error page and
-the connection can stay open for the next request. A deadline that runs
+ends the connection. One of those 400s catches clients out: a request
+target (path and query) of 4,096 bytes or more is refused with 400 even
+when the whole line is under the 8,192-byte limit, so a long URL gets
+400, and 414 only once the line itself is over 8,192 bytes. A later
+error, such as the 400 for too many arguments or a form body the parser
+cannot read, gets an error page and the connection can stay open for the
+next request. A deadline that runs
 out closes the connection without a response.
 
 ## The request
@@ -52,7 +57,7 @@ out closes the connection without a response.
 | `max_header_fields` | 100 | 8 | 431 Request Header Fields Too Large |
 | `max_header_line` | 8192 | 256 (maximum 65534) | 431 (the bytes of one field line, with its CRLF) |
 | `max_header_size` | 32768 | 1024 | 431 (the bytes of the whole header) |
-| (the request line) | 8192 | not configurable | 414 URI Too Long |
+| (the request line) | 8192 | not configurable | 414 URI Too Long; a target of 4096 bytes or more gets 400 first |
 | `max_args` | 1000 | 1 | 400 (query and form arguments, multipart fields and uploads, counted together, where arguments are parsed) |
 | `post_maxsize` | 5 MB | 1024 | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | 1 s | the connection is closed |
@@ -128,7 +133,10 @@ using memory the workers share. Set either to 0 to turn it off.
 
 `max_streams` keeps long-lived server-sent event (SSE) and WebSocket
 connections from taking every worker. With `prefork.max_child` at its
-default of 150, at least 50 workers are left for ordinary requests.
+default of 150, 100 streams leave 50 of that server's workers for
+ordinary requests. That is arithmetic against the server's own ceiling:
+the server reaches 150 workers only if klind's global `max_child`
+(default 300, shared by every server) leaves room for them.
 
 Behind a proxy, every client has the proxy's address. Raise
 `max_conn_per_ip`, or set it to 0 and limit clients at the proxy instead.
@@ -168,6 +176,12 @@ AddressSanitizer reserves terabytes of address space. klind itself and the
 key manager keep their own limits. The iterative model (`-d`) has no
 workers at all.
 
+On macOS, `worker_max_memory` cannot be applied: the system refuses an
+`RLIMIT_AS` limit, so every worker logs `worker: cannot set
+worker_max_memory: Invalid argument` and carries on without a memory
+limit. I saw this on macOS 15.8.1 (Apple silicon) on 22 Nov 2026. Set
+`worker_max_memory 0` there to skip the attempt and the warning.
+
 ## In-memory sessions
 
 The memory session store has its own caps (`memory.limit` and
@@ -175,7 +189,7 @@ The memory session store has its own caps (`memory.limit` and
 per-session size limit set by the size of one message to the parent;
 [SESSIONS](SESSIONS.md) gives both.
 
-## Tested
+## How the limits are tested
 
 `test/run_server_tests.py` checks each of these. It sends every request
 refused at the header stage with a valid request pipelined behind it, and checks both the

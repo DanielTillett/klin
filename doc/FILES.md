@@ -28,10 +28,21 @@ Both default to yes when built in.
 A request path is decoded (`%xx`), then normalised: backslashes become
 slashes, `.` and `..` segments are resolved and repeated slashes are
 reduced, all before the path is used. A NUL (`%00`) is refused with 400.
-The path is then appended to the `dir_alias` target whose prefix it
-matches, or to `dir_root`, and the file is opened under the
-`follow_symlinks` policy. This is the POSIX path; Windows differs at
-the open, as described [below](#windows).
+
+Two separate steps then decide where the file is. First the URL is
+mapped to a file-system path: the aliases are tried in order (each
+`dir_alias`, then each `script_alias`), and the first whose URL prefix
+matches the path, at a segment boundary, has its target put in place of
+that prefix. If none matches, the path is appended to `dir_root`. Second,
+klind picks the directory the file must stay inside: the longest of
+`dir_root` and all the alias targets that is a file-system prefix of the
+resulting path. That is usually the target of the alias that matched,
+but not always. If you alias `/docs` to /srv/www and also have
+/srv/www/private as another alias's target, a request for
+`/docs/private/x` is contained by /srv/www/private. A path under none of
+them is not opened. The file is then opened under that directory with the
+`follow_symlinks` policy. This is the POSIX path; Windows differs at the
+open, as described [below](#windows).
 
 ```mermaid
 flowchart TD
@@ -39,13 +50,15 @@ flowchart TD
     B --> C{"NUL in it?"}
     C -- "yes" --> E400["400 Bad Request"]
     C -- "no" --> D["normalise: backslash to slash,<br/>resolve . and .., merge repeated slashes"]
-    D --> F["append to the matching<br/>dir_alias target, or dir_root"]
-    F --> P{"follow_symlinks?"}
+    D --> F["URL to path: first alias whose<br/>URL prefix matches, else dir_root"]
+    F --> K{"longest dir_root or alias target<br/>that is a prefix of the path?"}
+    K -- "none" --> E404["404 Not Found"]
+    K -- "found" --> P{"follow_symlinks?"}
     P -- "inside" --> I{"resolve links in the directory<br/>and the file (realpath):<br/>file inside the directory?"}
     P -- "no" --> G{"open under the directory,<br/>segment by segment,<br/>O_NOFOLLOW on each"}
     P -- "yes" --> Y{"open the path,<br/>links followed<br/>wherever they lead"}
     I -- "yes" --> G
-    I -- "no, or not found" --> E404["404 Not Found"]
+    I -- "no, or not found" --> E404
     G -- "a link, or not found" --> E404
     Y -- "not found" --> E404
     G -- "opened" --> R{"regular file?"}
@@ -70,9 +83,9 @@ follow_symlinks     inside      # the default
                     yes
 ```
 
-With `inside`, a link is followed if its target is inside the directory
-the path was resolved under (`dir_root`, or the `dir_alias` or
-`script_alias` target). A link that leads out of it (to /etc, or to
+With `inside`, a link is followed if its target is inside the containing
+directory chosen above (the longest of `dir_root` and the `dir_alias` and
+`script_alias` targets that holds the path). A link that leads out of it (to /etc, or to
 ../secret.txt) is not found (404). The directory itself may be reached
 through links.
 
@@ -105,15 +118,18 @@ followed. These names are refused whatever the setting:
 - a segment ending in a dot or a blank (Windows drops them, so
   `page.kl1.` would name page.kl1);
 - one with a colon (an NTFS stream, `file::$DATA`);
-- a short 8.3 name (`SECRET~1.TXT`, another name for a file a rule may
-  cover by its long name);
+- one with a tilde followed by a digit (`SECRET~1.TXT`), the pattern of
+  the short 8.3 names Windows generates, which give a file a second name a
+  rule written for its long name would miss. Only that pattern is
+  checked, so a short name without it is not refused, and a long name
+  that happens to contain it (`v~2.txt`) is;
 - device names (CON, NUL, COM1, ...).
 
 **This code is not tested.** The Windows continuous integration (CI) job builds klind and serves
 embedded pages, but does not build the file-system supplier or run these
 path checks.
 
-## Tested
+## Paths the tests try
 
 test/run_server_tests.py, on both server models, requests a file next to
 a `dir_alias` target through `../`, `%2e%2e`, `%2f`, `%5c`, backslashes,

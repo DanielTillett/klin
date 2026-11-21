@@ -111,7 +111,7 @@ The trade-off is the key. Started as root, klind can read a key file that
 only root can read. Started as `klin`, the key file has to be readable by
 the same user the workers run as.
 
-## Tested
+## The systemd test
 
 `test/run_systemd_test.py` must run as root (CI runs it with sudo). It
 installs the unit under `/run/systemd/system`, starts klind with it and

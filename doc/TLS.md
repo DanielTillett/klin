@@ -2,15 +2,16 @@
 
 An HTTPS server accepts TLS 1.2 and 1.3, nothing older, and by default
 only forward-secret AEAD ciphers (authenticated encryption with associated
-data). Read
-on when a client cannot connect, or when you want a stricter policy than
-the default.
+data). When a client cannot connect, these rules are the usual reason, and
+the settings below change them.
 
 An https server block ([klind.conf(5)](man/klind.conf.5), SSL/TLS) needs
 only `cert_file`,
 plus `key_file` if the private key is in a file of its own. Without
-`key_file`, klind warns and looks for the key in `cert_file`. Everything
-else has a secure default.
+`key_file`, klind warns and looks for the key in `cert_file`. Use a
+separate `key_file` that the workers' user cannot read: the key manager
+keeps the key out of the workers only then ([KEYMGR](KEYMGR.md)). The
+other settings have secure defaults.
 
 ## Protocols
 
@@ -162,9 +163,9 @@ status to the handshake). Browsers do not rely on it, and
 short-lived certificates are a better way to limit how long a stolen key
 stays useful.
 
-## Tested
+## What the server tests check
 
-test/run_server_tests.py checks that:
+`test/run_server_tests.py` checks that:
 
 - TLS 1.3 is chosen when the client has it;
 - a TLS 1.2 client gets an ECDHE or DHE AEAD cipher, and one offering only

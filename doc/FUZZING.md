@@ -1,8 +1,9 @@
 # Fuzzing and static analysis
 
 Every parser that reads what a client sends has a fuzz target, and three
-static analysers check the C code. You need this when you add a parser,
-chase a fuzzer crash or read a code-scanning alert.
+static analysers check the C code. A new parser needs a target of its
+own; a fuzzer crash or a code-scanning alert starts with the sections
+below.
 
 The same targets in `fuzz/` are built two ways: by `test/run_fuzz.py` for
 a short smoke run (locally and in the Build and test workflow), and by

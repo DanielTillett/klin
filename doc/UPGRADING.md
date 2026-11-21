@@ -40,7 +40,7 @@ behaviour back:
 | What changed | To change it |
 | --- | --- |
 | TLS 1.2 ciphers by default: forward-secret authenticated encryption (AEAD) only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)); RSA key exchange also needs `key_manager no`, since the key manager does not decrypt with the key ([KEYMGR](KEYMGR.md)) |
-| The TLS private key is held by a separate process (RSA and EC keys; not on native Windows) | `key_manager no` ([KEYMGR](KEYMGR.md)) |
+| The TLS private key is held by a separate process (RSA and EC keys; not on native Windows); it stays out of the workers only with a `key_file` separate from the certificate that the workers' user cannot read | `key_manager no` ([KEYMGR](KEYMGR.md)) |
 | Workers run under a seccomp sandbox on Linux (x86-64 and ARM64), with argument checks (sockets, W^X memory, signals) | `sandbox no`, `sandbox_allow` ([SANDBOX](SANDBOX.md)) |
 | Worker limits: 1024 MB, 1024 files, and processes up to the model's maximum workers (`prefork.max_child` or `fork.max_child`, 150 by default) + 64 | `worker_max_memory`, `worker_max_files`, `worker_max_procs`; 0 leaves the inherited system limit unchanged ([LIMITS](LIMITS.md)) |
 | Header limits, a header deadline, connections per client address, SSE and WebSocket streams | `max_header_*`, `idle_timeout`, `max_conn_per_ip`, `max_streams` ([LIMITS](LIMITS.md)) |

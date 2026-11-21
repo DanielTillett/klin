@@ -1,9 +1,9 @@
 # Releases and workflows
 
 A Klin release is built, checked and signed by a GitHub Actions workflow,
-with no signing key for anyone to keep, and published by hand. Read this
-before you cut a release or edit a workflow, or when you want to check a
-release you have downloaded.
+with no signing key for anyone to keep, and published by hand. This page
+covers cutting a release, the workflows that guard the repository, and
+checking a release you have downloaded.
 
 ## Release files
 
@@ -92,8 +92,8 @@ short-lived certificate from Sigstore for its GitHub OIDC (OpenID Connect)
 identity, which names this repository, this workflow and the tag, and the
 signature is recorded in Sigstore's public transparency log (Rekor). I
 chose this because there is no private key to keep, rotate or lose, and a
-signature made anywhere other than this repository's release workflow does
-not verify. The trade-off is that the log entry is public as soon as the
+signature made anywhere other than this repository's release workflow
+fails the checks below, as long as you give `--signer-workflow`. The trade-off is that the log entry is public as soon as the
 workflow runs, before the draft is published.
 
 To check a downloaded release:
@@ -111,8 +111,27 @@ gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
 
 `--signer-workflow` and `--source-ref` check that it was the release
 workflow that signed the file, and for that tag, not another workflow in
-the repository or a branch. To check offline with the bundle, add
-`--bundle klin-4.0.0.provenance.sigstore.json` to the first command.
+the repository or a branch.
+
+Those commands fetch the attestations and Sigstore's trusted root from
+the network. To check on a machine with no network access, use the
+bundles from the release, and a trusted root you fetched beforehand on a
+machine that is online:
+
+```sh
+# online, once (fetch it again before each later offline check: the file
+# has no expiry, so it cannot tell you about keys revoked since)
+gh attestation trusted-root > trusted_root.jsonl
+
+# offline
+gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin     --signer-workflow DanielTillett/klin/.github/workflows/release.yml     --source-ref refs/tags/v4.0.0     --bundle klin-4.0.0.provenance.sigstore.json     --custom-trusted-root trusted_root.jsonl
+gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin     --signer-workflow DanielTillett/klin/.github/workflows/release.yml     --source-ref refs/tags/v4.0.0     --bundle klin-4.0.0.sbom.sigstore.json     --custom-trusted-root trusted_root.jsonl     --predicate-type https://spdx.dev/Document/v2.3
+```
+
+With a bundle, `--repo` is compared only with the repository name written
+into the signing certificate when the release was signed. It cannot tell
+whether the repository has been renamed since, or whether another one now
+has that name; the online check above can.
 
 Tags and commits are not GPG- or SSH-signed, as that needs a maintainer's
 key.
@@ -166,7 +185,7 @@ to the public Scorecard API (`publish_results: true`, with
 https://scorecard.dev/viewer/?uri=github.com/DanielTillett/klin and in the
 README's badge.
 
-## Tested
+## What CI checks, and what it doesn't yet
 
 `test/run_release_checks.py` runs in CI's Linux release build. It checks
 the workflow rules, that Dependabot covers the workflows and the fuzzing

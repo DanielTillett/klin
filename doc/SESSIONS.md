@@ -44,14 +44,23 @@ sequenceDiagram
     B->>W: request with klin_sid cookie
     W->>P: MSES_GET (session name)
     P-->>W: RESPONSE_OK (time, data)<br/>or RESPONSE_ERROR if unknown
-    Note over W: the page runs, its output is buffered<br/>(beyond 4,096 bytes it starts going out)
-    Note over W: page done, output flushed,<br/>then the session is freed and saved
+    Note over W: the page runs, its output is buffered
+    opt output reaches 4,096 bytes, or the response streams
+        Note over W: the headers commit now<br/>(an id is drawn if there is none)
+        W->>B: headers (Set-Cookie with a new id)<br/>and the output so far
+    end
+    Note over W: page done, then the session<br/>is freed and saved
     W->>P: MSES_SAVE (time, name, data)
     Note over P: stores it, discarding the<br/>oldest if over a limit
-    W->>B: the rest of the response<br/>(Set-Cookie only with a new id)
+    W->>B: the rest of the response, headers first<br/>if they have not gone out (Set-Cookie only with a new id)
 ```
 
-The save comes after the page has finished, as the session is freed. A
+The save comes after the page has finished, as the session is freed. The
+id cookie goes out with the headers, whenever they commit. For a small
+response that is after the save, but a page whose output reaches the
+4,096-byte buffer, or that streams (an SSE page, say), commits its headers
+while it is still running. If the session has no id yet, one is drawn
+then, and its cookie is sent before MSES_SAVE. A
 session with no variables of the page's own is not saved: its stored copy
 is removed instead (MSES_REMOVE).
 
@@ -209,7 +218,7 @@ anything. The token is 256 random bits kept in the session
 already stop most cross-site posts in current browsers; the token covers
 older browsers and same-site attackers.
 
-## Tested
+## How sessions are tested
 
 test/run_server_tests.py runs these checks on memory, file and client
 sessions (test/site/www/sessec.kl1):
