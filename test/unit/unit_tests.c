@@ -765,6 +765,46 @@ static void test_crypto(void)
         rlen = 1;
         CHECK(klin_b64_decode("aGk=", 4, raw, &rlen) != 0);
     }
+
+    /* u_cipher_encrypt/decrypt: *dcount is the size of dst, and data that
+       may not fit is refused before anything is written (a session's
+       KLIN_CIPHER_KEY longer than the key buffer overflowed it on the
+       stack, inside OpenSSL: found by ClusterFuzzLite) */
+    {
+        unsigned char key[32], iv[16];
+        char plain[48], sealed[64 + 16], out[16 + 32];
+        size_t n, i;
+        int clean = 1;
+
+        memset(key, 0x4b, sizeof key);
+        memset(iv, 0x49, sizeof iv);
+        memset(plain, 'p', sizeof plain);
+        n = sizeof sealed;
+        CHECK(u_cipher_encrypt(KC_AES_256_CBC, key, iv, sealed, &n, plain,
+                    sizeof plain) == 0 && n == 64);
+        /* 64 bytes into a 16-byte buffer, followed by a guard area */
+        memset(out, 0x55, sizeof out);
+        n = 16;
+        CHECK(u_cipher_decrypt(KC_AES_256_CBC, key, iv, out, &n, sealed, 64)
+                != 0);
+        for(i = 16; i < sizeof out; ++i)
+            if(out[i] != 0x55)
+                clean = 0;
+        CHECK(clean);
+        /* too small to encrypt into: refused too */
+        n = 32;
+        CHECK(u_cipher_encrypt(KC_AES_256_CBC, key, iv, sealed, &n, plain,
+                    sizeof plain) != 0);
+        /* enough room (the data and a block): decrypted */
+        {
+            char back[64 + 16];
+
+            n = sizeof back;
+            CHECK(u_cipher_decrypt(KC_AES_256_CBC, key, iv, back, &n, sealed,
+                        64) == 0 && n == sizeof plain &&
+                    !memcmp(back, plain, sizeof plain));
+        }
+    }
 }
 #endif
 
