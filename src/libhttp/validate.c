@@ -10,13 +10,18 @@
  * define named checks (a regular expression, an integer range, a length
  * range, a list of values) and its "params" blocks, per path and method,
  * say which parameters a page takes, from where, checked by which
- * validator. A page then only sees parameters that passed: an invalid or
- * missing required one gets 400 (or, with on_invalid drop, is removed),
- * and the arguments no rule names are dropped (or refused). */
+ * validator, and which files it takes, how large, of which types and how
+ * many. A page then only sees what passed: an invalid or missing required
+ * parameter gets 400 (or, with on_invalid drop, is removed), and the
+ * arguments and files no rule names are dropped (or refused).
+ *
+ * validate_load() parses the blocks once, when the vhost is created, so a
+ * request only walks arrays. */
 
 #include "klin_conf.h"
 #include <errno.h>
 #include <regex.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <u/libu.h>
@@ -33,9 +38,54 @@ struct validator_s
     const char *name;
     int type;
     regex_t re;             /* VALID_REGEX, matched against the whole value */
-    long long min, max;     /* VALID_INT, VALID_LENGTH                         */
+    long long min, max;     /* VALID_INT, VALID_LENGTH                      */
     const char *values;     /* VALID_ENUM, blank separated                  */
 };
+
+enum { SRC_QUERY = 1, SRC_FORM = 2, SRC_ROUTE = 4, SRC_HEADER = 8 };
+enum { UNKNOWN_DROP, UNKNOWN_REJECT, UNKNOWN_ALLOW };
+
+/* a "param" block */
+typedef struct valid_rule_s
+{
+    const char *name;
+    int src;                /* SRC_* bits                                    */
+    const validator_t *v;   /* NULL: only presence is checked                */
+    int required;
+} valid_rule_t;
+
+/* an "upload" block: the files sent in one multipart form field */
+typedef struct valid_upload_s
+{
+    const char *name;
+    long long max_size;     /* bytes per file, -1: no limit                  */
+    const char *types;      /* allowed Content-Types, blank separated; NULL:
+                               any                                           */
+    long long max_count;
+    int required;
+} valid_upload_t;
+
+/* a "params" block; strings point into the configuration */
+struct valid_params_s
+{
+    const char **paths;
+    size_t npaths;
+    const char *methods;    /* NULL: any                                     */
+    int unknown;            /* UNKNOWN_*                                     */
+    int drop;               /* on_invalid drop                               */
+    valid_rule_t *rules;
+    size_t nrules;
+    valid_upload_t *uploads;
+    size_t nuploads;
+};
+
+/* a query or form argument of the request being checked: var NULL once it
+   has been removed */
+typedef struct valid_arg_s
+{
+    var_t *var;
+    int src;                /* SRC_QUERY or SRC_FORM                         */
+} valid_arg_t;
 
 /* parse a whole decimal integer (optional '-', digits, nothing else) */
 static int valid_int(const char *s, long long *pv)
@@ -87,22 +137,22 @@ static const validator_t *valid_find(vhost_t *vhost, const char *name)
 }
 
 /* the params block for this path and method, or NULL */
-static u_config_t *valid_find_params(vhost_t *vhost, const char *path,
-        const char *method)
+static const valid_params_t *valid_find_params(vhost_t *vhost,
+        const char *path, const char *method)
 {
-    u_config_t *pb, *pc;
-    const char *pat, *m, *e;
-    size_t n = strlen(method);
-    int i, j, ok;
+    const valid_params_t *pb;
+    const char *m, *e;
+    size_t n = strlen(method), i, j;
+    int ok;
 
-    for(i = 0; (pb = u_config_get_child_n(vhost->config, "params", i)); ++i)
+    for(i = 0; i < vhost->nparams; ++i)
     {
-        for(ok = 0, j = 0; !ok && (pc = u_config_get_child_n(pb, "path", j));
-                ++j)
-            ok = (pat = u_config_get_value(pc)) && !fnmatch(pat, path, 0);
+        pb = &vhost->params[i];
+        for(ok = 0, j = 0; !ok && j < pb->npaths; ++j)
+            ok = !fnmatch(pb->paths[j], path, 0);
         if(!ok)
             continue;
-        if((m = u_config_get_subkey_value(pb, "method")) == NULL)
+        if((m = pb->methods) == NULL)
             return pb;
         for(; *m; m = e)
         {
@@ -114,8 +164,6 @@ static u_config_t *valid_find_params(vhost_t *vhost, const char *path,
     }
     return NULL;
 }
-
-enum { SRC_QUERY = 1, SRC_FORM = 2, SRC_ROUTE = 4, SRC_HEADER = 8 };
 
 static int valid_source(const char *s)
 {
@@ -140,16 +188,18 @@ static int valid_yes(u_config_t *c, const char *key, int def)
     return b;
 }
 
-/* does a rule of the block name the argument 'name' from 'src'? */
-static int valid_named(u_config_t *pb, const char *name, int src)
+/* does a rule of the block name the argument 'name' from 'src'? An upload
+   field's name also names a form argument: a file input left empty is sent
+   as a plain field */
+static int valid_named(const valid_params_t *pb, const char *name, int src)
 {
-    u_config_t *pr;
-    const char *n;
-    int i;
+    size_t i;
 
-    for(i = 0; (pr = u_config_get_child_n(pb, "param", i)); ++i)
-        if((n = u_config_get_subkey_value(pr, "name")) && !strcmp(n, name) &&
-                (valid_source(u_config_get_subkey_value(pr, "source")) & src))
+    for(i = 0; i < pb->nrules; ++i)
+        if((pb->rules[i].src & src) && !strcmp(pb->rules[i].name, name))
+            return 1;
+    for(i = 0; (src & SRC_FORM) && i < pb->nuploads; ++i)
+        if(!strcmp(pb->uploads[i].name, name))
             return 1;
     return 0;
 }
@@ -168,34 +218,92 @@ static int valid_arg_ok(const validator_t *v, var_t *var)
     return valid_check(v, value, len);
 }
 
-/* the source of an argument in the request's list: a POST value, or one
-   from the query string */
-static int valid_arg_source(request_t *rq, var_t *v)
+/* copy a list's var_t pointers to an array (vars_getn() walks the list,
+   so indexing it in a loop would be quadratic) */
+typedef struct valid_vec_s
 {
-    vars_t *post = request_get_postargs(rq);
+    var_t **v;
+    size_t n;
+} valid_vec_t;
+
+static int valid_cb_collect(var_t *v, void *arg)
+{
+    valid_vec_t *vec = arg;
+
+    vec->v[vec->n++] = v;
+    return 0;
+}
+
+static int valid_vec(vars_t *vs, valid_vec_t *vec)
+{
+    vec->v = NULL;
+    vec->n = 0;
+    if(vs == NULL || vars_count(vs) == 0)
+        return 0;
+    dbg_err_if((vec->v = u_malloc(vars_count(vs) * sizeof *vec->v)) == NULL);
+    vars_foreach(vs, valid_cb_collect, vec);
+
+    return 0;
+err:
+    return ~0;
+}
+
+static int valid_ptr_cmp(const void *a, const void *b)
+{
+    uintptr_t x = (uintptr_t) *(var_t * const *) a,
+              y = (uintptr_t) *(var_t * const *) b;
+
+    return x < y ? -1 : x > y;
+}
+
+/* the request's query and form arguments, each with its source (a POST
+   value, or one from the query string), in *pargs (to u_free) */
+static int valid_args(request_t *rq, valid_arg_t **pargs, size_t *pn)
+{
+    valid_vec_t all = { NULL, 0 }, post = { NULL, 0 };
+    valid_arg_t *args = NULL;
     size_t i;
 
-    for(i = 0; post && i < vars_count(post); ++i)
-        if(vars_getn(post, i) == v)
-            return SRC_FORM;
-    return SRC_QUERY;
+    dbg_err_if(valid_vec(request_get_args(rq), &all));
+    dbg_err_if(valid_vec(request_get_postargs(rq), &post));
+    if(post.n)
+        qsort(post.v, post.n, sizeof *post.v, valid_ptr_cmp);
+    if(all.n)
+        dbg_err_if((args = u_malloc(all.n * sizeof *args)) == NULL);
+    for(i = 0; i < all.n; ++i)
+    {
+        args[i].var = all.v[i];
+        args[i].src = (post.n && bsearch(&all.v[i], post.v, post.n,
+                    sizeof *post.v, valid_ptr_cmp)) ? SRC_FORM : SRC_QUERY;
+    }
+    U_FREE(all.v);
+    U_FREE(post.v);
+
+    *pargs = args;
+    *pn = all.n;
+    return 0;
+err:
+    U_FREE(all.v);
+    U_FREE(post.v);
+    U_FREE(args);
+    return ~0;
 }
 
 /* check one rule; 0, or the status to answer with */
-static int valid_rule(request_t *rq, u_config_t *pr, const validator_t *v,
-        int drop)
+static int valid_rule(request_t *rq, const valid_rule_t *r, valid_arg_t *args,
+        size_t nargs, int drop)
 {
-    const char *name = u_config_get_subkey_value(pr, "name"), *value;
-    int src = valid_source(u_config_get_subkey_value(pr, "source")), found = 0;
-    vars_t *args = request_get_args(rq), *route = request_get_route_params(rq);
+    vars_t *route = request_get_route_params(rq);
+    const char *value;
     var_t *var;
+    int found = 0;
     size_t i;
 
-    if(src & SRC_HEADER)
+    if(r->src & SRC_HEADER)
     {
-        if((value = request_get_field_value(rq, name)) != NULL)
+        if((value = request_get_field_value(rq, r->name)) != NULL)
         {
-            if(v && !valid_check(v, value, strlen(value)))
+            if(r->v && !valid_check(r->v, value, strlen(value)))
                 return HTTP_STATUS_BAD_REQUEST;     /* not removed: refuse */
             found = 1;
         }
@@ -203,34 +311,31 @@ static int valid_rule(request_t *rq, u_config_t *pr, const validator_t *v,
 
     /* the request's arguments (each value of a repeated name), then the
        route's */
-    for(i = 0; (src & (SRC_QUERY | SRC_FORM)) && args && i < vars_count(args);)
+    for(i = 0; (r->src & (SRC_QUERY | SRC_FORM)) && i < nargs; ++i)
     {
-        var = vars_getn(args, i);
-        if(strcmp(var_get_name(var), name) ||
-                !(valid_arg_source(rq, var) & src))
-        {
-            ++i;
+        if((var = args[i].var) == NULL || !(args[i].src & r->src) ||
+                strcmp(var_get_name(var), r->name))
             continue;
-        }
-        if(v && !valid_arg_ok(v, var))
+        if(r->v && !valid_arg_ok(r->v, var))
         {
             if(!drop)
                 return HTTP_STATUS_BAD_REQUEST;
             dbg_err_if(request_del_arg(rq, var));
+            args[i].var = NULL;
             continue;
         }
         found = 1;
-        ++i;
     }
-    for(i = 0; (src & SRC_ROUTE) && route && i < vars_count(route);)
+    for(i = 0; (r->src & SRC_ROUTE) && route && i < vars_count(route);)
     {
         var = vars_getn(route, i);
-        if(strcmp(var_get_name(var), name))
+        if(strcmp(var_get_name(var), r->name))
         {
             ++i;
             continue;
         }
-        if(v && !valid_check(v, var_get_value(var), strlen(var_get_value(var))))
+        if(r->v && !valid_check(r->v, var_get_value(var),
+                    strlen(var_get_value(var))))
         {
             if(!drop)
                 return HTTP_STATUS_BAD_REQUEST;
@@ -242,7 +347,7 @@ static int valid_rule(request_t *rq, u_config_t *pr, const validator_t *v,
         ++i;
     }
 
-    if(!found && valid_yes(pr, "required", 0))
+    if(!found && r->required)
         return HTTP_STATUS_BAD_REQUEST;
 
     return 0;
@@ -250,30 +355,123 @@ err:
     return HTTP_STATUS_INTERNAL_SERVER_ERROR;
 }
 
+/* does the Content-Type 'mime' (its parameters ignored) match one of
+   'types', "type/subtype" or "type/ *", compared without regard to case? */
+static int valid_type_ok(const char *types, const char *mime)
+{
+    size_t n = strcspn(mime, "; \t"), k;
+    const char *p, *e;
+
+    for(p = types; *p; p = e)
+    {
+        p += strspn(p, " \t,");
+        e = p + strcspn(p, " \t,");
+        if((k = (size_t) (e - p)) == 0)
+            continue;
+        if(k == n && !strncasecmp(p, mime, n))
+            return 1;
+        if(k >= 2 && p[k - 1] == '*' && n > k - 1 &&
+                !strncasecmp(p, mime, k - 1))
+            return 1;               /* "image/" then any subtype */
+    }
+    return 0;
+}
+
+/* is 'name' an upload field of the block? */
+static int valid_upload_named(const valid_params_t *pb, const char *name)
+{
+    size_t i;
+
+    for(i = 0; i < pb->nuploads; ++i)
+        if(!strcmp(pb->uploads[i].name, name))
+            return 1;
+    return 0;
+}
+
+/* check the uploaded files against the block's upload rules, then apply
+   unknown to the files in fields no rule names; 0, or the status to answer
+   with */
+static int valid_uploads(request_t *rq, const valid_params_t *pb)
+{
+    const valid_upload_t *u;
+    valid_vec_t up = { NULL, 0 };
+    const char *mime;
+    long long count;
+    size_t i, j, size;
+    int rc = 0;
+
+    dbg_err_if(valid_vec(request_get_uploads(rq), &up));
+
+    for(j = 0; rc == 0 && j < pb->nuploads; ++j)
+    {
+        u = &pb->uploads[j];
+        for(count = 0, i = 0; rc == 0 && i < up.n; ++i)
+        {
+            if(up.v[i] == NULL || strcmp(var_get_name(up.v[i]), u->name))
+                continue;
+            dbg_err_if(request_get_upload_info(up.v[i], &size, &mime));
+            if(u->max_size >= 0 && (unsigned long long) size >
+                    (unsigned long long) u->max_size)
+                rc = HTTP_STATUS_REQUEST_TOO_LARGE;
+            else if(u->types && !valid_type_ok(u->types, mime))
+                rc = HTTP_STATUS_BAD_REQUEST;
+            if(rc && pb->drop)
+            {
+                dbg_err_if(request_del_upload(rq, up.v[i]));
+                up.v[i] = NULL;
+                rc = 0;
+            } else if(rc == 0)
+                count++;
+        }
+        /* too many files, or none for a required field: refused whatever
+           on_invalid says */
+        if(rc == 0 && (count > u->max_count || (count == 0 && u->required)))
+            rc = HTTP_STATUS_BAD_REQUEST;
+    }
+
+    for(i = 0; rc == 0 && pb->unknown != UNKNOWN_ALLOW && i < up.n; ++i)
+    {
+        if(up.v[i] == NULL || valid_upload_named(pb, var_get_name(up.v[i])))
+            continue;
+        if(pb->unknown == UNKNOWN_REJECT)
+            rc = HTTP_STATUS_BAD_REQUEST;
+        else
+        {
+            dbg_err_if(request_del_upload(rq, up.v[i]));
+            up.v[i] = NULL;
+        }
+    }
+
+    U_FREE(up.v);
+    return rc;
+err:
+    U_FREE(up.v);
+    return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+}
+
 /**
- * \brief   Validate a request's parameters
+ * \brief   Validate a request's parameters and uploaded files
  *
  * If a params block of the vhost matches \p path (the path the client
  * asked for) and the method, parse the arguments and the form body and
  * check them against its rules.
  *
- * \return \c 0 to serve the page, or the status to answer with (400, or
- *         what parsing the body failed with)
+ * \return \c 0 to serve the page, or the status to answer with (400, 413
+ *         for a file larger than its rule allows, or what parsing the body
+ *         failed with)
  */
 int validate_request(http_t *h, request_t *rq, const char *path)
 {
-    const char *unknown;
-    u_config_t *pb, *pr;
+    const valid_params_t *pb;
+    valid_arg_t *args = NULL;
     vhost_t *vhost;
-    vars_t *args;
-    var_t *var;
-    size_t i;
-    int rc, drop;
+    size_t i, nargs = 0;
+    int rc;
 
     dbg_return_if (h == NULL || rq == NULL || path == NULL,
             HTTP_STATUS_INTERNAL_SERVER_ERROR);
 
-    if((vhost = http_get_vhost(h, rq)) == NULL || !vhost->has_params)
+    if((vhost = http_get_vhost(h, rq)) == NULL || vhost->nparams == 0)
         return 0;
     if((pb = valid_find_params(vhost, path, request_get_method_name(rq)))
             == NULL)
@@ -282,50 +480,192 @@ int validate_request(http_t *h, request_t *rq, const char *path)
     if((rc = request_parse_data(rq)) != 0)
         return rc;
 
-    drop = (u_config_get_subkey_value(pb, "on_invalid") != NULL &&
-            !strcasecmp(u_config_get_subkey_value(pb, "on_invalid"), "drop"));
+    dbg_err_if(valid_args(rq, &args, &nargs));
 
-    for(i = 0; (pr = u_config_get_child_n(pb, "param", i)); ++i)
-        if((rc = valid_rule(rq, pr,
-                        valid_find(vhost, u_config_get_subkey_value(pr,
-                                "validator")), drop)) != 0)
-            return rc;
+    for(i = 0; i < pb->nrules; ++i)
+        if((rc = valid_rule(rq, &pb->rules[i], args, nargs, pb->drop)) != 0)
+            goto end;
+
+    if((rc = valid_uploads(rq, pb)) != 0)
+        goto end;
 
     /* the arguments no rule names: dropped (default), refused or kept */
-    unknown = u_config_get_subkey_value(pb, "unknown");
-    if(unknown && !strcasecmp(unknown, "allow"))
-        return 0;
-    for(i = 0; (args = request_get_args(rq)) && i < vars_count(args);)
+    for(i = 0; pb->unknown != UNKNOWN_ALLOW && i < nargs; ++i)
     {
-        var = vars_getn(args, i);
-        if(valid_named(pb, var_get_name(var), valid_arg_source(rq, var)))
-        {
-            ++i;
+        if(args[i].var == NULL ||
+                valid_named(pb, var_get_name(args[i].var), args[i].src))
             continue;
+        if(pb->unknown == UNKNOWN_REJECT)
+        {
+            rc = HTTP_STATUS_BAD_REQUEST;
+            goto end;
         }
-        if(unknown && !strcasecmp(unknown, "reject"))
-            return HTTP_STATUS_BAD_REQUEST;
-        dbg_err_if(request_del_arg(rq, var));
+        dbg_err_if(request_del_arg(rq, args[i].var));
+        args[i].var = NULL;
+    }
+
+end:
+    U_FREE(args);
+    return rc;
+err:
+    U_FREE(args);
+    return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+}
+
+/* load a "param" block into 'r' */
+static int valid_load_rule(vhost_t *vhost, u_config_t *pr, valid_rule_t *r)
+{
+    const char *s;
+
+    r->name = u_config_get_subkey_value(pr, "name");
+    warn_err_ifm(r->name == NULL, "params: a param has no name");
+    r->src = valid_source(u_config_get_subkey_value(pr, "source"));
+    warn_err_ifm(!r->src, "params: %s: source is query, form, route, header "
+            "or any", r->name);
+    s = u_config_get_subkey_value(pr, "validator");
+    warn_err_ifm(s && (r->v = valid_find(vhost, s)) == NULL,
+            "params: %s: no validator called %s", r->name, s);
+    r->required = valid_yes(pr, "required", 0);
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* is each entry of a type list "type/subtype" or "type/ *"? */
+static int valid_types_ok(const char *types)
+{
+    const char *p, *e, *slash;
+
+    for(p = types; *p; p = e)
+    {
+        p += strspn(p, " \t,");
+        e = p + strcspn(p, " \t,");
+        if(e == p)
+            continue;
+        if((slash = memchr(p, '/', (size_t) (e - p))) == NULL ||
+                slash == p || slash + 1 == e ||
+                memchr(slash + 1, '/', (size_t) (e - slash - 1)) ||
+                memchr(p, '*', (size_t) (slash - p)) ||
+                (memchr(slash + 1, '*', (size_t) (e - slash - 1)) &&
+                 e - slash != 2))
+            return 0;
+    }
+    return 1;
+}
+
+/* load an "upload" block into 'u' */
+static int valid_load_upload(const valid_params_t *pb, u_config_t *uc,
+        valid_upload_t *u)
+{
+    u_config_t *c;
+    const char *key, *s;
+    int i;
+
+    u->name = u_config_get_subkey_value(uc, "name");
+    warn_err_ifm(u->name == NULL, "params: an upload has no name");
+    warn_err_ifm(valid_upload_named(pb, u->name),
+            "params: upload %s is named twice", u->name);
+    for(i = 0; (c = u_config_get_child_n(uc, NULL, i)); ++i)
+    {
+        key = u_config_get_key(c);
+        warn_err_ifm(strcmp(key, "name") && strcmp(key, "max_size") &&
+                strcmp(key, "type") && strcmp(key, "max_count") &&
+                strcmp(key, "required"), "params: upload %s: unknown key "
+                "'%s' (name, max_size, type, max_count, required)",
+                u->name, key);
+    }
+
+    u->max_size = -1;
+    if((s = u_config_get_subkey_value(uc, "max_size")) != NULL)
+        warn_err_ifm(valid_int(s, &u->max_size) || u->max_size < 0,
+                "params: upload %s: max_size is a size in bytes", u->name);
+    u->max_count = 1;
+    if((s = u_config_get_subkey_value(uc, "max_count")) != NULL)
+        warn_err_ifm(valid_int(s, &u->max_count) || u->max_count < 1,
+                "params: upload %s: max_count is 1 or more", u->name);
+    if((s = u_config_get_subkey_value(uc, "type")) != NULL ||
+            u_config_get_child(uc, "type"))
+        warn_err_ifm(s == NULL || !valid_types_ok(s) ||
+                s[strspn(s, " \t,")] == '\0', "params: upload %s: type is a "
+                "list of type/subtype or type/*", u->name);
+    u->types = s;
+    u->required = valid_yes(uc, "required", 0);
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* load a "params" block into 'pb' (a bad rule stops the server) */
+static int valid_load_params(vhost_t *vhost, u_config_t *c,
+        valid_params_t *pb)
+{
+    u_config_t *pc;
+    const char *s;
+    int i, n;
+
+    for(n = 0; u_config_get_child_n(c, "path", n); ++n)
+        ;
+    warn_err_ifm(n == 0, "params: a block has no path");
+    dbg_err_if((pb->paths = u_zalloc(n * sizeof *pb->paths)) == NULL);
+    for(i = 0; (pc = u_config_get_child_n(c, "path", i)); ++i)
+        if((s = u_config_get_value(pc)) != NULL)
+            pb->paths[pb->npaths++] = s;    /* a path without a value never
+                                               matches */
+    pb->methods = u_config_get_subkey_value(c, "method");
+
+    s = u_config_get_subkey_value(c, "unknown");
+    warn_err_ifm(s && strcasecmp(s, "drop") && strcasecmp(s, "reject") &&
+            strcasecmp(s, "allow"), "params: unknown is drop, reject or "
+            "allow");
+    pb->unknown = (s == NULL || !strcasecmp(s, "drop")) ? UNKNOWN_DROP :
+        !strcasecmp(s, "reject") ? UNKNOWN_REJECT : UNKNOWN_ALLOW;
+    s = u_config_get_subkey_value(c, "on_invalid");
+    warn_err_ifm(s && strcasecmp(s, "drop") && strcasecmp(s, "reject"),
+            "params: on_invalid is drop or reject");
+    pb->drop = (s && !strcasecmp(s, "drop"));
+
+    /* every rule names a parameter, a known source and a defined
+       validator */
+    for(n = 0; u_config_get_child_n(c, "param", n); ++n)
+        ;
+    if(n)
+        dbg_err_if((pb->rules = u_zalloc(n * sizeof *pb->rules)) == NULL);
+    for(i = 0; (pc = u_config_get_child_n(c, "param", i)); ++i)
+    {
+        dbg_err_if(valid_load_rule(vhost, pc, &pb->rules[pb->nrules]));
+        pb->nrules++;
+    }
+
+    for(n = 0; u_config_get_child_n(c, "upload", n); ++n)
+        ;
+    if(n)
+        dbg_err_if((pb->uploads = u_zalloc(n * sizeof *pb->uploads)) == NULL);
+    for(i = 0; (pc = u_config_get_child_n(c, "upload", i)); ++i)
+    {
+        dbg_err_if(valid_load_upload(pb, pc, &pb->uploads[pb->nuploads]));
+        pb->nuploads++;
     }
 
     return 0;
 err:
-    return HTTP_STATUS_INTERNAL_SERVER_ERROR;
+    return ~0;
 }
 
 /**
- * \brief   Load a vhost's validators and check its params blocks (a bad
- *          one stops the server)
+ * \brief   Load a vhost's validators and params blocks (a bad one stops
+ *          the server); validate_free() frees what it makes
  */
 int validate_load(vhost_t *vhost)
 {
-    u_config_t *vs, *vc, *pb, *pr;
+    u_config_t *vs, *vc, *pb;
     validator_t *v;
     const char *s, *name;
     char *pat = NULL;
     long long a, b;
     char ka[32], kb[32];
-    int i, j, n;
+    int i, n;
     size_t len;
 
     dbg_return_if (vhost == NULL, ~0);
@@ -348,12 +688,12 @@ int validate_load(vhost_t *vhost)
 
             if((s = u_config_get_subkey_value(vc, "regex")) != NULL)
             {
-                v->type = VALID_REGEX;
                 len = strlen(s) + 5;
                 dbg_err_if((pat = u_malloc(len)) == NULL);
                 (void) u_snprintf(pat, len, "^(%s)$", s);
                 warn_err_ifm(regcomp(&v->re, pat, REG_EXTENDED | REG_NOSUB),
                         "validators: %s: bad regular expression", name);
+                v->type = VALID_REGEX;  /* compiled: validate_free frees it */
                 U_FREE(pat);
             } else if((s = u_config_get_subkey_value(vc, "int")) != NULL ||
                     (s = u_config_get_subkey_value(vc, "length")) != NULL) {
@@ -375,31 +715,17 @@ int validate_load(vhost_t *vhost)
         }
     }
 
-    /* every rule names a parameter, a known source and a defined
-       validator */
+    for(n = 0; u_config_get_child_n(vhost->config, "params", n); ++n)
+        ;
+    if(n)
+        dbg_err_if((vhost->params = u_zalloc(n * sizeof *vhost->params))
+                == NULL);
     for(i = 0; (pb = u_config_get_child_n(vhost->config, "params", i)); ++i)
     {
-        vhost->has_params = 1;
-        warn_err_ifm(u_config_get_child(pb, "path") == NULL,
-                "params: a block has no path");
-        s = u_config_get_subkey_value(pb, "unknown");
-        warn_err_ifm(s && strcasecmp(s, "drop") && strcasecmp(s, "reject") &&
-                strcasecmp(s, "allow"), "params: unknown is drop, reject or "
-                "allow");
-        s = u_config_get_subkey_value(pb, "on_invalid");
-        warn_err_ifm(s && strcasecmp(s, "drop") && strcasecmp(s, "reject"),
-                "params: on_invalid is drop or reject");
-        for(j = 0; (pr = u_config_get_child_n(pb, "param", j)); ++j)
-        {
-            name = u_config_get_subkey_value(pr, "name");
-            warn_err_ifm(name == NULL, "params: a param has no name");
-            warn_err_ifm(!valid_source(u_config_get_subkey_value(pr, "source")),
-                    "params: %s: source is query, form, route, header or "
-                    "any", name);
-            s = u_config_get_subkey_value(pr, "validator");
-            warn_err_ifm(s && valid_find(vhost, s) == NULL,
-                    "params: %s: no validator called %s", name, s);
-        }
+        /* counted first, so validate_free frees what a bad block made */
+        vhost->nparams++;
+        dbg_err_if(valid_load_params(vhost, pb,
+                    &vhost->params[vhost->nparams - 1]));
     }
 
     return 0;
@@ -420,4 +746,12 @@ void validate_free(vhost_t *vhost)
             regfree(&vhost->validators[i].re);
     U_FREE(vhost->validators);
     vhost->nvalidators = 0;
+    for(i = 0; i < vhost->nparams; ++i)
+    {
+        U_FREE(vhost->params[i].paths);
+        U_FREE(vhost->params[i].rules);
+        U_FREE(vhost->params[i].uploads);
+    }
+    U_FREE(vhost->params);
+    vhost->nparams = 0;
 }

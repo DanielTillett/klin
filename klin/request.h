@@ -102,6 +102,8 @@ vars_t *request_get_uploads(request_t *rq);
 int request_get_uploaded_file(request_t *rq, const char *name, size_t idx, 
     char local_filename[U_FILENAME_MAX], char client_filename[U_FILENAME_MAX], 
     char mime_type[MIME_TYPE_BUFSZ], size_t *file_size);
+int request_get_upload_info(var_t *v, size_t *size, const char **mime_type);
+int request_del_upload(request_t *rq, var_t *v);
 
 vars_t *request_get_args(request_t *rq);
 const char *request_get_arg(request_t *rq, const char *name);

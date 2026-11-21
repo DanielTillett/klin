@@ -8,6 +8,8 @@
  */
 #include <klin/vhost.h>
 #include <klin/validate.h>
+#include <klin/route.h>
+#include <klin/acl.h>
 
 int vhost_create(vhost_t **pv)
 {
@@ -40,6 +42,8 @@ int vhost_free(vhost_t *v)
     u_free(v->rq_temp_dir);
     if(v->auth_users)
         u_config_free(v->auth_users);
+    route_free(v);
+    acl_free(v);
     validate_free(v);
     u_free(v);
 

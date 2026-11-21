@@ -1051,6 +1051,21 @@ VALIDATION_ROUTES = """
         {
             path /h
             page /echo.kl1
+        }
+        route
+        {
+            path /u1
+            page /upload.kl1
+        }
+        route
+        {
+            path /u2
+            page /upload.kl1
+        }
+        route
+        {
+            path /u3
+            page /upload.kl1
         }"""
 
 
@@ -1327,6 +1342,39 @@ VALIDATION = """validators
             validator token
             required yes
         }
+    }
+    params
+    {
+        path /u1
+        unknown reject
+        param
+        {
+            name field
+        }
+        upload
+        {
+            name file
+            max_size 16
+            type text/plain, image/*
+        }
+    }
+    params
+    {
+        path /u2
+        on_invalid drop
+        upload
+        {
+            name file
+            max_size 16
+            type text/plain
+            max_count 2
+            required yes
+        }
+    }
+    params
+    {
+        path /u3
+        unknown allow
     }"""
 
 def run_validation_checks(check, plain):
@@ -1378,6 +1426,57 @@ def run_validation_checks(check, plain):
         extra = b"X-Token: " + token + b"\r\n" if token else b""
         status, _ = get(b"/h", extra)
         check(status == want, f"Header validation {token!r}: {status}, expected {want}")
+
+    # upload rules: size (413), Content-Type, count, unknown fields
+    def upload(path, *parts):
+        body = b""
+        for name, filename, ctype, data in parts:
+            body += b"--XyZ\r\nContent-Disposition: form-data; name=\"" + name + b"\""
+            if filename is not None:
+                body += b"; filename=\"" + filename + b"\""
+            body += b"\r\n" + (b"Content-Type: " + ctype + b"\r\n" if ctype else b"") + \
+                b"\r\n" + data + b"\r\n"
+        body += b"--XyZ--\r\n"
+        reply = exchange(plain, b"POST " + path + b" HTTP/1.1\r\nHost: localhost\r\n"
+                         b"Content-Type: multipart/form-data; boundary=XyZ\r\n"
+                         b"Content-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
+        head, _, data = reply.partition(b"\r\n\r\n")
+        return int(head.split(b"\r\n")[0].split()[1]), data
+
+    text = (b"file", b"a.txt", b"text/plain", b"file body")
+    big = (b"file", b"b.txt", b"text/plain", b"x" * 17)
+    for name, path, parts, want, seen in [
+            ("allowed file", b"/u1", [(b"field", None, None, b"v"), text], 200,
+             b"file=a.txt text/plain 9 [file body]\nuploads=1\n"),
+            ("type/* match", b"/u1", [(b"file", b"p.png", b"image/png", b"png")], 200,
+             b"file=p.png image/png 3"),
+            ("type case and parameters", b"/u1",
+             [(b"file", b"c.txt", b"TEXT/Plain; charset=utf-8", b"abc")], 200, b"uploads=1"),
+            ("size limit exactly", b"/u1", [(b"file", b"s.txt", b"text/plain", b"y" * 16)], 200,
+             b"uploads=1"),
+            ("too large", b"/u1", [big], 413, None),
+            ("wrong type", b"/u1", [(b"file", b"a.pdf", b"application/pdf", b"%PDF")], 400, None),
+            ("no Content-Type", b"/u1", [(b"file", b"a.txt", None, b"abc")], 400, None),
+            ("two files, max_count 1", b"/u1", [text, text], 400, None),
+            ("unnamed field, unknown reject", b"/u1", [text, (b"other", b"o.txt", b"text/plain",
+                                                             b"o")], 400, None),
+            ("empty file input", b"/u1", [(b"file", b"", b"application/octet-stream", b"")], 200,
+             b"file=(none)\nuploads=0\n"),
+            ("no file, not required", b"/u1", [(b"field", None, None, b"v")], 200, b"uploads=0"),
+            ("drop: bad file removed", b"/u2", [big, text], 200,
+             b"file=a.txt text/plain 9 [file body]\nuploads=1\n"),
+            ("drop: required file dropped", b"/u2", [big], 400, None),
+            ("drop: wrong type dropped", b"/u2", [(b"file", b"p.png", b"image/png", b"png"), text],
+             200, b"file=a.txt"),
+            ("drop: max_count 2", b"/u2", [text, text], 200, b"uploads=2"),
+            ("drop: too many files", b"/u2", [text, text, text], 400, None),
+            ("drop: unnamed field dropped", b"/u2", [(b"other", b"o.txt", b"text/plain", b"o"),
+                                                    text], 200, b"uploads=1"),
+            ("unknown allow keeps files", b"/u3", [(b"other", b"o.txt", b"text/plain", b"o")], 200,
+             b"uploads=1")]:
+        status, data = upload(path, *parts)
+        check(status == want and (seen is None or seen in data),
+              f"Upload validation ({name}): {status} {data[:200]!r}, expected {want} {seen!r}")
 
     # pages without params rules are not affected
     status, _ = get(b"/pid.kl1?anything=at%00all")
@@ -2698,6 +2797,19 @@ def run_bad_auth_checks(check, daemon, env, temp):
             ("bad unknown", good, "path /x\nunknown ignore"),
             ("no path", good, "param\n{\nname a\n}")]:
         check(not validated(validators, params), f"klind started with bad validation ({name})")
+    upload = "path /x\nupload\n{\nname f\n%s\n}"
+    check(validated(good, upload % "max_size 1024\ntype text/plain, image/*\nmax_count 3\n"
+                    "required yes"), "A valid upload rule was refused")
+    for name, body in [("no name", "path /x\nupload\n{\nmax_size 5\n}"),
+                       ("named twice", upload % "" + "\nupload\n{\nname f\n}"),
+                       ("negative max_size", upload % "max_size -1"),
+                       ("max_size not a number", upload % "max_size 1M"),
+                       ("max_count 0", upload % "max_count 0"),
+                       ("type without subtype", upload % "type text"),
+                       ("any type", upload % "type */*"),
+                       ("empty type list", upload % "type ,"),
+                       ("unknown key", upload % "maxsize 5")]:
+        check(not validated(good, body), f"klind started with a bad upload rule ({name})")
 
 
 def run_root_checks(check, daemon, env, temp):

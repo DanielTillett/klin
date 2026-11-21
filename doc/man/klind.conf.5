@@ -192,8 +192,12 @@ Plaintext passwords are refused. See doc/AUTH.md.
 Request validation: named \fBvalidator\fRs (\fBregex\fR, \fBint\fR,
 \fBlength\fR, \fBenum\fR) and \fBparams\fR blocks per \fBpath\fR and
 \fBmethod\fR with a \fBparam\fR block per parameter (\fBname\fR,
-\fBsource\fR, \fBvalidator\fR, \fBrequired\fR), \fBunknown\fR and
-\fBon_invalid\fR. See doc/VALIDATE.md.
+\fBsource\fR, \fBvalidator\fR, \fBrequired\fR), an \fBupload\fR block per
+file field (\fBname\fR, \fBmax_size\fR in bytes, answered 413 when
+exceeded; \fBtype\fR, a list of \fItype/subtype\fR or \fItype/*\fR;
+\fBmax_count\fR, default 1; \fBrequired\fR), \fBunknown\fR (which also
+covers files in fields no \fBupload\fR names) and \fBon_invalid\fR. See
+doc/VALIDATE.md.
 .TP
 \fBroutes\fR
 REST-style routes: \fBroute\fR blocks with a \fBpath\fR pattern

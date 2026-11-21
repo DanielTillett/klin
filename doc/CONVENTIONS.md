@@ -106,7 +106,7 @@ Who owns each of the main types:
 | `vars_t` / `var_t` | a request's args list owns its vars. `args_get` and `args_post` hold the same `var_t` pointers without owning them (see `request_vars()`) |
 | `io_t` | `io_free()` frees the codecs attached to it, and closes the descriptor only if the io was created with `IO_FD_CLOSE` |
 | `codec_t` | owned by the `io_t` it was added to |
-| `vhost_t` | owned by the `http_t`. Its cached strings (`alias`, `rq_temp_dir`) are copies it frees |
+| `vhost_t` | owned by the `http_t`. Its cached strings (`alias`, `rq_temp_dir`) are copies it frees. It also frees its routes, access rules, validators and `params` blocks, parsed when it is created; they point into the configuration for their strings |
 | `talarm_t` | `timerm_add()` returns it and `timerm_del()` frees it. A fired alarm is off the list but still allocated: `timerm_del()` it (or reschedule it) |
 
 The alarm is the one that catches people out, so here it is in code:

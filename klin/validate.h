@@ -21,6 +21,8 @@ extern "C" {
  * HTTP server */
 struct validator_s;
 typedef struct validator_s validator_t;
+struct valid_params_s;
+typedef struct valid_params_s valid_params_t;
 
 int validate_load(vhost_t *vhost);
 void validate_free(vhost_t *vhost);
