@@ -1,0 +1,1817 @@
+/*
+ * Copyright (c) 2005-2012 by KoanLogic s.r.l. <http://www.koanlogic.com>
+ * Copyright (c) 2026 Daniel Tillett
+ * All rights reserved.
+ *
+ * This file is part of Klin (derived from KLone), and as such it is subject to the license stated
+ * in the LICENSE file which you have received as part of this distribution.
+ */
+
+#include "klin_conf.h"
+#ifdef OS_UNIX
+#include <grp.h>
+#include <sys/resource.h>
+#endif
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_SYS_WAIT
+#include <sys/wait.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
+#endif
+#include <u/libu.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#ifdef OS_UNIX
+#include <sys/time.h>
+#endif
+#include <klin/server.h>
+#include <klin/backend.h>
+#include <klin/os.h>
+#include <klin/timer.h>
+#include <klin/context.h>
+#include <klin/ppc.h>
+#include <klin/ppc_cmd.h>
+#include <klin/utils.h>
+#include <klin/klog.h>
+#include <klin/conntab.h>
+#include <klin/hook.h>
+#include <klin/hookprv.h>
+#include <klin/server_ppc_cmd.h>
+#include <klin/emb.h>
+#include <klin/keyproxy.h>
+#include <klin/tls.h>
+#include <klin/sandbox.h>
+#include "server_s.h"
+#include "child.h"
+
+#define SERVER_MAX_BACKENDS 8
+
+/* the largest max_child: klind's select() watches one channel per worker,
+   below FD_SETSIZE, with room for the listening sockets and the rest */
+#ifndef OS_WIN
+#define SERVER_MAX_CHILD_LIMIT (FD_SETSIZE - 128)
+#else   /* Winsock: no workers (no fork), and FD_SETSIZE counts sockets */
+#define SERVER_MAX_CHILD_LIMIT 65536
+#endif
+#ifdef OS_UNIX
+static volatile sig_atomic_t server_children_changed = 0;
+#endif
+
+enum watch_fd_e
+{
+    WATCH_FD_READ   = 1 << 1,
+    WATCH_FD_WRITE  = 1 << 2,
+    WATCH_FD_EXCP   = 1 << 3
+};
+
+static int server_watch_fd(server_t *s, int fd, unsigned int mode);
+static void server_clear_fd(server_t *s, int fd, unsigned int mode);
+static void server_close_fd(server_t *s, int fd);
+static void server_sandbox(backend_t *be);
+static void server_limits(backend_t *be);
+
+static int server_be_listen(backend_t *be)
+{
+    dbg_return_if (be == NULL, ~0);
+    dbg_return_if (be->na == NULL, ~0);
+
+    /* Return a socket descriptor bound to the configured endpoint. */
+    warn_return_if ((be->ld = u_net_sd_by_addr(be->na)) == -1, ~0);
+
+    return 0;
+}
+
+
+#ifdef OS_UNIX
+/* remove a child process whose pid is 'pid' to children list */
+static int server_reap_child(server_t *s, pid_t pid)
+{
+    child_t *child;
+    backend_t *be;
+
+    dbg_err_if (s == NULL);
+    
+    /* get the child object */
+    dbg_err_if(children_get_by_pid(s->children, pid, &child));
+
+    /* remove the child from the list */
+    dbg_err_if(children_del(s->children, child));
+
+    /* and its connection, if it died serving one */
+    conntab_reap(pid);
+    be = child->be;
+
+    /* check that the minimum number of process are active */
+    be->nchild--;
+    if(be->nchild < be->start_child)
+        be->fork_child = be->start_child - be->nchild;
+
+    U_FREE(child);
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* add a child to the list */
+static int server_add_child(server_t *s, pid_t pid, backend_t *be)
+{
+    child_t *child = NULL;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (be == NULL);
+
+    dbg_err_if(child_create(pid, be, &child));
+
+    dbg_err_if(children_add(s->children, child));
+
+    be->nchild++;
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* send 'sig' signal to all children process */
+static int server_signal_children(server_t *s, int sig)
+{
+    child_t *child;
+    ssize_t i;
+    int rc = 0;
+
+    dbg_return_if (s == NULL, ~0);
+
+    /* every child gets the signal, even if one before it could not (ESRCH:
+       already gone, its entry not yet removed) */
+    for(i = children_count(s->children) - 1; i >= 0; --i)
+    {
+        if(!children_getn(s->children, i, &child) &&
+                kill(child->pid, sig) < 0 && errno != ESRCH)
+        {
+            dbg_strerror(errno);
+            rc = ~0;
+        }
+    }
+
+    return rc;
+}
+#endif
+
+static void server_term_children(server_t *s)
+{
+    dbg_ifb(s == NULL) return;
+#ifdef OS_UNIX
+    server_signal_children(s, SIGTERM);
+#endif
+    return;
+}
+
+static void server_kill_children(server_t *s)
+{
+    dbg_ifb(s == NULL) return;
+#ifdef OS_UNIX
+    server_signal_children(s, SIGKILL);
+#endif
+    return;
+}
+
+/* the signal that stopped the server (logged by server_loop) */
+static volatile sig_atomic_t server_stop_signal = 0;
+
+/* SIGINT and SIGTERM. Only async-signal-safe work here: flags, close(2) and
+ * _exit(2); the logging and the cleanup happen in server_loop() and
+ * app_term() (the handlers used to log and free the embedded files, which
+ * the interrupted code could be using) */
+static void server_sigstop(int sig)
+{
+    /* a child stopped by the parent dies at once (and must not log: the
+       parent may be dead already, e.g. after "killall klind") */
+    if(sig == SIGTERM && ctx && ctx->pipc)
+        _exit(0);
+
+    server_stop_signal = sig;
+
+    /* sets the stop flag and closes a child's listening socket, so that
+       an accept(2) restarted after this handler returns fails at once */
+    if(ctx && ctx->server)
+        (void) server_stop(ctx->server);
+}
+
+#ifdef OS_UNIX
+static void server_sigchld(int sig)
+{
+    u_unused_args(sig);
+    /* Signals can arrive before ctx->server is assigned or after it is freed. */
+    server_children_changed = 1;
+}
+
+static void server_waitpid(server_t *s)
+{
+    pid_t pid = -1;
+    int status;
+
+    dbg_ifb(s == NULL) return;
+    
+    u_sig_block(SIGCHLD);
+
+    /* detach from child processes */
+    while((pid = waitpid(-1, &status, WNOHANG)) > 0) 
+    {
+        if(WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+            u_warn("pid [%u], exit code [%d]", pid, WEXITSTATUS(status));
+
+        if(WIFSIGNALED(status))
+            u_warn("pid [%u], signal [%d]", pid, WTERMSIG(status));
+
+#ifdef SSL_OPENSSL
+        /* the key manager held the only copy of a TLS key: without it no
+           handshake can be signed, so stop rather than fail every one */
+        if(tls_keyproxy_is_manager(pid))
+        {
+            u_crit("TLS key manager [%u] exited, stopping", pid);
+            s->stop = 1;
+            continue;
+        }
+#endif
+
+        /* decrement child count */
+        server_reap_child(s, pid);
+    }
+
+    server_children_changed = 0;
+
+    u_sig_unblock(SIGCHLD);
+}
+#endif
+
+static void server_recalc_hfd(server_t *s)
+{
+    register int i;
+    fd_set *prdfds, *pwrfds, *pexfds;
+
+    dbg_ifb(s == NULL) return;
+    
+    prdfds = &s->rdfds;
+    pwrfds = &s->wrfds;
+    pexfds = &s->exfds;
+
+    /* set s->hfd to highest value */
+    for(i = s->hfd, s->hfd = 0; i > 0; --i)
+    {
+        if(FD_ISSET(i, prdfds) || FD_ISSET(i, pwrfds) || FD_ISSET(i, pexfds))
+        {
+            s->hfd = i;
+            break;
+        }
+    }
+}
+
+static void server_clear_fd(server_t *s, int fd, unsigned int mode)
+{
+    dbg_ifb(s == NULL) return;
+
+    if(mode & WATCH_FD_READ)
+        FD_CLR(fd, &s->rdfds);
+
+    if(mode & WATCH_FD_WRITE)
+        FD_CLR(fd, &s->wrfds);
+
+    if(mode & WATCH_FD_EXCP)
+        FD_CLR(fd, &s->exfds);
+
+    server_recalc_hfd(s);
+}
+
+/* fails for a descriptor select(2) cannot watch (POSIX: FD_SETSIZE or
+   above, FD_SET would write past the set; a Winsock set counts sockets,
+   whatever their handles, and klind has only its listening ones) */
+static int server_watch_fd(server_t *s, int fd, unsigned int mode)
+{
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (fd < 0, ~0);
+#ifndef OS_WIN
+    warn_return_ifm (fd >= FD_SETSIZE, ~0, "descriptor %d is beyond what "
+            "select() can watch (%d): fewer servers or max_child", fd,
+            FD_SETSIZE);
+#endif
+
+    if(mode & WATCH_FD_READ)
+        FD_SET(fd, &s->rdfds);
+
+    if(mode & WATCH_FD_WRITE)
+        FD_SET(fd, &s->wrfds);
+
+    if(mode & WATCH_FD_EXCP)
+        FD_SET(fd, &s->exfds);
+
+    s->hfd = U_MAX(s->hfd, fd);
+
+    return 0;
+}
+
+/* a new worker: close what it inherited of the parent's descriptors that
+   are not its own, the parent's ends of its siblings' IPC channels (with
+   them it could read or answer their messages to klind) and the other
+   servers' listening sockets */
+static void server_close_inherited(server_t *s, backend_t *be)
+{
+    backend_t *obe;
+    int fd, listener;
+
+    for(fd = 0; fd <= s->hfd; ++fd)
+    {
+        if(!FD_ISSET(fd, &s->rdfds) || fd == be->ld)
+            continue;
+        listener = 0;
+        LIST_FOREACH(obe, &s->bes, np)
+            if(obe->ld == fd)
+                listener = 1;
+        if(!listener)
+            close(fd);
+    }
+    FD_ZERO(&s->rdfds);
+    FD_ZERO(&s->wrfds);
+    FD_ZERO(&s->exfds);
+    s->hfd = 0;
+}
+
+static void server_close_fd(server_t *s, int fd)
+{
+    dbg_ifb(s == NULL) return;
+    dbg_ifb(fd < 0) return;
+
+    server_clear_fd(s, fd, WATCH_FD_READ | WATCH_FD_WRITE | WATCH_FD_EXCP);
+    close(fd);
+}
+
+static int server_be_accept(server_t *s, backend_t *be, int *pfd)
+{
+    struct sockaddr sa;
+    socklen_t sa_len = sizeof(struct sockaddr);
+    int ad;
+
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (be == NULL, ~0);
+    dbg_return_if (pfd == NULL, ~0);
+
+again:
+    ad = accept(be->ld, &sa, &sa_len);
+    if(ad == -1 && errno == EINTR)
+        goto again; /* interrupted */
+    dbg_err_if(ad == -1); /* accept error */
+
+#ifdef SSL_OPENSSL
+    /* a worker idle since it forked holds an old session ticket secret:
+       step it forward before anything of the client's is read */
+    tls_tickets_advance();
+#endif
+
+    *pfd = ad;
+
+    return 0;
+err:
+    if(ad < 0 && !s->stop)  /* not an idle spare worker leaving */
+        warn_strerror(errno);
+    return ~0;
+}
+
+static int server_backend_detach(server_t *s, backend_t *be)
+{
+    s->nbackend--;
+
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (be == NULL, ~0);
+
+    u_net_addr_free(be->na);
+    be->server = NULL;
+    be->na = NULL;
+    be->config = NULL;
+
+    close(be->ld);
+    be->ld = -1;
+
+    backend_free(be);
+
+    return 0;
+}
+
+/* prefork: whether the watchdog runs (it asks the parent for one more
+ * worker when this one has held a connection for more than a second), and
+ * whether the connection is serving a request (or waiting for the next one) */
+static int server_watchdog_enabled = 0;
+static int server_watchdog_on = 0;
+static volatile sig_atomic_t server_watchdog_busy = 0;   /* read by the tick */
+
+/* prefork: this worker was started beyond start_child (a spare) */
+static int server_spare = 0;
+
+#ifdef OS_UNIX
+static int server_chroot_to(server_t *s, const char *dir)
+{
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (dir == NULL, ~0);
+
+    u_unused_args(s);
+
+    dbg_err_if(chroot(dir));
+
+    dbg_err_if(chdir("/"));
+
+    u_info("chroot'd: %s", dir);
+
+    return 0;
+err:
+    warn_strerror(errno);
+    return ~0;
+}
+
+static int server_foreach_cb(struct dirent *d, const char *path, void *arg)
+{
+    int *pfound = (int*)arg;
+
+    u_unused_args(d, path);
+
+    *pfound = 1;
+
+    return ~0;
+}
+
+static int server_chroot_blind(server_t *s)
+{
+#ifdef HAVE_FORK
+    enum { BLIND_DIR_MODE = 0100 }; /* blind dir mode must be 0100 */
+    char dir[U_PATH_MAX], c;
+    struct stat st;
+    int fd_dir = -1, found, status, sync[2] = { -1, -1 };
+    int made = 0;           /* the dir exists, and no helper removes it */
+    pid_t child = -1;
+    unsigned int mask;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (s->chroot == NULL);
+
+    dbg_err_if(u_path_snprintf(dir, U_PATH_MAX, U_PATH_SEPARATOR,
+        "%s/klind_blind_chroot_%d.dir", s->chroot, getpid()));
+
+    /* create the blind dir (0100 mode) */
+    dbg_err_if(mkdir(dir, BLIND_DIR_MODE ));
+    made = 1;
+
+    /* get the fd of the dir: the one just made, not a link or anything
+       else put in its place; it is checked, and entered, through the fd */
+    dbg_err_if((fd_dir = open(dir, O_RDONLY | O_DIRECTORY | O_NOFOLLOW)) < 0);
+
+    /* the dir must be owned by root, with mode 0100 */
+    dbg_err_if(fstat(fd_dir, &st));
+    dbg_err_if(st.st_gid || st.st_uid);
+    dbg_err_if((st.st_mode & 07777) != BLIND_DIR_MODE);
+
+    /* a helper removes the dir once klind is inside (it is outside) */
+    dbg_err_if(pipe(sync));
+    dbg_err_if((child = fork()) < 0);
+
+    if(child == 0)
+    {   /* child: wait for the parent's chroot (or its failure), then
+           delete the chroot dir and exit */
+        close(sync[1]);
+        if(read(sync[0], &c, 1) < 0)
+            u_dbg("[child] wait for the chroot: %s", strerror(errno));
+        u_dbg("[child] removing dir: %s\n", dir);
+        _exit(rmdir(dir) ? 1 : 0);
+    }
+    /* parent: the helper removes the dir now, whatever happens */
+    made = 0;
+    close(sync[0]);
+    sync[0] = -1;
+
+    /* do chroot */
+    dbg_err_if(fchdir(fd_dir));
+    dbg_err_if(chroot("."));
+    dbg_err_if(chdir("/"));
+    u_info("chroot'd: %s", dir);
+
+    /* let the helper remove the dir */
+    close(sync[1]);
+    sync[1] = -1;
+    dbg_err_if(waitpid(child, &status, 0) != child);
+    child = -1;
+    warn_err_ifm(!WIFEXITED(status) || WEXITSTATUS(status),
+            "blind_chroot: cannot remove %s", dir);
+
+    /* the dir must be empty */
+    found = 0;
+    mask = S_IFIFO | S_IFCHR | S_IFDIR | S_IFBLK | S_IFREG | S_IFLNK | S_IFSOCK;
+    dbg_err_if(u_foreach_dir_item("/", mask, server_foreach_cb, &found));
+
+    /* bail out if the dir is not empty */
+    dbg_err_if(found);
+
+    close(fd_dir);
+
+    return 0;
+err:
+    warn_strerror(errno);
+    if(sync[1] >= 0)
+        close(sync[1]);     /* the helper removes the dir */
+    if(sync[0] >= 0)
+        close(sync[0]);
+    if(child > 0)
+        (void) waitpid(child, NULL, 0);
+    if(made)
+        (void) rmdir(dir);
+    if(fd_dir >= 0)
+        close(fd_dir);
+    return ~0;
+#else   /* !HAVE_FORK */
+    u_unused_args(s);
+    err("Blind chroot could not be honoured since fork(2) unavailable");
+    return ~0;
+#endif  /* HAVE_FORK */
+}
+
+static int server_chroot(server_t *s)
+{
+    dbg_return_if (s == NULL, ~0);
+
+    if(s->blind_chroot)
+        return server_chroot_blind(s);
+    else
+        return server_chroot_to(s, s->chroot);
+}
+
+static int server_drop_privileges(server_t *s)
+{
+    uid_t uid;
+    gid_t gid;
+
+    dbg_return_if (s == NULL, ~0);
+
+    if(s->gid > 0)
+    {
+        gid = (gid_t)s->gid;
+
+        /* remove all groups except gid */
+        dbg_err_if(setgroups(1, &gid));
+
+        /* set gid */
+        dbg_err_if(setgid(gid));
+        dbg_err_if(setegid(gid));
+
+        /* verify */
+        dbg_err_if(getgid() != gid || getegid() != gid);
+    }
+
+    if(s->uid > 0)
+    {
+        uid = (uid_t)s->uid;
+
+        /* set uid */
+        dbg_err_if(setuid(uid));
+        dbg_err_if(seteuid(uid));
+
+        /* verify */
+        dbg_err_if(getuid() != uid || geteuid() != uid);
+    }
+    
+    return 0;
+err:
+    warn_strerror(errno);
+    return ~0;
+}
+
+static int server_fork_child(server_t *s, backend_t *be)
+{
+#ifdef HAVE_FORK
+    backend_t *obe; /* other backed */
+    pid_t child;
+    int socks[2] = { -1, -1 };
+#ifdef __linux__
+    pid_t parent = getpid();
+#endif
+
+    dbg_return_if (s == NULL, -1);
+    dbg_return_if (be == NULL, -1);
+    /* exit on too much children */
+    dbg_return_if (children_count(s->children) == s->max_child, -1);
+    dbg_return_if (be->nchild == be->max_child, -1);
+
+    /* create a parent<->child IPC channel, which no CGI script gets, and
+       which the parent's select() can watch */
+    dbg_err_if(socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0);
+    dbg_err_if(fcntl(socks[0], F_SETFD, FD_CLOEXEC) ||
+            fcntl(socks[1], F_SETFD, FD_CLOEXEC));
+    warn_err_ifm(socks[0] >= FD_SETSIZE, "descriptor %d is beyond what "
+            "select() can watch (%d): fewer servers or max_child", socks[0],
+            FD_SETSIZE);
+
+    if((child = fork()) == 0)
+    {   /* child */
+
+        /* never flush, the parent process will */
+        s->klog_flush = 0;
+
+        /* reseed the PRNG */
+        srand(rand() + getpid() + time(0));
+
+#ifdef __linux__
+        /* a worker does not outlive klind (killed, it cannot stop them);
+           SIGKILL, as klind's own SIGTERM handler is still installed */
+        if(prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != parent)
+            _exit(0);
+#endif
+
+#ifdef SSL_OPENSSL
+        /* only its own server's session ticket secret */
+        tls_tickets_keep(be->config);
+#endif
+
+        /* close one end of the channel */
+        close(socks[0]);
+
+        /* save parent PPC socket and close the other */
+        ctx->pipc = socks[1];
+        ctx->backend = be;
+
+        /* close the parent's ends of the siblings' channels */
+        server_close_inherited(s, be);
+
+        /* close listening sockets of other backends */
+        LIST_FOREACH(obe, &s->bes, np)
+        {
+            if(obe == be)
+                continue;
+            close(obe->ld);
+            obe->ld = -1;
+        }
+
+        /* clear child copy of children list */
+        dbg_err_if(children_clear(s->children));
+
+    } else if(child > 0) {
+        /* parent */
+
+        /* save child pid and increment child count */
+        server_add_child(s, child, be);
+
+        /* close one end of the channel */
+        close(socks[1]);
+
+        /* watch the PPC socket connected to the child (checked above) */
+        (void) server_watch_fd(s, socks[0], WATCH_FD_READ);
+    } else {
+        warn_err("fork error");
+    }
+
+    return child;
+err:
+    warn_strerror(errno);
+    if(socks[0] >= 0)
+        close(socks[0]);
+    if(socks[1] >= 0)
+        close(socks[1]);
+    return -1;
+#else   /* !HAVE_FORK */
+    u_unused_args(s, be);
+    u_warn("Only iterative mode is enabled (fork(2) unsupported by target OS)");
+    return -1;
+#endif  /* HAVE_FORK */
+}
+
+static int server_child_serve(server_t *s, backend_t *be, int ad)
+{
+    pid_t child;
+
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (be == NULL, ~0);
+
+    dbg_err_if((child = server_fork_child(s, be)) < 0);
+
+    if(child == 0)
+    {   /* child */
+
+        /* close this be listening descriptor */
+        U_CLOSE(be->ld);
+
+        hook_call(child_init);
+        server_limits(be);
+        server_sandbox(be);
+
+        /* serve the page (the backend closes the client socket) and die */
+        dbg_if(backend_serve(be, ad));
+
+        hook_call(child_term);
+
+        server_stop(be->server);
+    } else
+        close(ad); /* parent: the child owns the client socket */
+
+    return 0;
+err:
+    warn_strerror(errno);
+    close(ad);
+    return ~0;
+}
+
+/* clients are waiting in the accept queue: no worker is free to take them */
+static int server_clients_waiting(void)
+{
+    struct timeval tv = { 0, 0 };
+    fd_set rdfds;
+    int ld;
+
+    if(ctx->backend == NULL || (ld = ctx->backend->ld) < 0 ||
+            ld >= FD_SETSIZE)
+        return 0;
+
+    FD_ZERO(&rdfds);
+    FD_SET(ld, &rdfds);
+
+    return select(ld + 1, &rdfds, NULL, NULL, &tv) > 0;
+}
+
+/* The prefork worker's own SIGALRM (setitimer(2)): unlike the alarms of
+ * timer.h, which run while klin waits for a descriptor, these must interrupt
+ * whatever the worker is doing (a slow page, accept(2)). So the handler does
+ * only async-signal-safe work: flags, close(2) and one write(2). */
+enum { TICK_OFF, TICK_WATCHDOG, TICK_SPARE_IDLE };
+static volatile sig_atomic_t server_tick_mode = TICK_OFF;
+
+/* the watchdog, every second while a connection lasts */
+static void server_tick_watchdog(server_t *s)
+{
+    /* must be called by a child process */
+    if(ctx->backend == NULL || ctx->pipc == 0)
+        return;
+
+    /* ask the parent for a new worker once for a slow request, and every
+       second while other clients wait for a worker: each new worker that
+       gets a kept-alive connection does the same, so the pool doubles every
+       second (up to max_child) instead of growing by a few workers */
+    if(server_clients_waiting() || (server_watchdog_busy && !s->stop))
+    {
+        if(server_ppc_cmd_fork_child(s, ctx->backend))
+            return;
+
+        /* mark the current child process so it will die when it finishes
+           serving this connection; its listening socket stays open
+           (closing it may drop the kept-alive connection) */
+        s->stop = 1;
+    }
+}
+
+static void server_sigalrm(int sig)
+{
+    u_unused_args(sig);
+
+    if(ctx == NULL || ctx->server == NULL)
+        return;
+
+    switch(server_tick_mode)
+    {
+    case TICK_WATCHDOG:
+        server_tick_watchdog(ctx->server);
+        break;
+    case TICK_SPARE_IDLE:
+        /* a spare worker waited idle_timeout seconds for a client: exit,
+           so that the pool shrinks back after a burst (closing the
+           listening socket ends the accept(2)) */
+        (void) server_stop(ctx->server);
+        break;
+    default:
+        break;
+    }
+}
+
+/* run 'mode' in 'secs' seconds, then every 'every' seconds (0: once); a
+ * TICK_OFF stops it */
+static int server_tick(int mode, int secs, int every)
+{
+    struct itimerval it;
+    static int installed = 0;
+
+    if(!installed)
+    {
+        dbg_err_if(u_signal(SIGALRM, server_sigalrm));
+        installed = 1;
+    }
+
+    /* stop first: a tick of the old mode pending now is delivered when
+       setitimer() returns, while the mode is still off */
+    server_tick_mode = TICK_OFF;
+    memset(&it, 0, sizeof it);
+    dbg_err_sif(setitimer(ITIMER_REAL, &it, NULL));
+
+    if(mode == TICK_OFF)
+        return 0;
+
+    server_tick_mode = mode;
+    it.it_value.tv_sec = secs;
+    it.it_interval.tv_sec = every;
+    dbg_err_sif(setitimer(ITIMER_REAL, &it, NULL));
+
+    return 0;
+err:
+    server_tick_mode = TICK_OFF;
+    return ~0;
+}
+#endif /* ifdef OS_UNIX */
+
+/**
+ * \brief   Tell a prefork worker whether it is serving a request
+ *
+ * Called with \p busy set to \c 0 while a kept-alive connection waits for its
+ * next request, and to \c 1 when that request arrives.  Once the connection
+ * has been held for a second the worker asks the parent for one more worker,
+ * and exits after the connection, if a request is slow (once) or while other
+ * clients wait for a worker (every second).  Does nothing in other server
+ * models.
+ *
+ * \param s     the server object
+ * \param busy  \c 1 when serving a request, \c 0 when idle
+ *
+ * \return \c 0 if successful, non-zero on error
+ */
+int server_watchdog(server_t *s, int busy)
+{
+    if(!server_watchdog_enabled || s == NULL)
+        return 0;
+
+    server_watchdog_busy = busy;
+
+#if defined(OS_UNIX) && defined(HAVE_FORK)
+    /* the watchdog runs every second until the connection is closed */
+    if(busy && !server_watchdog_on)
+    {
+        dbg_err_if(server_tick(TICK_WATCHDOG, 1, 1));
+        server_watchdog_on = 1;
+    }
+#endif
+
+    return 0;
+err:
+    return ~0;
+}
+
+#if defined(OS_UNIX) && defined(HAVE_FORK)
+/* prefork: the connection is closed, stop the watchdog */
+static void server_watchdog_end(void)
+{
+    if(server_watchdog_on)
+    {
+        dbg_if(server_tick(TICK_OFF, 0, 0));
+        server_watchdog_on = 0;
+    }
+    server_watchdog_enabled = 0;
+}
+#endif
+
+/* does a configuration tree run CGI scripts (a script_alias, or an
+   extension's handler, anywhere)? */
+static int server_config_has(u_config_t *c, const char *key)
+{
+    u_config_t *child;
+    const char *k;
+    size_t n;
+    int i;
+
+    for(i = 0; (child = u_config_get_child_n(c, NULL, i)) != NULL; ++i)
+    {
+        k = u_config_get_key(child);
+        n = strlen(k);
+        if(!strcmp(k, key) || (n > 8 && !strcmp(k + n - 8, ".handler")) ||
+                server_config_has(child, key))
+            return 1;
+    }
+    return 0;
+}
+
+/* sandbox a worker of 'be' after its init hook (doc/SANDBOX); on by
+ * default, "sandbox no" turns it off. A worker that cannot be sandboxed
+ * does not serve */
+#ifdef OS_UNIX
+/* AddressSanitizer reserves terabytes of address space: no memory limit */
+#if defined(__SANITIZE_ADDRESS__)
+#define SERVER_ASAN 1
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define SERVER_ASAN 1
+#endif
+#endif
+
+/* set resource 'res' to 'value', soft and hard limit alike, so that the
+   worker (not root) cannot raise it again (never above the hard limit it
+   has); 0 leaves it as it is */
+static void server_rlimit(int res, rlim_t value, const char *name)
+{
+    struct rlimit rl;
+
+    if(value == 0 || getrlimit(res, &rl))
+        return;
+    if(rl.rlim_max != RLIM_INFINITY && value > rl.rlim_max)
+        value = rl.rlim_max;
+    rl.rlim_cur = rl.rlim_max = value;
+    if(setrlimit(res, &rl))
+        u_warn("worker: cannot set %s: %s", name, strerror(errno));
+}
+#endif
+
+/* a worker's resource limits (doc/LIMITS, WORKERS): its address space,
+ * open files and processes (its user's, CGIs included). Set before the
+ * sandbox, in the worker only: klind and the key manager keep theirs */
+static void server_limits(backend_t *be)
+{
+#ifdef OS_UNIX
+    int mem = SERVER_WORKER_MEMORY, files = SERVER_WORKER_FILES,
+        procs = (int) be->max_child + SERVER_WORKER_EXTRA_PROCS;
+
+    (void) u_config_get_subkey_value_i(be->config, "worker_max_memory",
+            mem, &mem);
+    (void) u_config_get_subkey_value_i(be->config, "worker_max_files",
+            files, &files);
+    (void) u_config_get_subkey_value_i(be->config, "worker_max_procs",
+            procs, &procs);
+
+#ifndef SERVER_ASAN
+    if(mem > 0)
+        server_rlimit(RLIMIT_AS, (rlim_t) mem * 1024 * 1024,
+                "worker_max_memory");
+#endif
+    if(files > 0)
+        server_rlimit(RLIMIT_NOFILE, (rlim_t) files, "worker_max_files");
+#ifdef RLIMIT_NPROC
+    if(procs > 0)
+        server_rlimit(RLIMIT_NPROC, (rlim_t) procs, "worker_max_procs");
+#endif
+#else
+    u_unused_args(be);
+#endif
+}
+
+static void server_sandbox(backend_t *be)
+{
+    int on = 1;
+
+    (void) u_config_get_subkey_value_b(be->config, "sandbox", 1, &on);
+    if(!on)
+        return;
+    if(sandbox_worker(server_config_has(be->config, "script_alias"),
+                u_config_get_subkey_value(be->config, "sandbox_allow")))
+    {
+        u_crit("cannot sandbox the worker (set sandbox no to run without)");
+        _exit(EXIT_FAILURE);
+    }
+}
+
+/* serve the accepted socket 'ad', which is always consumed (closed) */
+static int server_be_serve(server_t *s, backend_t *be, int ad)
+{
+    int owned = 1;  /* 'ad' not yet handed over */
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (be == NULL);
+
+    switch(be->model)
+    {
+#if defined(OS_UNIX) && defined(HAVE_FORK)
+    case SERVER_MODEL_FORK:
+        /* spawn a child to handle the request */
+        owned = 0;  /* consumed by server_child_serve() */
+        dbg_err_if(server_child_serve(s, be, ad));
+        break;
+
+    case SERVER_MODEL_PREFORK:
+        /* if a request takes more then 1 second spawn a new worker process */
+        server_watchdog_enabled = 1;
+        dbg_if(server_watchdog(s, 1));
+
+        /* serve the page (the backend closes the socket) */
+        owned = 0;
+        dbg_if(backend_serve(be, ad));
+
+        server_watchdog_end();
+        break;
+#endif  /* OS_UNIX && HAVE_FORK */
+
+    case SERVER_MODEL_ITERATIVE:
+        /* serve the page (the backend closes the socket) */
+        owned = 0;
+        dbg_if(backend_serve(be, ad));
+        break;
+
+    default:
+        warn_err_if("server model not supported");
+    }
+
+    return 0;
+err:
+    if(owned)
+        close(ad);
+    return ~0;
+}
+
+/* async-signal-safe (signal handlers call it): only a flag and close(2), no
+ * logging */
+int server_stop(server_t *s)
+{
+    if(s == NULL)
+        return ~0;
+
+    if(ctx->pipc && ctx->backend)
+    {   /* child process: close the listening socket to force accept(2) to
+           exit */
+        U_CLOSE(ctx->backend->ld);
+    }
+
+    /* stop the parent process */
+    s->stop = 1;
+
+    return 0;
+}
+
+static int server_listen(server_t *s)
+{
+    backend_t *be;
+
+    dbg_err_if (s == NULL);
+    
+    LIST_FOREACH(be, &s->bes, np)
+    {
+        dbg_err_if(server_be_listen(be));
+
+        /* watch the listening socket */
+        if(be->model != SERVER_MODEL_PREFORK)
+            dbg_err_if(server_watch_fd(s, be->ld, WATCH_FD_READ));
+    }
+
+    return 0;
+err:
+    return ~0;
+}
+
+int server_cgi(server_t *s)
+{
+    backend_t *be;
+
+    dbg_err_if (s == NULL);
+
+    /* use the first http backend as the CGI backend */
+    LIST_FOREACH(be, &s->bes, np)
+    {
+        if(strcasecmp(be->proto, "http") == 0)
+        {
+            hook_call(server_init);
+
+            dbg_if(backend_serve(be, 0));
+
+            hook_call(server_term);
+
+            return 0;
+        }
+    }
+
+err: /* fall through if search loop exhausted */
+    return ~0;
+}
+
+ppc_t* server_get_ppc(server_t *s)
+{
+    dbg_return_if (s == NULL, NULL);
+
+    return s->ppc;
+}
+
+static int server_process_ppc(server_t *s, int fd)
+{
+    unsigned char cmd;
+    char data[PPC_MAX_DATA_SIZE];
+    ssize_t n;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (fd < 0);
+
+    /* get a ppc request */
+    n = ppc_read(s->ppc, fd, &cmd, data, PPC_MAX_DATA_SIZE); 
+    if(n > 0)
+    {   
+        /* process a ppc (parent procedure call) request */
+        dbg_err_if(ppc_dispatch(s->ppc, fd, cmd, data, n));
+    } else if(n == 0) {
+        /* child has exit or closed the channel. close our side of the sock 
+           and remove it from the watch list */
+        server_close_fd(s, fd);
+    } else {
+        /* ppc error. close fd and remove it from the watch list */
+        server_close_fd(s, fd);
+    }
+
+    return 0;
+err:
+    return ~0;
+}
+
+static int server_dispatch(server_t *s, int fd)
+{
+    backend_t *be;
+    int ad = -1, rc, idle = 0;
+
+    dbg_err_if (s == NULL);
+
+    /* find the backend that listen on fd */
+    LIST_FOREACH(be, &s->bes, np)
+        if(be->ld == fd)
+            break;
+
+    if(be == NULL) /* a child is ppc-calling */
+        return server_process_ppc(s, fd);
+
+#if defined(OS_UNIX) && defined(HAVE_FORK)
+    /* a spare worker exits if no client comes for a while */
+    if(server_spare && be->idle_timeout > 0)
+    {
+        dbg_err_if(server_tick(TICK_SPARE_IDLE, be->idle_timeout, 0));
+        idle = 1;
+    }
+#endif
+
+    /* accept the pending connection */
+    rc = server_be_accept(s, be, &ad);
+#if defined(OS_UNIX) && defined(HAVE_FORK)
+    if(idle)
+        dbg_if(server_tick(TICK_OFF, 0, 0));
+#endif
+    dbg_err_if(rc);
+
+    /* Disable Nagle on the socket. Note that this may fail if the socket is 
+     * in the UNIX family or it is using the SCTP transport instead of TCP. */
+    (void) u_net_nagle_off(ad);
+
+    /* serve the page (this consumes the socket) */
+    rc = server_be_serve(s, be, ad);
+    ad = -1;
+    dbg_err_if(rc);
+
+    return 0;
+err:
+    U_CLOSE(ad);
+    return ~0;
+}
+
+/* the log flush alarm (it runs from timerm_run() in server_loop): flush
+ * and set it again */
+int server_cb_klog_flush(talarm_t *a, void *arg)
+{
+    server_t *s = (server_t*)arg;
+
+    dbg_err_if(s == NULL);
+
+    klog_flush(s->klog);
+
+    return timerm_reschedule(a, SERVER_LOG_FLUSH_TIMEOUT, server_cb_klog_flush,
+            s);
+err:
+    return ~0;
+}
+
+#ifdef OS_UNIX
+int server_spawn_child(server_t *s, backend_t *be)
+{
+    size_t c;
+    int rc, spare;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (be == NULL);
+
+    /* a worker beyond start_child is a spare (see TICK_SPARE_IDLE) */
+    spare = (be->nchild >= be->start_child);
+
+    dbg_err_if((rc = server_fork_child(s, be)) < 0);
+    if(rc > 0)
+        return 0; /* parent */
+
+    server_spare = spare;
+
+    /* call the hook that runs the on-child user code */
+    hook_call(child_init);
+
+    /* then its resource limits, and nothing an attacker needs is left to
+       it (doc/SANDBOX) */
+    server_limits(be);
+    server_sandbox(be);
+
+    /* child main loop: 
+       close on s->stop or if max # of request limit has reached (the 
+       server will respawn a new process if needed) */
+    for(c = 0; !s->stop && c < be->max_rq_xchild; ++c)
+    {
+        /* wait for a new client (will block on accept(2)) */
+        rc = server_dispatch(s, be->ld);
+
+        /* stopped while waiting (e.g. an idle spare worker): not an error */
+        if(s->stop)
+            break;
+        dbg_err_if(rc);
+    }
+
+    /* before child shutdowns call the term hook */
+    hook_call(child_term);
+
+    server_stop(s);
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* spawn pre-fork child processes */
+static int server_spawn_children(server_t *s)
+{
+    backend_t *be;
+    int spawned;
+
+    dbg_err_if (s == NULL);
+
+    /* never ask for more children than a backend may have */
+    LIST_FOREACH (be, &s->bes, np)
+        if(be->model == SERVER_MODEL_PREFORK &&
+                be->nchild + be->fork_child > be->max_child)
+            be->fork_child = be->max_child > be->nchild ?
+                be->max_child - be->nchild : 0;
+
+    /* spawn the missing child processes (that will sleep asap into
+       accept(2)) one per backend at a time, so that every backend still
+       gets children when the server or system process limit is reached */
+    do {
+        spawned = 0;
+        LIST_FOREACH (be, &s->bes, np)
+        {
+            if(be->model != SERVER_MODEL_PREFORK || be->fork_child == 0)
+                continue;
+
+            /* at a process limit: try again later */
+            if(server_spawn_child(s, be))
+                return 0;
+
+            /* child context? */
+            if(ctx->pipc)
+                return 0; /* the child previously spawned is dying, exit */
+
+            be->fork_child--;
+            spawned++;
+        }
+    } while(spawned);
+
+    return 0;
+err:
+    return ~0;
+}
+#endif
+
+/* chroot, drop to the configured uid/gid and refuse to run as root unless
+ * allow_root is set (the listening sockets are open by now) */
+static int server_harden(server_t *s)
+{
+#ifdef OS_UNIX
+    /* if it's configured chroot to the dst dir */
+    if(s->chroot)
+        dbg_err_if(server_chroot(s));
+
+    /* set uid/gid to non-root user */
+    warn_err_sifm(server_drop_privileges(s), "unable to drop priviledges");
+
+    /* if allow_root is not set check that we're not running as root */
+    if(!s->allow_root)
+        warn_err_ifm(!getuid() || !geteuid() || !getgid() || !getegid(),
+            "you must set the allow_root config option to run klind as root");
+
+#elif OS_WIN
+    if(s->chroot)
+        dbg_err_if(SetCurrentDirectory(s->chroot) == 0);
+
+#endif
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* on shutdown: SIGTERM the children, give them a second, then kill the
+ * ones still running */
+static void server_stop_children(server_t *s)
+{
+    server_term_children(s);
+#ifdef SSL_OPENSSL
+    tls_keyproxy_stop();
+#endif
+
+    sleep(1);
+
+#ifdef OS_UNIX
+    server_waitpid(s);
+#endif
+    if(children_count(s->children))
+        server_kill_children(s);
+}
+
+int server_loop(server_t *s)
+{
+    struct timeval tv;
+    int rc, fd, ms;
+    fd_set rdfds, wrfds, exfds;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (s->config == NULL);
+
+    dbg_err_if(server_listen(s));
+    dbg_err_if(server_harden(s));
+
+    /* flush the log every SERVER_LOG_FLUSH_TIMEOUT seconds */
+    if(s->klog_flush)
+        dbg_err_if(timerm_add(SERVER_LOG_FLUSH_TIMEOUT, server_cb_klog_flush,
+                    s, &s->al_klog_flush));
+
+    /* server startup hook */
+    hook_call(server_init);
+
+    for(; !s->stop; )
+    {
+#ifdef OS_UNIX
+        /* spawn new child if needed (may fail on resource limits) */
+        dbg_if(server_spawn_children(s));
+#endif
+
+        /* children in pre-fork mode exit here */
+        if(ctx->pipc)
+            break;
+
+        /* select() changes the sets: a fresh copy every time (also after
+           an interrupted select, whose sets are undefined) */
+        memcpy(&rdfds, &s->rdfds, sizeof(fd_set));
+        memcpy(&wrfds, &s->wrfds, sizeof(fd_set));
+        memcpy(&exfds, &s->exfds, sizeof(fd_set));
+
+#ifdef SSL_OPENSSL
+        /* erase past periods' session ticket secrets here too: workers
+           forked from klind start with the current ones only */
+        tls_tickets_advance();
+#endif
+
+        /* wake up every second, or for the next alarm */
+        ms = timerm_run();
+        if(ms < 0 || ms > 1000)
+            ms = 1000;
+        tv.tv_sec = ms / 1000; tv.tv_usec = (ms % 1000) * 1000;
+
+        rc = select(1 + s->hfd, &rdfds, &wrfds, &exfds, &tv);
+        if(rc == -1 && errno == EINTR)
+            continue; /* interrupted by a signal */
+        dbg_err_if(rc == -1); /* select error */
+
+#ifdef OS_UNIX
+        if(server_children_changed)
+            server_waitpid(s);
+#endif
+
+        /* parent only */
+        if(ctx->pipc == 0)
+        {
+            /* the alarms that are due (the log flush) */
+            (void) timerm_run();
+
+            /* server loop hook - trigger only upon timeout and not upon client request */
+            if(rc == 0)
+                hook_call(server_loop);
+        }
+
+        /* for each signaled listening descriptor */
+        for(fd = 0; rc && fd < 1 + s->hfd; ++fd)
+        { 
+            if(FD_ISSET(fd, &rdfds))
+            {
+                --rc;
+                /* dispatch the request to the right backend */
+                dbg_if(server_dispatch(s, fd));
+            } 
+        } /* for each ready fd */
+
+    } /* !s->stop */
+
+    /* children in fork mode exit here */
+    if(ctx->pipc)
+        return 0;
+
+    /* logged here, not in the handler */
+    if(server_stop_signal)
+        u_warn("%s", server_stop_signal == SIGINT ? "SIGINT" : "SIGTERM");
+
+    /* server shutdown hook */
+    hook_call(server_term);
+
+    /* shutdown all children (the kill fallback tested a counter that was
+       never set, so it never happened before) */
+    server_stop_children(s);
+
+    return 0;
+err:
+    return ~0;
+}
+
+int server_free(server_t *s)
+{
+    backend_t *be;
+
+    dbg_err_if (s == NULL);
+
+    /* remove the hook (that needs the server_t object) */
+    u_log_set_hook(NULL, NULL, NULL, NULL);
+
+    /* remove klog flushing alarm */
+    if(s->al_klog_flush)
+    {
+        timerm_del(s->al_klog_flush);
+        s->al_klog_flush = NULL;
+    }
+
+    if(s->klog)
+    {
+        /* child processes must not close klog when in 'file' mode, because 
+           klog_file_t will flush data that the parent already flushed 
+           (children inherit a "used" FILE* that will usually contain, on close,
+           not-empty buffer that fclose (called by exit()) flushes). same 
+           thing may happens with different log devices when buffers are used.
+         */
+        if(ctx->pipc == 0)
+            klog_close(s->klog);
+        s->klog = NULL;
+    }
+
+    while((be = LIST_FIRST(&s->bes)) != NULL)
+    {
+        LIST_REMOVE(be, np);
+        server_backend_detach(s, be);
+    }
+
+    dbg_if(ppc_free(s->ppc));
+
+    dbg_if(children_free(s->children));
+
+#ifdef OS_WIN
+    WSACleanup();
+#endif
+
+    U_FREE(s);
+    return 0;
+err:
+    return ~0;
+}
+
+static int server_setup_backend(server_t *s, backend_t *be)
+{
+    const char *a;
+
+    dbg_return_if (s == NULL, ~0);
+    dbg_return_if (be == NULL, ~0);
+    
+    /* server count */
+    s->nbackend++;
+
+    /* Get 'addr' value from config.  Expect it to be given in libu::net
+     * URI format, e.g. something in between 'tcp4://192.168.0.1:80' and 
+     * 'tcp6://[*]:8080'. */
+    warn_err_ifm ((a = u_config_get_subkey_value(be->config, "addr")) == NULL,
+        "missing or bad '<servname>.addr' value");
+
+    /* Parse and internalize it. */
+    warn_err_ifm (u_net_uri2addr(a, U_NET_SSOCK, &be->na), 
+            "bad syntax for 'addr' value");
+
+    return 0;
+err:
+    u_warn("'addr' syntax has changed with KLone 3: check libu URI format");
+    return ~0;
+}
+
+static int server_log_hook(void *arg, int level, const char *str)
+{
+    server_t *s = (server_t*)arg;
+    u_log_hook_t old = NULL;
+    void *old_arg = NULL;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (str == NULL);
+ 
+    /* if both the server and the calling backend have no log then exit */
+    if(s->klog == NULL && (ctx->backend == NULL || ctx->backend->klog == NULL))
+        return 0; /* log is disabled */
+
+    /* disable log hooking in the hook itself otherwise an infinite loop 
+       may happen if a log function is called from inside the hook */
+    u_log_set_hook(NULL, NULL, &old, &old_arg);
+
+    /* syslog klog doesn't go through ppc (s->klog is NULL when only the
+       backend has a log: a child then still sends the line to the parent) */
+    if((s->klog && s->klog->type == KLOG_TYPE_SYSLOG) || ctx->pipc == 0)
+    {   /* syslog klog or parent context */
+        if(s->klog)
+            dbg_err_if(klog(s->klog, syslog_to_klog(level), "%s", str));
+    } else {
+        /* children context */
+        dbg_err_if(server_ppc_cmd_log_add(s, level, str));
+    }
+
+    /* re-set the old hook */
+    u_log_set_hook(old, old_arg, NULL, NULL);
+
+    return 0;
+err:
+    if(old)
+        u_log_set_hook(old, old_arg, NULL, NULL);
+    return ~0;
+}
+
+int server_get_logger(server_t *s, klog_t **pkl)
+{
+    klog_t *kl = NULL;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (pkl == NULL);
+ 
+    if(ctx->backend)
+        kl = ctx->backend->klog; /* may be NULL */
+
+    if(kl == NULL)
+        kl = s->klog; /* may be NULL */
+
+    *pkl = kl;
+
+    return 0;
+err:
+    return ~0;
+}
+
+static int server_get_klog_line(server_t *s, klog_t *kl, size_t i, char *line)
+{
+    backend_t *be = ctx->backend;
+
+    dbg_err_if(kl->type != KLOG_TYPE_MEM);
+    dbg_err_if(be == NULL);
+
+    /* we need ppc just in prefork mode */
+    if(be->model != SERVER_MODEL_PREFORK)
+    {
+        dbg_err_if(klog_getln(kl, i, line));
+        return 0;
+    }
+
+    /* send the ppc command and read back the response */
+    nop_err_if(server_ppc_cmd_log_get(s, i, line));
+
+    return 0;
+err:
+    return ~0;
+}
+
+int server_foreach_memlog_line(server_t *s, 
+    int (*cb)(const char*, void*), void *arg)
+{
+    klog_t *kl = NULL;  
+    size_t i;
+    char line[KLOG_LN_SZ + 1];  /* klog_getln writes up to KLOG_LN_SZ + 1 */
+
+    /* get the configured klog object and check that's a in-memory klog */
+    if(server_get_logger(s, &kl) || kl == NULL || kl->type != KLOG_TYPE_MEM)
+    {
+        cb("logging is not configured or is not a in-memory log", arg);
+        return ~0;
+    }
+
+    /* for each log line call the user-given callback function */
+    for(i = 1; server_get_klog_line(s, kl, i, line) == 0; ++i)
+        cb(line, arg);
+
+    return 0;
+}
+
+
+int server_get_backend_by_id(server_t *s, int id, backend_t **pbe)
+{
+    backend_t *be;
+
+    dbg_err_if (s == NULL);
+    dbg_err_if (pbe == NULL);
+    
+    LIST_FOREACH(be, &s->bes, np)
+    {
+        if(be->id == id)
+        {
+            *pbe = be;
+            return 0;
+        }
+    }
+
+err: /* fall through if search loop exhausted */
+    return ~0;
+}
+
+/* the parent's handlers for the commands its children send */
+static int server_register_ppc(server_t *s)
+{
+    dbg_err_if(ppc_register(s->ppc, PPC_CMD_NOP, server_ppc_cb_nop, s));
+    dbg_err_if(ppc_register(s->ppc, PPC_CMD_LOG_ADD, server_ppc_cb_log_add, s));
+    dbg_err_if(ppc_register(s->ppc, PPC_CMD_LOG_GET, server_ppc_cb_log_get, s));
+#ifdef OS_UNIX
+    dbg_err_if(ppc_register(s->ppc, PPC_CMD_FORK_CHILD,
+        server_ppc_cb_fork_child, s));
+#endif
+    dbg_err_if(ppc_register(s->ppc, PPC_CMD_ACCESS_LOG,
+                server_ppc_cb_access_log, s));
+
+    return 0;
+err:
+    return ~0;
+}
+
+/* configure the server called 'name' in server_list (its config section),
+ * with id 'id', and add it to the server */
+static int server_add_backend(server_t *s, const char *name, int id,
+        int foreground)
+{
+    u_config_t *bekey = NULL, *log_c = NULL;
+    backend_t *be = NULL;
+    const char *type;
+
+    u_dbg("configuring backend: %s", name);
+
+    /* just SERVER_MAX_BACKENDS supported */
+    warn_err_if(s->nbackend == SERVER_MAX_BACKENDS);
+
+    /* get config tree of this backend */
+    warn_err_ifm(u_config_get_subkey(s->config, name, &bekey),
+        "missing [%s] backend configuration", name);
+
+    type = u_config_get_subkey_value(bekey, "type");
+    warn_err_ifm(type == NULL, "missing or bad '<servname>.type' value");
+
+    /* create a new backend and push it into the 'be' list */
+    warn_err_ifm(backend_create(type, bekey, &be),
+        "backend \"%s\" startup error", type);
+
+    be->server = s;
+    be->config = bekey;
+    be->id = id;
+
+    /* a sandbox_allow naming a call that cannot be allowed stops klind */
+    dbg_err_if(sandbox_check_allow(u_config_get_subkey_value(bekey,
+                    "sandbox_allow")));
+    if(be->model == SERVER_MODEL_UNSET)
+        be->model = s->model; /* inherit server model */
+
+    if(foreground)
+        be->model = SERVER_MODEL_ITERATIVE;
+
+    /* create the log device (may fail if logging is not configured) */
+    if(!u_config_get_subkey(bekey, "log", &log_c))
+        dbg_if(klog_open_from_config(log_c, &be->klog));
+
+#ifdef OS_WIN
+    warn_err_ifm(be->model != SERVER_MODEL_ITERATIVE, "child-based server "
+            "model is not yet supported on Windows");
+#endif
+
+    /* the server owns it from here (server_free) */
+    LIST_INSERT_HEAD(&s->bes, be, np);
+    be = NULL;
+
+    dbg_err_if(server_setup_backend(s, LIST_FIRST(&s->bes)));
+
+    return 0;
+err:
+    if(be)
+        backend_free(be);
+    return ~0;
+}
+
+/* configure each server named in 'list' (separated by blanks) */
+static int server_add_backends(server_t *s, const char *list, int foreground)
+{
+    char *copy = NULL, *name, *pp = NULL;
+    int id = 0;
+
+    dbg_err_if((copy = u_strdup(list)) == NULL);
+
+    /* (a sscanf loop stopped at a leading or doubled blank, ignoring the
+       servers after it) */
+    for(name = strtok_r(copy, " \t", &pp); name != NULL;
+            name = strtok_r(NULL, " \t", &pp))
+        dbg_err_if(server_add_backend(s, name, id++, foreground));
+
+    warn_err_ifm(id == 0, "no server in 'server_list'");
+
+    U_FREE(copy);
+
+    return 0;
+err:
+    U_FREE(copy);
+    return ~0;
+}
+
+int server_create(u_config_t *config, int foreground, server_t **ps)
+{
+    server_t *s = NULL;
+    u_config_t *log_c = NULL;
+    const char *list;
+    int iv;
+
+    dbg_return_if (ps == NULL, ~0);
+    dbg_return_if (config == NULL, ~0);
+
+#ifdef OS_WIN
+    WORD ver;
+    WSADATA wsadata;
+
+    ver = MAKEWORD(1,1);
+    dbg_err_if(WSAStartup(ver, &wsadata));
+#endif
+
+    s = u_zalloc(sizeof(server_t));
+    dbg_err_if(s == NULL);
+
+    *ps = s; /* we need it before backend inits */
+
+    s->config = config;
+    s->model = SERVER_MODEL_FORK; /* default */
+
+    dbg_err_if(children_create(&s->children));
+
+    /* init fd_set */
+    FD_ZERO(&s->rdfds);
+    FD_ZERO(&s->wrfds);
+    FD_ZERO(&s->exfds);
+
+    /* init backend list */
+    LIST_INIT(&s->bes);
+
+    dbg_err_if(ppc_create(&s->ppc));
+
+    /* create the log device if requested */
+    if(!u_config_get_subkey(config, "log", &log_c))
+    {
+        dbg_if(klog_open_from_config(log_c, &s->klog));
+        s->klog_flush = 1;
+    }
+
+    dbg_err_if(server_register_ppc(s));
+
+    /* redirect logs to the server_log_hook function */
+    dbg_err_if(u_log_set_hook(server_log_hook, s, NULL, NULL));
+
+    /* parse server list and build s->bes */
+    list = u_config_get_subkey_value(config, "server_list");
+    warn_err_ifm(list == NULL, "bad or missing 'server_list' config param");
+
+    /* chroot, uid and gid */
+    s->chroot = u_config_get_subkey_value(config, "chroot");
+    dbg_err_if(u_config_get_subkey_value_i(config, "uid", -1, &s->uid));
+    dbg_err_if(u_config_get_subkey_value_i(config, "gid", -1, &s->gid));
+    dbg_err_if(u_config_get_subkey_value_b(config, "allow_root", 0, 
+        &s->allow_root));
+    dbg_err_if(u_config_get_subkey_value_b(config, "blind_chroot", 0, 
+        &s->blind_chroot));
+
+    warn_err_ifm(!s->uid || !s->gid, 
+        "you must set uid and gid config parameters");
+
+    dbg_err_if(u_config_get_subkey_value_i(config, "max_child",
+        SERVER_MAX_CHILD, &iv));
+    /* klind watches one channel per worker with select(): FD_SETSIZE
+       less room for the listening sockets and other descriptors */
+    crit_err_ifm(iv < 1 || iv > SERVER_MAX_CHILD_LIMIT,
+        "max_child must be from 1 to %d", SERVER_MAX_CHILD_LIMIT);
+    s->max_child = (size_t) iv;
+
+    /* load config and init backend for each server in server_list */
+    dbg_err_if(server_add_backends(s, list, foreground));
+
+    /* init done, set signal handlers */
+    dbg_err_if(u_signal(SIGINT, server_sigstop));
+    dbg_err_if(u_signal(SIGTERM, server_sigstop));
+#ifdef OS_UNIX 
+    dbg_err_if(u_signal(SIGPIPE, SIG_IGN));
+    dbg_err_if(u_signal(SIGCHLD, server_sigchld));
+#endif
+
+    return 0;
+err:
+    u_warn("server init error (config error?)");
+    if(s)
+    {
+        server_free(s);
+        *ps = NULL;
+    }
+    return ~0;
+}
+

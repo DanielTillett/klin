@@ -1,0 +1,539 @@
+.TH "KLIND.CONF" "5" "03/06/2006" "KoanLogic Srl" "KoanLogic Srl"
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+klind.conf \- The configuration file for the klind daemon
+.SH "SYNOPSIS"
+.PP
+\fIklind.conf\fR
+is the configuration file for the
+\fBklind\fR(8)
+daemon, i.e. it contains its runtime configuration information. The complete description of the file format and possibile parameters therein, is provided for reference in the following sections.
+.SH "FILE FORMAT"
+.PP
+The file consists of sections and parameters. A section begins with the name of the section, is followed by a '{' (which must be on a line by itself) and continues until the corresponding '}' is found. Sections can contain subsections or parameter assignements of the form:
+\fIname\fR \fIvalue\fR.
+.PP
+The file is line\-based \- that is, each newline\-terminated line represents either a comment, a section name or a parameter.
+.PP
+Section and parameter names are case sensitive.
+.PP
+Leading, trailing and internal whitespace in section and parameter names is irrelevant. Leading and trailing whitespace in a parameter value is discarded. Internal whitespace within a parameter value is retained verbatim.
+.PP
+Any line beginning with a hash ('#') character is ignored, as well as lines containing only whitespace.
+.PP
+The value in parameters is always a string (no quotes needed) whose case is preserved.
+.PP
+It is also possible to use variable substitution which allows you to define a symbol name to be replaced by an arbitrary text string, with the classic bottom\-up scoping.
+.SH "CONFIGURATION FILE STRUCTURE"
+.PP
+Basically, you have an activation record for each running
+\fBklind\fR(8)
+instance: each instance implements an access method to the embedded data or to external data (file system) when requested. The two access methods currently implemented are HTTP and HTTPS.
+.PP
+The top level parameter
+\fBserver_list\fR
+lists the klin instances by name. For each name listed here there exist a corresponding activation record labelled with the same name.
+.PP
+For the sake of simplicity, the available options are grouped into four categories: those of general applicability (GENERAL), those common to both HTTP and HTTPS servers (SERVER), those specific to HTTP over SSL/TLS sessions (SSL/TLS) and those concerning activity logging (LOG).
+.SS "GENERAL"
+.TP
+\fBtype\fR
+The access method used by this
+\fBklind\fR(8)
+instance: at present
+\fIHTTP\fR
+or
+\fIHTTPS\fR. This parameter is
+\fImandatory\fR.
+.TP
+\fBdaemon.name\fR
+Identifier for the service (Windows(TM)
+ONLY).
+.TP
+\fBdaemon.description\fR
+Service description (Windows(TM)
+ONLY).
+.TP
+\fBaddr\fR
+The listening socket address expressed in LibU URI syntax.  E.g.
+\fI
+tcp6://[*]:http
+\fR
+for IPv6 wildcard listening socket on usual HTTP port 80;
+\fI
+tcp4://*:8080
+\fR
+for IPv4 wildcard listening socket on alternate HTTP port 8080;
+\fI
+sctp6://[::1]:80
+\fR
+for SCTP/IPv6 socket listening on loopback interface on port 80 (provided that SCTP and IPv6 are implemented on the target operating system, e.g. FreeBSD.)
+For further information on LibU URI syntax, see:
+\fI
+https://github.com/koanlogic/libu (toolbox/net.c)
+\fR
+.TP
+\fBbacklog\fR
+Defines the maximum length the queue of pending connections may grow to, it is passed verbatim to the
+\fBlisten\fR(2)
+call on this instance's socket. 
+\fI
+NOTE
+\fR
+at present this directive is inhibited, and a default of 300 is assumed.
+.TP
+\fBidle_timeout\fR
+Set the maximum number of seconds the server waits for an HTTP request on an already connected socket: the request line and the whole header must arrive within it, however slowly they trickle in (a "slowloris" client is closed when it runs out). The default value is 10 seconds.
+.TP
+\fBmax_header_fields\fR, \fBmax_header_line\fR, \fBmax_header_size\fR
+Request header limits: the number of fields (default 100), the bytes of one field line (default 8192) and of the whole header (default 32768). A request over any of them is answered 431 and the connection closed. A request line over 8192 bytes is answered 414. See doc/LIMITS.
+.TP
+\fBmax_conn_per_ip\fR
+Connections served at once from one client address (default 32; 0: no limit). Beyond it a new connection is closed as soon as it is accepted, before any TLS handshake.
+.TP
+\fBworker_max_memory\fR, \fBworker_max_files\fR, \fBworker_max_procs\fR
+Resource limits of each worker process: MB of address space (default 1024), open files (default 1024) and processes of its user (default the server's max_child plus 64). 0 leaves a limit unchanged. See doc/LIMITS.
+.TP
+\fBmax_streams\fR
+Server-sent event and WebSocket connections open at once on this server (default 100; 0: no limit), so that they cannot take every worker. Beyond it \fBsse_start\fR() and \fBws_accept\fR() answer 503 with Retry-After.
+.TP
+\fBkeep_alive\fR
+Keep connections open for further requests (HTTP persistent connections): \fIyes\fR (default) or \fIno\fR. A connection stays open after a response if the client asks for it (HTTP/1.1 by default, HTTP/1.0 with \fIConnection: keep\-alive\fR) and the response body is delimited by a Content\-Length or, for HTTP/1.1, chunked transfer coding. Always off in the iterative server model (and so with \fB\-d\fR), where an idle client would block the server.
+.TP
+\fBkeep_alive_timeout\fR
+Seconds to wait for the next request on a kept-alive connection before closing it. The default value is 5 seconds.
+.TP
+\fBkeep_alive_max\fR
+Maximum number of requests served on one connection. The default value is 100.
+.TP
+\fBpost_timeout\fR
+Set the maximum number of seconds the server waits for an HTTP POST request on an already connected socket. The default value is 10 minutes.
+.TP
+\fBpost_maxsize\fR
+Set the maximum number of bytes the server is willing to accept in a request body, whatever the method (CGI uploads included). A request whose Content\-Length is greater than
+\fBpost_maxsize\fR
+is answered 413 and the connection closed. The default value is 5 MB.
+.TP
+\fBsandbox\fR, \fBsandbox_allow\fR
+\fIyes\fR (default) runs the workers and the TLS key manager in a
+seccomp sandbox (Linux) or under pledge (OpenBSD); \fIno\fR turns it off.
+\fBsandbox_allow\fR names further system calls the workers may make. See
+doc/SANDBOX.
+.TP
+\fBkey_manager\fR
+HTTPS only: \fIyes\fR (default) keeps the private key in a separate
+key manager process that signs the TLS handshakes, out of the worker
+processes; it also turns off TLS 1.2 RSA key exchange. \fIno\fR loads
+the key into klind's processes. See doc/KEYMGR.
+.TP
+\fBaccess\fR
+IP access control: \fBrule\fR blocks with \fBpath\fR patterns (none:
+every path) and \fBallow\fR and \fBdeny\fR lines of addresses,
+networks (\fIaddress/bits\fR) or \fIall\fR. The first rule for the path
+decides (403). See doc/ACCESS.
+.TP
+\fBauth\fR
+HTTP authentication (Basic and Digest) of the paths in one or more realms:
+\fBrealm\fR blocks (\fBname\fR, \fBpath\fR patterns, \fBscheme\fR
+\fIdigest\fR, \fIbasic\fR or \fIany\fR, \fBroles\fR, \fBmd5\fR) and
+\fBuser\fR blocks made by \fBklin \-c passwd\fR, here or in
+\fBusers_file\fR; also \fBnonce_lifetime\fR and \fBbasic_over_http\fR.
+Plaintext passwords are refused. See doc/AUTH.
+.TP
+\fBvalidators\fR, \fBparams\fR
+Request validation: named \fBvalidator\fRs (\fBregex\fR, \fBint\fR,
+\fBlength\fR, \fBenum\fR) and \fBparams\fR blocks per \fBpath\fR and
+\fBmethod\fR with a \fBparam\fR block per parameter (\fBname\fR,
+\fBsource\fR, \fBvalidator\fR, \fBrequired\fR), \fBunknown\fR and
+\fBon_invalid\fR. See doc/VALIDATE.
+.TP
+\fBroutes\fR
+REST-style routes: \fBroute\fR blocks with a \fBpath\fR pattern
+(\fI{name}\fR segments, a last \fI{name*}\fR), the \fBmethod\fRs it
+takes and the \fBpage\fR that serves it. See doc/ROUTES.
+.TP
+\fBsecurity_headers\fR
+Security headers sent with every response: \fBx_content_type_options\fR
+(default \fInosniff\fR), \fBx_frame_options\fR (default
+\fISAMEORIGIN\fR), \fBreferrer_policy\fR (default
+\fIstrict\-origin\-when\-cross\-origin\fR), \fBcontent_security_policy\fR
+(not sent by default) and \fBstrict_transport_security\fR (default
+\fImax\-age=31536000\fR, HTTPS only). The value \fIno\fR leaves a header
+out. See doc/HEADERS.
+.TP
+\fBtemp_dir\fR
+Set the base directory where temporary resources (e.g. uploaded files) are created.  When provided, the system default is overridden.  Currently, this value has per-backend scope.
+.SS "SERVER"
+.PP
+Per server\-type configuration parameters.
+.PP
+Note that we use the URI
+\fIsup://\fR
+convention to specify the location of content that
+\fBklind\fR
+tries to retreive from its suppliers. By default there is only one active supplier, which is the embedded file system. Anyway, there could be many different suppliers, e.g. the local disk that is enabled by setting the
+\fBENABLE_SUP_FS\fR
+variable during compilation. The embedded file system supplier is
+\fIalways\fR
+searched first. In case the requested resource were not found in the embedded file system, the other suppliers are searched sequentially.
+.TP
+\fBdir_root\fR
+The top level directory under which this server's instance keeps the site data. When a request for the resource
+\fI/dir/page.kl1\fR
+is done, it is mapped to
+\fIsup://${dir_root}/dir/page.kl1\fR. The default value is
+\fI/\fR.
+.TP
+\fBchroot\fR
+Set the directory where the running server resides. It requires no additional files to exist in jail: the chroot call is made after server initialisation (log setup, backend configuration, bind/listen) but before forking and dropping of priviledges.
+.TP
+\fBblind_chroot\fR
+A variant of the
+\fBchroot\fR
+directive which, additionally, unlinks the server root directory, making the chance for a hijacked/malfunctioning server to access the file system very unlikely. klind creates a directory of mode 0100 under the chroot directory, checks it and enters it through the same descriptor (a link or another directory put in its place is refused), and has it removed once inside. It can be useful in combination with in\-memory logging or syslog remote logging to achieve a very high level of bounding.
+.TP
+\fBuid\fR
+Set the real and effective user ID of the running server.
+.TP
+\fBgid\fR
+Set the real, effective group IDs and the saved set\-group\-ID of the running server.
+.TP
+\fBallow_root\fR
+A boolean which specifies if the server is allowed to run with root credentials (i.e. user ID 0 or group ID 0). Started as root, klind refuses to run unless both
+\fBuid\fR
+and
+\fBgid\fR
+are set to non\-root IDs (a
+\fBchroot\fR
+alone is not enough) or
+\fBallow_root\fR
+is
+\fByes\fR. See doc/SYSTEMD for a hardened systemd unit.
+.TP
+\fBmax_child\fR
+Set the maximum number of child processes per server (i.e. total number of running backend child processes) available at run\-time. The default value is 300; it must be from 1 to FD_SETSIZE less 128 (896 on Linux), since klind watches one channel per worker with select(2).
+.TP
+\fBerror.\fR\fB\fIhttp_errno\fR\fR
+Select the file which will be displayed on the given HTTP error event (\fIhttp_errno\fR
+can be any of 4XX and 5XX). The value is a URI relative to the site: e.g.
+\fI/a/b/c/d.klin\fR
+is translated into
+\fI(http|https)://sitehost[:port]/a/b/c/d.klin\fR.
+.TP
+\fBdir_alias \fR\fB\fIsrc\fR\fR\fB \fR\fB\fIdst\fR\fR
+Maps
+\fIdst\fR
+to
+\fIsrc\fR
+in the requested URI. For example, when the following is set:
+.sp
+.nf
+dir_alias /img /var/httpd/img
+            
+.fi
+.sp
+a request to
+\fI(http|https)://sitehost[:port]/img/a.gif\fR
+will be mapped to
+\fIsup://var/httpd/img/a.gif\fR.
+.TP
+\fBfollow_symlinks\fR
+Symbolic links in files served from the file system and in CGI scripts:
+\fIinside\fR (the default) follows a link whose target is inside the dir_root or alias target the path was resolved under,
+\fIno\fR follows none,
+\fIyes\fR follows all. See doc/FILES.
+.TP
+\fBserve_files\fR, \fBrun_cgi\fR
+\fIno\fR turns off the file system or the CGI supplier for this server or virtual host (default \fIyes\fR, when built in). See doc/FILES.
+.TP
+\fBcgi.timeout\fR, \fBcgi.max_cpu\fR, \fBcgi.max_memory\fR
+Limits of a CGI script: seconds before it is killed (default 60; 504 if it sent nothing), seconds of CPU time (default 30) and MB of address space (default 512). 0 sets none. See doc/CGI.
+.TP
+\fBcgi.pass_env\fR
+Variables of klind's environment passed to CGI scripts (default none).
+.TP
+\fBcgi.pass_headers\fR
+Request header fields passed to CGI scripts as HTTP_* variables:
+\fIdefault\fR (all but Authorization and Proxy-Authorization),
+\fIall\fR, or a list of field names. Proxy, and names with other than letters, digits and '\-', are never passed. See doc/CGI.
+.TP
+\fBserver_sig\fR
+Set the server signature string which will be returned in the HTTP head (Server: %s). When setting a custom Product token, the guidelines stated in paragraph 3.7 of RFC 1945 should be followed. The default value is
+"klin/1.0".
+.TP
+\fBmodel\fR
+Set the type of the serving model for this klin instance:
+\fIfork\fR, a child process is spawned for every client request,
+\fIiterative\fR, pending clients are processed one at a time, or
+\fIprefork\fR, a pool of child processes is created on start up and an available process from the pool is chosen to handle each incoming client request. When a request burst happens in
+\fIprefork\fR
+mode, the server reacts adaptively, i.e. it creates other child processes up to a configurable maximum in order to gracefully handle the busy condition. Note that the
+\fB\-F\fR
+command line switch overrides this value, enforcing the iterative model. The default value is inherited from the parent, which by default is
+\fIprefork\fR.
+.TP
+\fBfork.max_child, prefork.max_child\fR
+Set the maximum number of child processes at running time. The default value is 150.
+.TP
+\fBprefork.max_request_per_child\fR
+Set the maximum number of request that a child process can handle before giving up.
+.TP
+\fBindex\fR
+Specify the index page location. This is the page that is returned to the client requesting
+\fI(http|https)://sitehost[:port]/\fR. The default values are (in order):
+\fIindex.klin\fR,
+\fIindex.kl1\fR,
+\fIindex.html\fR,
+\fIindex.htm\fR.
+.PP
+All the session variables are gathered into an ad hoc
+\fBsession\fR
+subsection of an HTTP or HTTPS activation record.
+.TP
+\fBtype\fR
+Specify where to store session data:
+\fImemory\fR
+for the host volatile memory,
+\fIfile\fR
+for the host file system,
+\fIclient\fR
+for storing data on the client. The default value is
+\fIfile\fR.
+.TP
+\fBidle_timeout\fR (or \fBmax_age\fR)
+The session ends when it has not been used for this long: minutes, or seconds with an
+\fIs\fR
+suffix (e.g.
+\fI90s\fR). The default is 20 minutes.
+.TP
+\fBabsolute_timeout\fR
+The session ends this long after it was created (or given a new id at login), however much it is used: minutes, or seconds with an
+\fIs\fR
+suffix;
+\fI0\fR
+for no limit. The default is 480 minutes (8 hours). See doc/SESSIONS.
+.TP
+\fBsid_name\fR
+Set a custom cookie name. Session cookies are always sent with the
+\fIPath=/\fR,
+\fIHttpOnly\fR
+and
+\fISameSite=Lax\fR
+attributes, plus
+\fISecure\fR
+when the connection to
+\fBklind\fR
+uses TLS. Session identifiers contain 128 bits from a cryptographic random source; an identifier a client sends that names no stored session is not taken on (a new one is drawn), and pages give a session a new one at login with
+\fBsession_regenerate_id\fR().
+.TP
+\fBencrypt\fR
+A boolean specifying whether the session data should be encrypted before being sent to the client. Encryption is always enabled for
+\fIclient\fR
+sessions, whatever this directive says: AES\-256\-GCM, which also authenticates the data, the session id and its time.
+.TP
+\fBcompress\fR
+A boolean specifying whether the session data should be compressed before being pushed to the client. The default is
+\fIno\fR.
+.TP
+\fBmemory.limit\fR
+Set the maximum size in bytes for the memory used to hold the collection of all sessions' data. The default value is
+\fI0\fR, i.e. unbounded.
+.TP
+\fBmemory.max_count\fR
+Set the maximum number of sessions the server can store in memory. The default value is
+\fI0\fR, i.e. unbounded.
+.PP
+NOTE: in case one of the two latter limits is exceeded, the data of the older inactive session will be discarded.
+.TP
+\fBfile.path\fR
+Specify where to store session data when the
+\fIfile\fR
+driver is in use. The default value depends on the host platform: on
+UNIX(TM)
+it is
+\fI/tmp\fR, on
+Windows(TM)
+the system temporary path.
+.TP
+\fBclient.hash_function\fR
+The hash function of the HMAC over the cookies of client sessions saved before 4.0 (AES\-256\-CBC), which are still read in 4.x; new ones are sealed with AES\-256\-GCM. The available values are:
+\fIsha256\fR,
+\fIsha1\fR,
+\fImd5\fR
+and, with OpenSSL only,
+\fIripemd160\fR. The default is
+\fIsha256\fR. The weaker
+\fIsha1\fR
+and
+\fImd5\fR
+are kept for compatibility only.
+.SS "SSL/TLS"
+.PP
+All the cryptographic material examined in this section MUST not be password protected. This is because on unattended devices such as appliances or similar, password protection is useless if not harmful.
+.PP
+OpenSSL 3 is required. HTTPS servers accept TLS 1.2 or newer only (TLS 1.3 when the client has it); TLS 1.0 and 1.1 are rejected, and TLS compression and renegotiation are disabled. See doc/TLS. OpenSSL 3 also enforces minimum key sizes and signature algorithms according to the system's security level; on common distributions such as Ubuntu, 1024\-bit RSA keys and MD5\-signed certificates are refused. Use certificates with at least 2048\-bit RSA (or equivalent) keys.
+.TP
+\fBcert_file\fR
+PEM\-encoded certificate file for the server and optionally also its corresponding RSA or DSA Private Key file (contained in the same file). The certificate should be configured with the Common Name matching the fully qualified domain name of the server. This parameter is
+\fImandatory\fR.
+.TP
+\fBkey_file\fR
+PEM\-encoded private key file for the server. If the private key is not combined with the certificate in the
+\fBcert_file\fR, use this additional directive to point to the file with the stand\-alone private key. When
+\fBcert_file\fR
+is used and the file contains both the certificate and the private key this directive need not be used. However, such practice is strongly discouraged. Instead the certificate should be separated from the private key. By default the value of
+\fBcert_file\fR
+is used.
+.TP
+\fBcertchain_file\fR
+Optional all\-in\-one file where you can assemble the certificates of Certification Authorities (CA) which form the certificate chain of the server certificate. This starts with the issuing CA certificate of the server certificate and can range up to the root CA certificate. Such a file is simply the concatenation of the various PEM\-encoded CA Certificate files, usually in certificate chain order. This is intended for instance for the Verisign Global\-ID situation where one
+\fIhas\fR
+to send the intermediate CA of Verisign with the GID while one wants to avoid that under client authentication all clients issued by this CA are accepted, which would happen when one references the CA cert via
+\fBca_file\fR.
+.TP
+\fBca_file\fR
+All\-in\-one file where you can assemble the certificates of Certification Authorities (CA) for all certificates expected from clients. These are used for Client authentication. Such a file is simply the concatenation of the various PEM\-encoded certificate files, in order of preference. It is mandatory when
+\fBverify_mode\fR
+is
+\fIoptional\fR
+or
+\fIrequire\fR.
+.TP
+\fBdh_file\fR
+PEM\-encoded file containing Diffie\-Hellman parameters to be used on session data negotiation phase. When missing, OpenSSL selects suitable DH parameters automatically. Ephemeral RSA keys are no longer used.
+.TP
+\fBverify_depth\fR
+This directive sets how deeply openssl should verify before deciding that the clients don't have a valid certificate. The depth is the maximum number of intermediate CA certificates allowed between the client certificate and a CA in
+\fBca_file\fR
+(OpenSSL's verify depth): 0 means the client certificate must be signed directly by a CA in
+\fBca_file\fR, and the default of 1 also allows one intermediate CA. It must be a number from 0 to 100; anything else stops klind at startup.
+.TP
+\fBcrl_file\fR
+PEM\-encoded file containing CRLs against which certificates supplied by the client (at least its own) will be checked for revocation status.  
+.TP
+\fBcrl_opts\fR
+This directive can be set to the value that follows in order to enforce a stricter check upon the supplied certificate chain: not only the client certificate, but every certificate in chain up to the anchor CA will be tested for its revocation status.
+.RS
+.TP
+\fBCHECK_ALL\fR
+.RE
+.sp
+.TP
+\fBverify_mode\fR
+This directive sets the certificate verification level for the Client authentication. The following values are available:
+.RS
+.TP
+\fBNO\fR
+no client certificate is required at all
+.TP
+\fBOPTIONAL\fR
+the client may present a valid certificate
+.TP
+\fBREQUIRE\fR
+the client has to present a valid certificate (mutual TLS; doc/TLS)
+.RE
+.IP
+.sp
+Note that optional makes sense only in testing scenarios. The default value is
+\fBNO\fR.
+.TP
+\fBtls_min_version\fR
+\fI1.2\fR
+(default) or
+\fI1.3\fR, to accept TLS 1.3 clients only.
+.TP
+\fBtls_ciphers\fR
+The TLS 1.2 cipher list (OpenSSL syntax). The default is Mozilla's "intermediate" list: ECDHE and DHE key exchange with AES\-GCM or ChaCha20\-Poly1305 only.
+.TP
+\fBtls_ciphersuites\fR
+The TLS 1.3 cipher suites (OpenSSL syntax); by default OpenSSL's (all AEAD).
+.TP
+\fBtls_ticket_key_lifetime\fR
+How long a session ticket key is used, in minutes or seconds with an
+\fIs\fR
+suffix; a ticket is taken for twice that. The default is 720 (12 hours);
+\fI0\fR
+turns session tickets off.
+.SS "LOG"
+.PP
+Klin provides three types of log device: memory, syslog and file. The first is especially targeted for ROM appliances, while the second and third need a device with available (and writeable) storage in order to work. The file type is for systems with no available system message logger (RFC 3164 like). Instead, if the host system has syslog, either as a locally running daemon or just as a set of client API interfacing an external device, then the syslog type (which is nothing but a wrapper to the
+\fBsyslog\fR(3)
+family of functions) can be used.
+.PP
+Each klin instance can be given its private log device. Furthermore there may exist a top level log device, associated to the klin dispatcher to which log messages who could not find a suitable sink (i.e. messages sent by klin instances with no configured log device) are forwarded. If no log devices are configured (neither instance specific, nor the top level one), nothing at all is logged.
+.PP
+Each log message is bounded to a severity level. Available levels, starting from the lowest, are:
+\fBKLOG_DEBUG\fR,
+\fBKLOG_INFO\fR,
+\fBKLOG_NOTICE\fR,
+\fBKLOG_WARNING\fR,
+\fBKLOG_ERR\fR,
+\fBKLOG_CRIT\fR,
+\fBKLOG_ALERT\fR,
+\fBKLOG_EMERG\fR.
+.PP
+Each log device has its
+\fBlog\fR
+subsection which gathers all its configuration parameters.
+.TP
+\fBtype\fR
+Specify the type of log device: can be one of
+\fImemory\fR,
+\fIfile\fR
+or
+\fIsyslog\fR. This parameter is
+\fImandatory\fR.
+.TP
+\fBident\fR
+Set a fixed string which will be prepended to each log message.
+.TP
+\fBthreshold\fR
+Specify the threshold severity level for messages that you want to be displayed: log messages with a level lower than this will be discarded. If not specified, the lowest value is set 
+(i.e. \fBKLOG_DEBUG\fR).
+.TP
+\fBmemory.limit\fR
+The memory log device is basically a fixed size array of log strings with a FIFO discard policy. This parameter specifies the array dimension, i.e. the maximum number of resident log messages. If not specified a default value of 250 is set.
+.TP
+\fBsyslog.facility\fR
+Set a default
+\fBsyslog\fR(3)
+facility for log messages. It must be one of
+\fBLOG_LOCAL[0\-7]\fR. If not set the highest value possible is set 
+(i.e. \fBLOG_LOCAL7\fR).
+.TP
+\fBsyslog.options\fR
+Optionally specify a list of blank separated values from the set of the
+\fBsyslog\fR(3)
+log options:
+\fBLOG_CONS\fR,
+\fBLOG_NDELAY\fR,
+\fBLOG_PERROR\fR,
+\fBLOG_PID\fR.
+.PP
+A file log device is physically subdivided into a certain number of files (pages) named
+\fIbasename\fR.\fIpage_id\fR, used as pieces of a sliding circular buffer. A page must be thought as a fixed size array of log lines: each page in a file log has the same dimension, so that each log line can be referenced uniquely. State information is grouped into a
+\fIhead\fR
+file to be preserved between one run and the subsequent. Information in head (i.e. number of page files, page dimension, active page id, offset in page and basename) is used iff it corresponds to actual config parameters, otherwise the past log is discarded.
+.TP
+\fBfile.basename\fR
+The page basename. This parameter is
+\fImandatory\fR.
+.TP
+\fBfile.limit\fR
+Set the number of log lines in each page file. If not set, a default value of 250 is silently assumed.
+.TP
+\fBfile.splits\fR
+Set the number of pages for this log device. If not set, a default value of 4 is silently assumed. The minimal number of pages is 2.
+.SH "SEE ALSO"
+.PP
+\fBklin\fR(1),
+\fBklind\fR(8).
+.PP
+The standard
+Klin
+software distribution contains a complete and carefully annotated
+\fIklind\-sample.conf\fR
+file which can be used as a reference.

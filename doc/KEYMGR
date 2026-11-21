@@ -1,0 +1,87 @@
+KLIN TLS KEY MANAGER
+--------------------
+
+The private key of an HTTPS server is kept out of the processes that
+serve requests. At startup, before any worker is forked, klind starts a
+key manager, a small process of its own, which reads the key file itself
+and tells klind only the public key: klind never decodes the private
+key. Workers (and klind itself) only hold a proxy key: when
+a TLS handshake needs a signature, the worker sends the digest to the key
+manager, which signs it and sends the signature back. A worker that runs
+attacker-controlled code can ask for signatures while it runs, but it
+cannot read the key, and the key does not leave with a memory dump or a
+core file of a worker.
+
+It is on by default for every HTTPS server; to keep the key in klind's
+processes, as before 4.0.0:
+
+    secure
+    {
+        type        https
+        cert_file   /etc/klin/cert.pem
+        key_file    /etc/klin/key.pem
+        key_manager no
+    }
+
+HOW IT WORKS
+
+- One key manager per HTTPS server. It closes every descriptor but its
+  control socket, ignores HUP and ALRM, and, when klind runs as root with
+  uid and gid set, drops to them like klind does. It tells klind it is
+  ready only once it has done all that and its sandbox is on; one that is
+  not ready in 10 s is killed, and klind does not start.
+- Its memory is not readable by other processes of the same user, the
+  workers included: it makes itself undumpable (Linux: PR_SET_DUMPABLE 0,
+  so /proc/<pid>/mem and ptrace are refused) before it reads the key, and
+  again after dropping to uid and gid, and it has no core dumps
+  (RLIMIT_CORE 0). This matters when klind runs as its user from the
+  start (systemd User=): nothing else would make it undumpable. Other
+  systems get the core limit only.
+- It signs only what a TLS handshake asks for: a SHA-1, SHA-224, SHA-256,
+  SHA-384 or SHA-512 digest of the right length; for RSA, PKCS #1 v1.5 or
+  PSS padding (with a PSS salt length and MGF1 digest TLS uses). Raw RSA,
+  other paddings and digests, and data that is not a digest are refused.
+  A request carries exactly one descriptor (for the answer); one with
+  more is not answered, and the others are closed.
+- The proxy key is an OpenSSL 3 provider built into klind
+  ("klin-keyproxy"): its key management answers with the public key
+  (certificate checks, sizes, curve), its signature operation forwards
+  the digest and the RSA padding, PSS salt length and MGF1 digest. RSA
+  (PKCS #1 v1.5 and PSS, TLS 1.2 and 1.3) and EC keys (ECDSA) are
+  supported; other key types stop klind at startup (set key_manager no).
+- Each signature: the worker creates a socket pair, sends the request and
+  one end of the pair over the control socket every klind process
+  inherited, and waits up to 5 s for the answer on the other end.
+- TLS 1.2 RSA key exchange is turned off (":!kRSA" is added to the TLS 1.2
+  cipher list, tls_ciphers or the default of doc/TLS): it decrypts with
+  the private key, which the key manager does not do, and it has no
+  forward secrecy. Every current client uses ECDHE.
+- If a key manager exits, klind stops: nothing else holds the key, so no
+  handshake could succeed. A key manager exits when klind does.
+- Key and certificate files are read into OpenSSL secure memory (wiped
+  when freed), not through stdio. Until 4.0's last changes klind decoded
+  the key and handed it over; OpenSSL's decoder leaves copies in ordinary
+  freed memory, which the workers inherited (seen with two servers
+  sharing a key file, the second with a ca_file). The key manager now
+  reads the file, so klind's memory never has the key.
+- One key manager per HTTPS server: servers sharing a key file have one
+  each.
+
+LIMITS
+
+- A key embedded in klind (a key_file in the site, see the import) is in
+  every process's memory as part of the program: klind warns at startup.
+  Keep keys in files outside the site.
+- The key manager signs handshake digests for the workers while they run:
+  it protects the key, not the TLS sessions of a compromised worker.
+- Native Windows has no key manager.
+
+The server tests check it: after TLS requests they scan the memory of
+klind and every process it started (Linux, /proc) for the private key,
+and expect to find it in the key managers only (two servers share the
+key, one of them with client certificates: the case that leaked); as
+klind's user they cannot read the key managers' memory at all (as root,
+klind is started as nobody and nobody tries). A page asks the key manager,
+as a compromised worker could, for MD5, no digest, raw RSA, a digest of
+the wrong length and X9.31 padding (all refused), and sends two extra
+descriptors (closed); klind starts with its standard output closed.

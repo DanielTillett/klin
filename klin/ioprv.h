@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2005-2012 by KoanLogic s.r.l. <http://www.koanlogic.com>
+ * Copyright (c) 2026 Daniel Tillett
+ * All rights reserved.
+ *
+ * This file is part of Klin (derived from KLone), and as such it is subject to the license stated
+ * in the LICENSE file which you have received as part of this distribution.
+ */
+
+#ifndef _KLIN_IO_PRV_H_
+#define _KLIN_IO_PRV_H_
+
+#include "klin_conf.h"
+#ifdef HAVE_STDINT
+#include <stdint.h>
+#endif /* HAVE_STDINT */
+#include <klin/codec.h>
+#include <klin/utils.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
+/* functions used by io devices */
+
+/** alloc sizeof(type) and initialize the io_t object */
+#define io_create(type, pio) io_prv_create(sizeof(type), pio)
+int io_prv_create(size_t dev_sz, io_t **pio);
+
+typedef ssize_t (*io_read_op) (io_t*, char*, size_t);
+typedef ssize_t (*io_write_op) (io_t*, const char*, size_t);
+typedef ssize_t (*io_seek_op) (io_t*, size_t);
+typedef ssize_t (*io_tell_op) (io_t*);
+typedef int (*io_close_op) (io_t*);
+typedef int (*io_free_op) (io_t*);
+
+struct io_s
+{
+    char *name;
+    codec_chain_t codec_chain; 
+    int eof;
+    int type;
+    size_t size;
+
+    /* reference count (used by dup'd io_t) */
+    unsigned int refcnt; 
+
+    /* !0 for encrypted connections */
+    int is_secure;
+
+    /* io ops */
+    io_read_op read;
+    io_write_op write;
+    io_seek_op seek;
+    io_tell_op tell;
+    io_close_op close;
+    io_free_op free;
+
+    /* input buffer */
+
+    char *rbuf;     /* read buffer                                            */
+    size_t rbsz;    /* read buffer size                                       */
+    size_t rcount;  /* available bytes in the buffer                          */
+    size_t roff;    /* offset of the first byte to return                     */
+
+    size_t rtot;    /* total number of bytes read from this io                */
+
+    /* underflow buffer */
+    char *ubuf;     /* underflow buffer                                       */
+    size_t ucount;  /* available bytes in the ubuffer                         */
+    size_t uoff;    /* offset of the first byte to return                     */
+
+
+    /* output buffer */
+
+    char *wbuf;     /* write buffer                                           */
+    size_t wbsz;    /* write buffer size                                      */
+    size_t wcount;  /* # of non-empty bytes in the buffer                     */
+    size_t woff;    /* offset of the head of the buffer                       */
+
+    /* read limit: reads stop (EOF) when rtot reaches rlimit */
+    int rlimited;   /* !0 if rlimit is set                                    */
+    size_t rlimit;  /* max value of rtot                                      */
+
+    /* !0 if codecs only transform written data (e.g. a connection whose
+       codecs belong to the response) */
+    int wr_codecs;
+};
+
+#ifdef __cplusplus
+}
+#endif 
+
+#endif

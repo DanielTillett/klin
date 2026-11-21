@@ -1,0 +1,14 @@
+# pinned LibU checkout fetched by build/build.py
+libu
+# build/build.py output, and common CMake build directories
+.build/
+build-*/
+out/
+# in-tree artefacts (e.g. from running klin by hand)
+*.o
+*.a
+pg_*.c
+pg_*.kld
+autogen.cmake
+tags
+__pycache__/

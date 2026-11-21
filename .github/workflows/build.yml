@@ -1,0 +1,154 @@
+# Copyright (c) 2026 Daniel Tillett. Part of Klin; see the LICENSE file.
+name: Build and test
+# Linux (GCC release, sanitizers, BSD make) and native Windows (MinGW) on
+# every push and pull request. macOS runs weekly and by hand from the Actions
+# tab: hosted macOS runners are often not available for hours
+on:
+  push:
+    branches-ignore: ["wip/**", "cflite-*"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, sanitize]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential clang libclang-rt-dev libssl-dev zlib1g-dev python3 python3-yaml git cmake ninja-build pkg-config
+      - name: Build and test (CMake + Ninja)
+        env:
+          SANITIZE: ${{ matrix.mode == 'sanitize' && '--sanitize' || '' }}
+        run: python3 build/build.py --test $SANITIZE
+      - name: Fuzz smoke test (every target in fuzz/, ASan and UBSan)
+        if: matrix.mode == 'release'
+        run: python3 test/run_fuzz.py --runs 20000
+      - name: Build-system checks (site names, includes, flags, install, packages)
+        if: matrix.mode == 'release'
+        run: python3 test/run_build_checks.py
+      - name: Release and workflow checks (pins, permissions, tarball, SBOM)
+        if: matrix.mode == 'release'
+        run: python3 test/run_release_checks.py
+      - name: klind under the hardened systemd unit
+        if: matrix.mode == 'release'
+        run: sudo python3 test/run_systemd_test.py --build .build/release/cmake
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: build-logs-${{ matrix.mode }}
+          path: |
+            .build/${{ matrix.mode }}/*.log
+            .build/${{ matrix.mode }}/build-info.json
+
+  # Proves the build needs no GNU make: BSD make drives the generated
+  # makefiles while any 'make'/'gmake' on PATH fails if invoked.
+  bsd-make:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y gcc clang libclang-rt-dev libssl-dev zlib1g-dev python3 git cmake bmake
+      - name: Block GNU make
+        run: |
+          mkdir -p "$RUNNER_TEMP/nogmake"
+          for m in make gmake; do
+            printf '#!/bin/sh\necho "GNU make invoked: $0 $*" >&2\nexit 99\n' > "$RUNNER_TEMP/nogmake/$m"
+            chmod +x "$RUNNER_TEMP/nogmake/$m"
+          done
+          echo "$RUNNER_TEMP/nogmake" >> "$GITHUB_PATH"
+      - name: Build and test (CMake + bmake)
+        run: python3 build/build.py --test --generator "Unix Makefiles" --make-program "$(command -v bmake)"
+      - name: Build-system checks (bmake)
+        run: python3 test/run_build_checks.py --generator "Unix Makefiles" --make-program "$(command -v bmake)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: build-logs-bsd-make
+          path: |
+            .build/release/*.log
+            .build/release/build-info.json
+
+  # Native Windows: MinGW-w64 (UCRT64), the single-process server model
+  windows:
+    runs-on: windows-2025
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          install: >-
+            git openssl
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libsystre
+            mingw-w64-ucrt-x86_64-python
+      - name: Fetch the pinned LibU
+        run: python -c "import sys; sys.path.insert(0, 'build'); import build; build.dependencies(False)"
+      - name: Build (MinGW, Ninja, example site)
+        run: |
+          cmake -S . -B .build/mingw -G Ninja -DLIBU_SOURCE_DIR=libu -DKLIN_SITE_DIR=$PWD/doc/example-site
+          cmake --build .build/mingw
+      - name: Serve pages (HTTP and HTTPS)
+        run: python test/run_windows_smoke.py --daemon .build/mingw/bin/klind.exe
+      - name: Regression suite (extracted functions)
+        run: python test/run_regressions.py --cc gcc
+
+  macos:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: macos-15
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [release, sanitize]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install build tools
+        run: |
+          brew install cmake ninja openssl@3
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> "$GITHUB_ENV"
+      - name: Build and test (CMake + Ninja, Apple Clang)
+        env:
+          SANITIZE: ${{ matrix.mode == 'sanitize' && '--sanitize' || '' }}
+        run: python3 build/build.py --test $SANITIZE
+      - name: Build-system checks
+        if: matrix.mode == 'release'
+        run: python3 test/run_build_checks.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: build-logs-macos-${{ matrix.mode }}
+          path: |
+            .build/${{ matrix.mode }}/*.log
+            .build/${{ matrix.mode }}/build-info.json
