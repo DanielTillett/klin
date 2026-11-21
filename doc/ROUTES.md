@@ -27,7 +27,7 @@ routes
 ```
 
 - path: segments separated by '/'. A {name} segment matches one
-  non-empty segment; a {`name*`} segment, which must be last, matches the
+  non-empty segment; a `{name*}` segment, which must be last, matches the
   rest of the path, slashes included (it may be empty). Names are
   letters, digits and '_'. The match is exact: "/a" does not match "/a/".
 - method: GET, HEAD, POST, PUT, DELETE, PATCH or `*`, separated by blanks
@@ -47,6 +47,6 @@ Authentication realms ([AUTH](AUTH.md)) match the path the client asked for,
 before routing: protect `/api/*` and every route under it is protected.
 
 A route that cannot work (a relative path or page, a bad parameter, a
-{`name*`} that is not last, an unknown method) stops klind at startup.
+`{name*}` that is not last, an unknown method) stops klind at startup.
 
 See [JSON](JSON.md) for reading request bodies and writing JSON responses.

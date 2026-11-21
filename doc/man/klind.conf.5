@@ -1,4 +1,4 @@
-.TH "KLIND.CONF" "5" "03/06/2006" "KoanLogic Srl" "KoanLogic Srl"
+.TH "KLIND.CONF" "5" "November 2026" "Klin 4.0" "Klin"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -10,10 +10,10 @@ klind.conf \- The configuration file for the klind daemon
 \fIklind.conf\fR
 is the configuration file for the
 \fBklind\fR(8)
-daemon, i.e. it contains its runtime configuration information. The complete description of the file format and possibile parameters therein, is provided for reference in the following sections.
+daemon, i.e. it contains its runtime configuration information. The complete description of the file format and possible parameters therein, is provided for reference in the following sections.
 .SH "FILE FORMAT"
 .PP
-The file consists of sections and parameters. A section begins with the name of the section, is followed by a '{' (which must be on a line by itself) and continues until the corresponding '}' is found. Sections can contain subsections or parameter assignements of the form:
+The file consists of sections and parameters. A section begins with the name of the section, is followed by a '{' (which must be on a line by itself) and continues until the corresponding '}' is found. Sections can contain subsections or parameter assignments of the form:
 \fIname\fR \fIvalue\fR.
 .PP
 The file is line\-based \- that is, each newline\-terminated line represents either a comment, a section name or a parameter.
@@ -29,13 +29,13 @@ The value in parameters is always a string (no quotes needed) whose case is pres
 It is also possible to use variable substitution which allows you to define a symbol name to be replaced by an arbitrary text string, with the classic bottom\-up scoping.
 .SH "CONFIGURATION FILE STRUCTURE"
 .PP
-Basically, you have an activation record for each running
+Basically, you have a server block for each running
 \fBklind\fR(8)
 instance: each instance implements an access method to the embedded data or to external data (file system) when requested. The two access methods currently implemented are HTTP and HTTPS.
 .PP
 The top level parameter
 \fBserver_list\fR
-lists the klin instances by name. For each name listed here there exist a corresponding activation record labelled with the same name.
+lists the klin instances by name. For each name listed here there exists a corresponding server block labeled with the same name.
 .PP
 For the sake of simplicity, the available options are grouped into four categories: those of general applicability (GENERAL), those common to both HTTP and HTTPS servers (SERVER), those specific to HTTP over SSL/TLS sessions (SSL/TLS) and those concerning activity logging (LOG).
 .SS "GENERAL"
@@ -70,7 +70,7 @@ for IPv4 wildcard listening socket on alternate HTTP port 8080;
 \fI
 sctp6://[::1]:80
 \fR
-for SCTP/IPv6 socket listening on loopback interface on port 80 (provided that SCTP and IPv6 are implemented on the target operating system, e.g. FreeBSD.)
+for SCTP/IPv6 socket listening on loopback interface on port 80 (provided that SCTP and IPv6 are implemented on the target operating system, e.g. FreeBSD, and Klin is built with -DLIBU_ENABLE_SCTP=ON; it is off by default).
 For further information on LibU URI syntax, see:
 \fI
 https://github.com/koanlogic/libu (toolbox/net.c)
@@ -174,8 +174,8 @@ Note that we use the URI
 \fIsup://\fR
 convention to specify the location of content that
 \fBklind\fR
-tries to retreive from its suppliers. By default there is only one active supplier, which is the embedded file system. Anyway, there could be many different suppliers, e.g. the local disk that is enabled by setting the
-\fBENABLE_SUP_FS\fR
+tries to retrieve from its suppliers. By default there is only one active supplier, which is the embedded file system. Anyway, there could be many different suppliers, e.g. the local disk that is enabled by setting the
+\fBKLIN_ENABLE_SUP_FS\fR
 variable during compilation. The embedded file system supplier is
 \fIalways\fR
 searched first. In case the requested resource were not found in the embedded file system, the other suppliers are searched sequentially.
@@ -188,7 +188,7 @@ is done, it is mapped to
 \fI/\fR.
 .TP
 \fBchroot\fR
-Set the directory where the running server resides. It requires no additional files to exist in jail: the chroot call is made after server initialisation (log setup, backend configuration, bind/listen) but before forking and dropping of priviledges.
+Set the directory where the running server resides. It requires no additional files to exist in jail: the chroot call is made after server initialization (log setup, backend configuration, bind/listen) but before forking and dropping of privileges.
 .TP
 \fBblind_chroot\fR
 A variant of the
@@ -262,7 +262,7 @@ Request header fields passed to CGI scripts as HTTP_* variables:
 .TP
 \fBserver_sig\fR
 Set the server signature string which will be returned in the HTTP head (Server: %s). When setting a custom Product token, the guidelines stated in paragraph 3.7 of RFC 1945 should be followed. The default value is
-"klin/1.0".
+"klin/" followed by the version, e.g. "klin/4.0.0".
 .TP
 \fBmodel\fR
 Set the type of the serving model for this klin instance:
@@ -272,14 +272,22 @@ Set the type of the serving model for this klin instance:
 \fIprefork\fR
 mode, the server reacts adaptively, i.e. it creates other child processes up to a configurable maximum in order to gracefully handle the busy condition. Note that the
 \fB\-F\fR
-command line switch overrides this value, enforcing the iterative model. The default value is inherited from the parent, which by default is
+command line switch keeps klind in the foreground with this model; \fB\-d\fR enforces the iterative model. The default value is inherited from the parent, which by default is
 \fIprefork\fR.
 .TP
 \fBfork.max_child, prefork.max_child\fR
 Set the maximum number of child processes at running time. The default value is 150.
 .TP
-\fBprefork.max_request_per_child\fR
-Set the maximum number of request that a child process can handle before giving up.
+\fBprefork.max_requests_per_child\fR
+Set the maximum number of connections a child process serves before it exits and is replaced. The default value is 10000.
+.TP
+\fBprefork.start_child\fR
+Set the number of child processes started with the server and kept running. The default value is 2.
+.TP
+\fBprefork.idle_timeout\fR
+Set the seconds a child process started beyond
+\fBprefork.start_child\fR
+(for a burst of clients) waits for a client before it exits; 0 means never. The default value is 10.
 .TP
 \fBindex\fR
 Specify the index page location. This is the page that is returned to the client requesting
@@ -326,7 +334,7 @@ attributes, plus
 \fISecure\fR
 when the connection to
 \fBklind\fR
-uses TLS. Session identifiers contain 128 bits from a cryptographic random source; an identifier a client sends that names no stored session is not taken on (a new one is drawn), and pages give a session a new one at login with
+uses TLS. Session identifiers contain 128 bits from a cryptographic random source; an identifier a client sends that names no stored session is not accepted (a new one is drawn), and pages give a session a new one at login with
 \fBsession_regenerate_id\fR().
 .TP
 \fBencrypt\fR
@@ -377,7 +385,7 @@ All the cryptographic material examined in this section MUST not be password pro
 OpenSSL 3 is required. HTTPS servers accept TLS 1.2 or newer only (TLS 1.3 when the client has it); TLS 1.0 and 1.1 are rejected, and TLS compression and renegotiation are disabled. See doc/TLS.md. OpenSSL 3 also enforces minimum key sizes and signature algorithms according to the system's security level; on common distributions such as Ubuntu, 1024\-bit RSA keys and MD5\-signed certificates are refused. Use certificates with at least 2048\-bit RSA (or equivalent) keys.
 .TP
 \fBcert_file\fR
-PEM\-encoded certificate file for the server and optionally also its corresponding RSA or DSA Private Key file (contained in the same file). The certificate should be configured with the Common Name matching the fully qualified domain name of the server. This parameter is
+PEM\-encoded certificate file for the server and optionally also its corresponding RSA or EC private key (the key manager supports RSA and EC keys only) (contained in the same file). The certificate should be configured with the Common Name matching the fully qualified domain name of the server. This parameter is
 \fImandatory\fR.
 .TP
 \fBkey_file\fR
@@ -516,7 +524,7 @@ log options:
 A file log device is physically subdivided into a certain number of files (pages) named
 \fIbasename\fR.\fIpage_id\fR, used as pieces of a sliding circular buffer. A page must be thought as a fixed size array of log lines: each page in a file log has the same dimension, so that each log line can be referenced uniquely. State information is grouped into a
 \fIhead\fR
-file to be preserved between one run and the subsequent. Information in head (i.e. number of page files, page dimension, active page id, offset in page and basename) is used iff it corresponds to actual config parameters, otherwise the past log is discarded.
+file to be preserved between one run and the subsequent. Information in head (i.e. number of page files, page dimension, active page id, offset in page and basename) is used only if it corresponds to actual config parameters, otherwise the past log is discarded.
 .TP
 \fBfile.basename\fR
 The page basename. This parameter is
@@ -535,5 +543,7 @@ Set the number of pages for this log device. If not set, a default value of 4 is
 The standard
 Klin
 software distribution contains a complete and carefully annotated
-\fIklind\-sample.conf\fR
-file which can be used as a reference.
+\fIdoc/var/klind.conf.example\fR
+file and the sample configurations in
+\fIetc/\fR
+(virtual hosts, HTTPS, CGI, IPv6, access logs, sessions without a disk), which can be used as a reference.

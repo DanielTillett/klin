@@ -61,25 +61,18 @@ The request's header fields become `HTTP_<NAME>` variables (Accept-Language
 is HTTP_ACCEPT_LANGUAGE). Some never do:
 
   - Proxy: HTTP_PROXY is read as a proxy setting by many HTTP libraries,
-
-```
-so a client could send the script's own requests through its server
-("httpoxy", CVE-2016-5385 and others).
-```
-
+  so a client could send the script's own requests through its server
+  ("httpoxy", CVE-2016-5385 and others).
   - names with characters other than letters, digits and '-': X-User and
-
-```
-X_User would both be HTTP_X_USER, and a proxy in front that checks
-one may pass the other.
-```
+  X_User would both be HTTP_X_USER, and a proxy in front that checks
+  one may pass the other.
 
 pass_headers chooses the rest:
 
 ```
 pass_headers  default   all but Authorization and Proxy-Authorization
                         (the credentials are for klind's realms,
-                        doc/AUTH; the script gets REMOTE_USER)
+                        AUTH.md; the script gets REMOTE_USER)
 pass_headers  all       those too
 pass_headers  Cookie User-Agent Accept    only these
 ```

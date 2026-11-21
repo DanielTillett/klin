@@ -3,7 +3,7 @@
 contrib/systemd/klind.service is a hardened unit for klind. Copy it to
 /etc/systemd/system/, set the ExecStart paths, then
 
-```
+```sh
 systemctl daemon-reload
 systemctl enable --now klind
 ```
@@ -50,7 +50,7 @@ RestrictAddressFamilies   AF_UNIX (the key manager), AF_INET, AF_INET6
 SystemCallFilter       @system-service without @privileged, @mount,
                        @debug etc., then @setuid and chroot back for the
                        drop; klind adds its own, narrower filter in each
-                       worker (doc/SANDBOX)
+                       worker (SANDBOX.md)
 LimitNOFILE, TasksMax
 ```
 

@@ -27,7 +27,11 @@ Klin 4.0.0:
 	  updates the pins and the fuzzing image's digest; OpenSSF Scorecard
 	  runs weekly (results published to scorecard.dev). The repository is
 	  https://github.com/DanielTillett/klin; README and doc/ are Markdown,
-	  with CONTRIBUTING.md and issue and pull request templates
+	  with CONTRIBUTING.md and issue and pull request templates; new
+	  doc/PAGES.md (writing a site) and doc/UPGRADING.md (from KLone); the
+	  example site is a current HTML page; the manual pages corrected (-f
+	  replaces the embedded configuration, prefork.max_requests_per_child,
+	  prefork.start_child and prefork.idle_timeout, the Server default)
 	- files from the file system (doc/FILES.md): symbolic links are followed
 	  only to targets inside the dir_root or alias target the path was
 	  resolved under (follow_symlinks inside; no follows none, yes all,

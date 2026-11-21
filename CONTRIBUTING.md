@@ -13,7 +13,7 @@ welcome.
   before you write the code.
 - Klin is used on small devices: a change should not add a dependency,
   a thread or a large amount of memory without a good reason.
-- Behaviour that makes a deployment less safe (a weaker default, a check
+- Behavior that makes a deployment less safe (a weaker default, a check
   removed) needs a setting to turn it on, documentation, and a ChangeLog
   entry.
 

@@ -40,7 +40,7 @@ back to err.
 
 ## Ownership
 
-The creator of an object frees it with the matching `*_free`(). A function
+The creator of an object frees it with the matching `*_free()`. A function
 that keeps a pointer it was given says so in its comment ("takes
 ownership", or "the caller keeps it, and it must outlive x").
 
@@ -105,8 +105,8 @@ can end it.
 
 The one exception is the prefork worker's own SIGALRM (setitimer, in
 server.c), which must interrupt any code, a slow page or accept(2): the
-watchdog (it asks the parent for one more worker with a single ppc
-write(2)) and the idle timeout of a spare worker (server_stop()).
+watchdog (it asks the parent for one more worker with a single write(2)
+to its ppc, the parent-process IPC channel) and the idle timeout of a spare worker (server_stop()).
 
 ## Cryptography
 

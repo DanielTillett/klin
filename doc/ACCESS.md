@@ -31,7 +31,7 @@ Entries are IPv4 or IPv6 addresses, networks (address/prefix bits) or
 
 For a request, the first rule whose path matches decides (a rule without
 a path matches every path): its first allow or deny line naming the
-client's address wins, and a client no line names is let in. A refused
+client's address wins, and a client that no line names is allowed. A refused
 request gets 403 Forbidden. Paths are the decoded request path the client
 asked for, before routes and aliases, as for authentication realms; IP
 rules are checked before authentication.
@@ -43,6 +43,8 @@ closed at once, before the TLS handshake or any HTTP.
 The address is the socket's peer: behind a proxy or load balancer it is
 the proxy's, and X-Forwarded-For is not used. A bad entry, an unknown key
 or a rule with no allow or deny line stops klind at startup.
+
+## Tested
 
 The server tests check rules per path, networks, the first match and
 connections dropped at accept over IPv4, and on a tcp6://[::1] listener

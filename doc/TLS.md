@@ -43,19 +43,25 @@ left out, whatever the list.
 ## Session resumption
 
 Session tickets let a returning client skip the full handshake. Their
-keys change every tls_ticket_key_lifetime (default 12 hours); a ticket
-made with the previous key is still taken, and the client gets a new one,
-so a ticket is good for 12 to 24 hours. Each HTTPS server draws a random
-secret when klind starts, before the workers fork; every period the
-secret is replaced by an HMAC-SHA256 of itself and the old one erased,
-and the period's keys are derived from its secret. Every process steps
-its copy forward on its own, so all have the same keys without talking to
-each other: klind every second, a worker whenever it accepts a connection
-(before reading anything of the client's). A worker keeps only its own
-server's secret, and the key managers none. A process whose memory is
-read gives away the keys of the current and previous periods, and of
-later ones until a restart, but not those of earlier periods: tickets
-issued before then stay closed. A restart draws a new secret.
+keys change every `tls_ticket_key_lifetime` (default 12 hours); a ticket
+made with the previous key is still accepted, and the client gets a new
+one, so a ticket is good for 12 to 24 hours.
+
+How the keys are made:
+
+- Each HTTPS server draws a random secret when klind starts, before the
+  workers fork. Every period the secret is replaced by an HMAC-SHA256 of
+  itself, and the old one is erased; the period's keys are derived from
+  its secret.
+- Every process steps its copy forward on its own, so all have the same
+  keys without talking to each other: klind every second, a worker
+  whenever it accepts a connection (before reading anything the client
+  sent). A worker keeps only its own server's secret; the key managers
+  keep none.
+- A process whose memory is read gives away the keys of the current and
+  previous periods, and of later ones until a restart, but not those of
+  earlier periods: tickets issued before then stay closed. A restart draws
+  a new secret.
 
 The session's own lifetime is three periods, so the ticket's key is what
 ends it. A clock set back keeps the keys a process has (processes that

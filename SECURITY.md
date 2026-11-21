@@ -55,7 +55,9 @@ Out of scope:
 ## Hardening
 
 How Klin limits the damage of a bug, and the settings that turn each
-protection off, are in `doc/HARDENING.md`, `doc/SANDBOX.md`, `doc/LIMITS.md`,
-`doc/TLS.md`, `doc/SESSIONS.md`, `doc/FILES.md`, `doc/CGI.md` and `doc/SYSTEMD.md`.
-Fuzzing and static analysis are in `doc/FUZZING.md`. How releases are built
-and how to verify them is in `doc/RELEASES.md`.
+protection off, are in [HARDENING](doc/HARDENING.md),
+[SANDBOX](doc/SANDBOX.md), [KEYMGR](doc/KEYMGR.md), [LIMITS](doc/LIMITS.md),
+[TLS](doc/TLS.md), [SESSIONS](doc/SESSIONS.md), [FILES](doc/FILES.md),
+[CGI](doc/CGI.md) and [SYSTEMD](doc/SYSTEMD.md). Fuzzing and static analysis
+are in [FUZZING](doc/FUZZING.md). How releases are built and how to verify
+them is in [RELEASES](doc/RELEASES.md).

@@ -1,43 +1,46 @@
 <%!
     #include <time.h>
-    time_t now;
 %>
-<html>
-<head><title>Klin start page</title></head>
-<link rel="stylesheet" href="kl.css" type="text/css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klin start page</title>
+  <link rel="stylesheet" href="kl.css">
+</head>
 <body>
+  <main>
+    <h1>Welcome to Klin <%= KLIN_VERSION %></h1>
 
-<blockquote>
+    <p class="lead">This page is compiled into klind: the server, its
+    configuration and this site are one program.</p>
 
-<blockquote><table width="750" cellpadding="5"><tr><td bgcolor="white">
-<center>
-<h3>Welcome to Klin (Ver. <%= KLIN_VERSION %>)!</h3>
-</center>
-</td></tr></table></blockquote>
-<p>
+    <section class="card">
+      <h2>Device time</h2>
+      <p class="value"><%
+          time_t now = time(NULL);
+          io_printf(out, "%s", ctime(&now));
+      %></p>
+      <p class="note">Written by C code in <code>www/index.kl1</code>,
+      run for every request.</p>
+    </section>
 
-<blockquote><table width="750" cellpadding="5"><tr><td bgcolor="#e0e0ff">
-<% 
-    now = time(0);
-    io_printf(out, "Time: %s", ctime(&now));
-%>
-</td></tr></table></blockquote>
+    <section class="card">
+      <h2>Next steps</h2>
+      <ul>
+        <li>Edit <code>doc/example-site/www/index.kl1</code> and run
+            <code>cmake --build out</code> again.</li>
+        <li>Read <a href="https://github.com/DanielTillett/klin/blob/master/doc/PAGES.md">Writing a site</a>.</li>
+        <li>See the <a href="https://github.com/DanielTillett/klin#readme">documentation</a>
+            and the <a href="https://github.com/DanielTillett/klin">project home</a>.</li>
+      </ul>
+    </section>
+  </main>
 
-<p>
-
-About Klin:
-<blockquote><table width="750" cellpadding="5"><tr><td bgcolor="#e0e0ff">
-
-<a href="https://github.com/DanielTillett/klin">Project home</a><br>
-<a href="https://github.com/DanielTillett/klin#readme">Documentation</a><br>
-<a href="https://github.com/DanielTillett/klin/issues">Support</a><br>
-
-</td></tr></table></blockquote>
-
-<font size="-1">
-Copyright (c) 2005-2012 by <a href="https://github.com/koanlogic/klone">KoanLogic s.r.l.</a>, (c) 2026 Daniel Tillett - All rights reserved.
-</font>
-</blockquote>
-
+  <footer>
+    Klin, derived from <a href="https://github.com/koanlogic/klone">KLone</a>
+    by KoanLogic s.r.l. &middot; BSD-3-Clause
+  </footer>
 </body>
 </html>

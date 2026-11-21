@@ -303,8 +303,9 @@ def main():
                              "#include <klin/version.h>\n#include <stdio.h>\n"
                              "int main(void) { return puts(klin_version()) < 0; }\n")
         lib = next(p for p in (prefix / "lib", prefix / "lib64") if p.exists())
-        # Klin's public headers include OpenSSL's, which a consumer supplies
-        # itself (on macOS, Homebrew's OpenSSL is not on the default path)
+        # OpenSSL's headers on the path too, for a consumer that includes
+        # klin/keyproxy.h or klin/tlsprv.h (the public headers do not need
+        # them; on macOS, Homebrew's OpenSSL is not on the default path)
         cache = (b / "CMakeCache.txt").read_text().splitlines()
         openssl = [line.split("=", 1)[1] for line in cache if line.startswith("OPENSSL_INCLUDE_DIR:")]
         command = ["cc", "-I", str(prefix / "include"), *[f"-I{d}" for d in openssl if d],

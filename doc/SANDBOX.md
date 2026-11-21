@@ -13,7 +13,7 @@ www
 }
 ```
 
-LINUX (seccomp)
+## Linux (seccomp)
 
 A worker is sandboxed after the child_init hook (so a webapp can open
 what it needs first) and before it serves. A seccomp-bpf filter, with
@@ -92,6 +92,8 @@ test setup. macOS and others: no sandbox.
 klind itself (it forks workers, reaps them, writes logs) and the
 single-process server of -d, which is meant for development. CGI
 scripts are filtered only as far as the worker's filter goes.
+
+## Tested
 
 The server tests check, on Linux: every worker and the key manager have
 the filter (Seccomp: 2 in /proc), klind does not; a call outside the

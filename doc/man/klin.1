@@ -1,4 +1,4 @@
-.TH "KLIN" "1" "11/03/2005" "KoanLogic Srl" "KoanLogic Srl"
+.TH "KLIN" "1" "November 2026" "Klin 4.0" "Klin"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -11,9 +11,11 @@ klin \- Klin swiss army knife
 .SH "DESCRIPTION"
 .PP
 \fBklin\fR
-performs two different tasks depending on the argument supplied to the
+performs three different tasks depending on the argument supplied to the
 \fB\-c\fR
-switch: import a site directory tree into the Klin building environment (i.e. the embedded file system), or translate static and dynamic pages into C files.
+switch: import a site directory tree into the Klin building environment (i.e. the embedded file system), translate static and dynamic pages into C files, or make the password hash of a user for an
+\fBauth\fR
+block (passwd).
 .PP
 .PP
 Both commands are normally run by the CMake build rather than by hand. Pass the site directory when configuring Klin and build:
@@ -83,7 +85,7 @@ The user can choose whether to compress all the imported files based on their MI
 If, while importing, you don't want to include a set of files you can use the 
 \fB\-x\fR argument to provide the pattern of files you want to exclude.
 
-Arguments \fB\-x\fR, \fB\-Z\fR and \fB\-e\fR may be used more then once.
+Arguments \fB\-x\fR, \fB\-Z\fR and \fB\-e\fR may be used more than once.
 
 .SS "Passwd:"
 .HP 6
@@ -106,7 +108,7 @@ The following environment variable affects the execution of
 \fBKLIN_CIPHER_KEY\fR
 If set,
 \fBklin\fR
-tries to read the embedded file system encryption key from it. It is be overridden by the
+tries to read the embedded file system encryption key from it. It is overridden by the
 \fB\-k\fR
 option.
 .SH "DIAGNOSTICS"
@@ -124,5 +126,5 @@ if an error occurs.
 \fBklind.conf\fR(5).
 .SH "BUGS"
 .PP
-If you find one, please email it to
+If you find one, please report it at
 https://github.com/DanielTillett/klin/issues

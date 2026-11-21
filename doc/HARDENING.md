@@ -5,23 +5,23 @@ compiler and linker protections below, each one only if the compiler or
 linker accepts it. It is on by default; to build without (e.g. to compare
 performance, or for a toolchain that misbehaves):
 
-```
+```sh
 cmake -S . -B out -DKLIN_HARDENING=OFF
 ```
 
-## Gcc and clang
+## GCC and Clang
 
 ```
 -D_FORTIFY_SOURCE=3       bounds-checked libc calls (glibc 2.34+; older
                           ones fall back to level 2). Release builds
-                          only: it needs optimisation, so Debug builds
+                          only: it needs optimization, so Debug builds
                           (and the sanitizer builds) leave it out
 -fstack-protector-all     (KLIN_STACK_PROTECTOR, already on)
 -fstack-clash-protection  no stack/heap collision through big frames
 -fcf-protection=full      x86: Intel CET (indirect branch tracking,
                           shadow stack) where the CPU and kernel have it
 -mbranch-protection=standard   ARM64: PAC and BTI
--ftrivial-auto-var-init=zero   uninitialised locals are zero
+-ftrivial-auto-var-init=zero   uninitialized locals are zero
 -Wformat -Werror=format-security   a format string that is not a
                           literal and has no arguments is an error
 -fPIE, -pie               position-independent programs (full ASLR)
@@ -36,7 +36,7 @@ MinGW (Windows) links with --dynamicbase, --nxcompat and --high-entropy-va
 MSVC (not a supported build today, see README) would get /GS and
 /guard:cf, linking with /guard:cf /DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT.
 
-## Checked
+## Tested
 
 The build checks (test/run_build_checks.py) read the ELF headers of klind
 on Linux with readelf and fail unless it is PIE, has GNU_RELRO and

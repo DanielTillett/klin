@@ -5,15 +5,14 @@ block of klind.conf.
 
 ## The request
 
-```
-setting             default   beyond it
-max_header_fields   100       431 Request Header Fields Too Large
-max_header_line     8192      431 (bytes of one field, with its CRLF)
-max_header_size     32768     431 (bytes of the whole header)
-(request line)      8192      414 URI Too Long (not configurable)
-post_maxsize        5 MB      413 (the body, whatever the method)
-idle_timeout        10 s      the connection is closed
-```
+| Setting | Default | Beyond it |
+| --- | --- | --- |
+| `max_header_fields` | 100 | 431 Request Header Fields Too Large |
+| `max_header_line` | 8192 | 431 (bytes of one field, with its CRLF) |
+| `max_header_size` | 32768 | 431 (bytes of the whole header) |
+| (the request line) | 8192 | 414 URI Too Long (not configurable) |
+| `post_maxsize` | 5 MB | 413 (the body, whatever the method) |
+| `idle_timeout` | 10 s | the connection is closed |
 
 idle_timeout is a deadline for the whole request line and header, not for
 each read: a client that sends one byte a second ("slowloris") is closed
@@ -27,20 +26,16 @@ is read, so a vhost block cannot change them.
 A proxy in front of klind and klind must agree on where a request ends.
 klind refuses what two HTTP implementations might read differently:
 
-```
-Transfer-Encoding with Content-Length        400
-two Content-Length fields (even equal)       400
-a Content-Length that is not just digits     400
-any Transfer-Encoding (chunked is not        501
-  implemented; unknown or repeated codings)
-obsolete line folding (a line starting       400
-  with a blank or a tab)
-a field name that is not a token, or a       400
-  blank before the colon
-a control character (other than tab) in      400
-  a field, a bare CR, a NUL
-a line over the limits above                 431
-```
+| Request | Status |
+| --- | --- |
+| Transfer-Encoding with Content-Length | 400 |
+| two Content-Length fields (even equal) | 400 |
+| a Content-Length that is not just digits | 400 |
+| any Transfer-Encoding (chunked is not implemented; unknown or repeated codings) | 501 |
+| obsolete line folding (a line starting with a blank or a tab) | 400 |
+| a field name that is not a token, or a blank before the colon | 400 |
+| a control character (other than tab) in a field, a bare CR, a NUL | 400 |
+| a line over the limits above | 431 |
 
 After any of these the connection is closed: a request pipelined behind
 it is never read. The response is sent before the close, and klind reads
@@ -49,12 +44,10 @@ not reset the connection and drop the response (plain HTTP).
 
 ## Connections
 
-```
-max_conn_per_ip     32        a new connection from the same address is
-                              closed when accepted (before TLS)
-max_streams         100       sse_start() and ws_accept() answer 503 with
-                              Retry-After: 5
-```
+| Setting | Default | Beyond it |
+| --- | --- | --- |
+| `max_conn_per_ip` | 32 | a new connection from the same address is closed when accepted (before TLS) |
+| `max_streams` | 100 | `sse_start()` and `ws_accept()` answer 503 with `Retry-After: 5` |
 
 Both count the connections being served by all of a server's workers (in
 memory shared by them), and 0 turns either off. max_streams keeps
@@ -71,17 +64,12 @@ these caps never apply.
 Each worker process (prefork or fork model) gets resource limits when it
 starts, before its sandbox:
 
-```
-worker_max_memory   1024      MB of address space (RLIMIT_AS)
-worker_max_files    1024      open files (RLIMIT_NOFILE)
-worker_max_procs    max_child processes of its user (RLIMIT_NPROC),
-                    + 64      so the CGIs it starts are bounded too
-prefork.max_child   150       workers at once (fork.max_child for the
-                              fork model); max_child, 300, for the whole
-                              of klind (1 to 896 on Linux: klind's
-                              select() watches one channel per worker,
-                              below FD_SETSIZE)
-```
+| Setting | Default | Limit |
+| --- | --- | --- |
+| `worker_max_memory` | 1024 | MB of address space (`RLIMIT_AS`) |
+| `worker_max_files` | 1024 | open files (`RLIMIT_NOFILE`) |
+| `worker_max_procs` | `max_child` + 64 | processes of its user (`RLIMIT_NPROC`), so the CGIs it starts are bounded too |
+| `prefork.max_child` | 150 | workers at once (`fork.max_child` for the fork model); `max_child`, 300, for the whole of klind (1 to 896 on Linux: klind's `select()` watches one channel per worker, below `FD_SETSIZE`) |
 
 0 leaves a limit as klind has it. Past a limit, malloc() returns NULL,
 open() fails with EMFILE and fork() with EAGAIN: the page sees the error,

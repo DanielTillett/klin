@@ -77,6 +77,8 @@ secure
   it protects the key, not the TLS sessions of a compromised worker.
 - Native Windows has no key manager.
 
+## Tested
+
 The server tests check it: after TLS requests they scan the memory of
 klind and every process it started (Linux, /proc) for the private key,
 and expect to find it in the key managers only (two servers share the

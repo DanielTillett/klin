@@ -5,7 +5,7 @@ the file system are served by two optional suppliers: the file system one
 (static files) and the CGI one ([CGI](CGI.md)). Both are left out of a build
 unless asked for:
 
-```
+```sh
 cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
 ```
 
@@ -50,7 +50,7 @@ A link that leads out of it (to /etc, or to ../secret.txt) is not found
 
 no: no link is followed below that directory.
 
-yes: links are followed wherever they lead (the behaviour before 4.0).
+yes: links are followed wherever they lead (the behavior before 4.0).
 
 The file is opened one path segment at a time from the directory, with
 O_NOFOLLOW for each segment, after the links are resolved (inside). A link
@@ -71,7 +71,8 @@ in a dot or a blank (Windows drops them, so "page.kl1." would name
 page.kl1), one with a colon (an NTFS stream, "file::$DATA"), a short
 8.3 name ("SECRET~1.TXT", another name for a file a rule may cover by its
 long name), and device names (CON, NUL, COM1, ...). This code is not
-tested: there is no Windows machine in the test setup.
+tested: the Windows CI job builds klind and serves embedded pages, but
+does not build the file-system supplier or run these path checks.
 
 ## Tested
 

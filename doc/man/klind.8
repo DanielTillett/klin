@@ -1,4 +1,4 @@
-.TH "KLIND" "8" "11/03/2005" "KoanLogic Srl" "KoanLogic Srl"
+.TH "KLIND" "8" "November 2026" "Klin 4.0" "Klin"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -7,7 +7,7 @@
 klind \- klin daemon
 .SH "SYNOPSIS"
 .HP 7
-\fBklind\fR [\fB\-d\fR] [\fB\-f\ \fR\fB\fIfile\fR\fR] [\fB\-c\fR] [\fB\-F\fR] [\fB\-h\fR] [\fB\-i\fR] [\fB\-u\fR] [\fB\-p\ \fR\fB\fIfile\fR\fR] [\fB\-n\fR]
+\fBklind\fR [\fB\-d\fR] [\fB\-f\ \fR\fB\fIfile\fR\fR] [\fB\-c\fR] [\fB\-F\fR] [\fB\-h\fR] [\fB\-i\fR] [\fB\-u\fR] [\fB\-p\ \fR\fB\fIfile\fR\fR] [\fB\-n\fR] [\fB\-V\fR]
 .SH "DESCRIPTION"
 .PP
 \fBklind\fR
@@ -24,12 +24,13 @@ manual page.
 Enable verbose logging for debugging purposes. HTTP/HTTPS requests are also served iteratively: no child is forked to handle the client connection.
 .TP
 \-f \fIconfig_file\fR
-Load further configuration parameters from the external file
+Load the configuration from the external file
 \fIconfig_file\fR
-besides those found in the embedded configuration file
-\fIsup://etc/klind.conf\fR. Parameters in
-\fIconf_file\fR
-override the values of those with the same name in the embedded configuration file.
+instead of the embedded configuration file
+\fIsup://etc/klind.conf\fR
+(the two are not merged; use
+\fB\-c\fR
+to override single values).
 .TP
 \-c
 Read configuration sections from standard input (until EOF is found), overriding
@@ -83,7 +84,7 @@ Print klin version and exit.
 \fBklind\fR
 depends on
 \fIsup://etc/klind.conf\fR
-for the configuration of its instances (clones). Additional configuration can be supplied via an external file (the
+for the configuration of its servers. Another configuration file can be used instead (the
 \fB\-f\fR
 command line flag): see
 \fBklind.conf\fR(5)
@@ -91,7 +92,7 @@ for details on available configuration parameters and their respective values.
 .SH "DIAGNOSTICS"
 .PP
 Klin
-is a product targeted for embedded systems, especially those with limited or no disk resources; as such it tries to reduce logging activity to a minumum (at its best, zero logging).
+is a product targeted for embedded systems, especially those with limited or no disk resources; as such it tries to reduce logging activity to a minimum (at its best, zero logging).
 .PP
 Diagnostics issued by
 \fBklind\fR
@@ -104,11 +105,13 @@ and can be routed to a configurable file (see
 \fBsyslog.conf\fR(5)
 for details).
 .PP
-The number and nature of diagnostics available depends on the debug level defined at compile\-time. If you are having problems, compile the
+The number and nature of diagnostics available depends on the build and on
+\fB\-d\fR. If you are having problems, build
 Klin
-application with
-\fBNDEBUG\fR
-unset, configure the syslog daemon appropriately, run your application and peruse the log files. Most messages are reasonably self\-explanatory. At this stage your best bet is still to grep the source code and inspect the conditions that gave rise to the diagnostics you are seeing.
+with
+\fB\-DKLIN_DEBUG=ON\fR
+(debug logging and symbols), run klind with
+\fB\-d\fR, configure the syslog daemon appropriately, run your application and peruse the log files. Most messages are reasonably self\-explanatory. At this stage your best bet is still to grep the source code and inspect the conditions that gave rise to the diagnostics you are seeing.
 .PP
 \fBklind\fR
 is a service/daemon, as such it will bail out with an
@@ -146,5 +149,6 @@ signal and wait for it to die on its own.
 \fBklin\fR(1).
 .SH "BUGS"
 .PP
-Sure there are some. If you find one, please email it to
-https://github.com/DanielTillett/klin/issues.
+If you find one, please report it at
+https://github.com/DanielTillett/klin/issues
+(security problems privately: see SECURITY.md).

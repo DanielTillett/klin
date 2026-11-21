@@ -8,6 +8,7 @@
         io_t *out = (io_t*)arg;
 
         io_printf(out, "<tr><td>%s</td></tr>", line);
+        return 0;
     }
 
 %>

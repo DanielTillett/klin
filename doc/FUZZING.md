@@ -12,8 +12,8 @@ request     a whole request: request line, header (limits, smuggling
 multipart   multipart/form-data bodies (parts, their headers, uploads)
 header      header fields alone, strict (requests) and lenient
             (multipart parts, CGI output)
-url         URL, hex, HTML and SQL escapes; URI path normalisation
-            (aborts if a normalised path leaves the root)
+url         URL, hex, HTML and SQL escapes; URI path normalization
+            (aborts if a normalized path leaves the root)
 json        the JSON reader and writer (parse, write, parse, write must
             give the same bytes)
 ws          WebSocket frames after the handshake: fragments, control
@@ -32,7 +32,7 @@ dictionary for the HTTP targets.
 
 ## Running them
 
-```
+```sh
 python3 test/run_fuzz.py [--runs N] [--target NAME ...]
 ```
 
@@ -40,7 +40,7 @@ builds every target with clang, libFuzzer, ASan and UBSan into .build/fuzz
 and runs each N times (default 10000) from its seeds; CI runs it on every
 push. A crash is left as `.build/fuzz/<target>-crash-*`; reproduce it with
 
-```
+```sh
 .build/fuzz/fuzz/fuzz_<target> .build/fuzz/<target>-crash-...
 ```
 
@@ -54,16 +54,9 @@ KLIN_FUZZ_ENGINE is the engine's link flag (-fsanitize=fuzzer).
 for ClusterFuzzLite, which runs them from GitHub Actions:
 
   - every pull request (.github/workflows/cflite_pr.yml): ASan and UBSan,
-
-```
-5 minutes, in code-change mode (the targets the change reaches);
-```
-
+  5 minutes, in code-change mode (the targets the change reaches);
   - daily (cflite_batch.yml): ASan and UBSan for 30 minutes each, then
-
-```
-corpus pruning and a coverage report.
-```
+  corpus pruning and a coverage report.
 
 Crashes appear as failed jobs with the crash input and stack as artifacts,
 and (batch runs) as code-scanning alerts.
@@ -86,50 +79,33 @@ been prepared or submitted for OSS-Fuzz.
 ## Static analysis
 
   - CodeQL (.github/workflows/codeql.yml): the security-extended queries,
-
-```
-on every push to master and rename/**, pull requests and weekly;
-results are code-scanning alerts.
-```
-
+  on every push to master, pull requests and weekly;
+  results are code-scanning alerts.
   - clang-tidy (analysis.yml, .clang-tidy): the clang static analyzer,
+  bugprone and some CERT checks over src/; findings are listed in the
+  job summary and as an artifact, and the analyzer's core, unix,
+  security and valist checks fail the job. The same locally:
 
 ```
-bugprone and some CERT checks over src/; findings are listed in the
-job summary and as an artifact, and the analyzer's core, unix,
-security and valist checks fail the job. The same locally:
-
     CC=clang cmake -S . -B .build/tidy -G Ninja \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DKLIN_BUILD_TESTS=ON
     cmake --build .build/tidy --target klin_utils
     run-clang-tidy -p .build/tidy -quiet "$PWD/src/"
 ```
-
   - Coverity Scan (coverity.yml): weekly, once the repository has a
-
-```
-COVERITY_SCAN_TOKEN secret and a COVERITY_EMAIL variable (and,
-optionally, COVERITY_PROJECT if the project is not named owner/repo).
-Until then the job only notes that it was skipped.
-```
+  COVERITY_SCAN_TOKEN secret and a COVERITY_EMAIL variable (and,
+  optionally, COVERITY_PROJECT if the project is not named owner/repo).
+  Until then the job only notes that it was skipped.
 
 ## What fuzzing found
 
   - a WebSocket worker crashed on an empty first message (a NULL write);
   - LibU's base64 decoder read out of its table on bytes over 0x7f, and
-
-```
-wrote up to 2 bytes past the output for a padded last group: Basic
-credentials, WebSocket keys and password hashes now go through
-klin_b64_decode(), which checks the input and gives LibU a buffer of
-its own (LibU is pinned, and not changed);
-```
-
+  wrote up to 2 bytes past the output for a padded last group: Basic
+  credentials, WebSocket keys and password hashes now go through
+  klin_b64_decode(), which checks the input and gives LibU a buffer of
+  its own (LibU is pinned, and not changed);
   - session loading leaked a variable whose key did not decrypt;
   - the io drivers were called through a pointer of another function type
-
-```
-(undefined; UBSan's -fsanitize=function stops on it);
-```
-
+  (undefined; UBSan's -fsanitize=function stops on it);
   - a JSON -0 did not round-trip.

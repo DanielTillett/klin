@@ -9,7 +9,7 @@ src/libutils/crypto.c       digests, HMAC, PBKDF2, random bytes,
                             constant-time compare, wiping, ciphers
 src/libtls/tls.c            TLS server contexts
 src/libtls/tls_glue.c       certificates, keys, CA and CRL files
-src/libtls/keyproxy.c       the TLS key manager's provider (doc/KEYMGR)
+src/libtls/keyproxy.c       the TLS key manager's provider (KEYMGR.md)
 src/libio/iossl.c           the TLS io driver
 klin/tlsprv.h               their private declarations
 ```
@@ -44,15 +44,15 @@ io_ssl_get_SSL() is declared in klin/tlsprv.h only.
 
 API changes in 4.0.0 for code that used these directly:
 codec_cipher_create() and u_cipher_encrypt/decrypt() take KC_AES_256_CBC
-instead of EVP_aes_256_cbc(); tls_load_init_ctx() returns tls_ctx_t `*`;
-io_ssl_create() takes a tls_ctx_t `*`; Klin's headers no longer include
+instead of EVP_aes_256_cbc(); tls_load_init_ctx() returns `tls_ctx_t *`;
+io_ssl_create() takes a `tls_ctx_t *`; Klin's headers no longer include
 OpenSSL's (include them yourself where a page uses OpenSSL).
 
-THE BACKEND: OPENSSL ONLY (decision, 20 Nov 2026)
+## The backend: OpenSSL only (decision, 20 Nov 2026)
 
 OpenSSL 3 is the only backend, and no mbedTLS or wolfSSL backend is to be
-added until a real target device cannot take OpenSSL (size, licence or
-platform). If one is needed then, it will be mbedTLS (Apache 2.0 licence),
-not wolfSSL (GPL or a commercial licence), written against this interface:
+added until a real target device cannot take OpenSSL (size, license or
+platform). If one is needed then, it will be mbedTLS (Apache 2.0 license),
+not wolfSSL (GPL or a commercial license), written against this interface:
 crypto.c and the TLS layer above, with the TLS key manager either ported to
 mbedTLS's external-key hooks or turned off.

@@ -12,7 +12,7 @@ connection is TLS. Ids are 128 random bits.
 
 ## Session fixation
 
-An id the client sends is taken on only if it names a stored session
+An id the client sends is accepted only if it names a stored session
 (for client sessions: if the cookies carrying the session are genuine).
 Otherwise it is dropped and a new one drawn when the page stores
 something, so an attacker cannot plant an id in a victim's browser and
@@ -51,7 +51,7 @@ session
 A session ends when it has not been used for idle_timeout, or
 absolute_timeout after it was created or given a new id, however much it
 is used (the absolute timeout is new in 4.0, default 8 hours: set it to 0
-for the old behaviour). The creation time is kept in the session, as the
+for the old behavior). The creation time is kept in the session, as the
 variable KLIN_SESSION_CREATED (in whole seconds); a session saved before
 4.0 starts counting when it is first loaded. An ended session's stored
 copy and cookie go, and the same request may start a new session.

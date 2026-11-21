@@ -1,4 +1,4 @@
-# Server-sent events
+# Server-Sent Events
 
 A page can stream events to the browser (the HTML EventSource API,
 "text/event-stream"). Include `<klin/sse.h>`:
