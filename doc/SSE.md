@@ -34,8 +34,8 @@ goes to the client as it is written.
 
 ## How the stream runs
 
-The figure below shows a stream from the browser's first request to the
-moment it closes the tab.
+Here is a stream from the browser's first request to the moment it
+closes the tab:
 
 ```mermaid
 sequenceDiagram
@@ -95,3 +95,6 @@ WebSocket connections open at once across all of a server's workers
 503 with `Retry-After: 5` and returns non-zero, so the page's
 `if(sse_start(...)) return;` ends the page and that answer is sent. See
 [LIMITS.md](LIMITS.md).
+
+See also: [WEBSOCKET.md](WEBSOCKET.md) for two-way traffic, and
+[LIMITS.md](LIMITS.md) for `max_streams` and the other limits.

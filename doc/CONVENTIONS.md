@@ -1,8 +1,8 @@
 # Coding conventions
 
-This page covers how Klin's C code returns errors, who frees what, and
-which state is global. New code follows these rules. Old code that does
-not is a bug, to fix when you next touch it.
+New C code in Klin returns errors one way, frees what it creates, and
+keeps global state to the short list below. Old code that does not follow
+these rules is a bug, to fix when you next touch it.
 
 The examples below are sketches written to show a rule, not code copied
 from the tree, though the functions they call are real.
@@ -29,7 +29,7 @@ err:
 }
 ```
 
-The table below gives the return convention for each kind of function.
+Each kind of function has its own convention:
 
 | Kind | Returns |
 | --- | --- |
@@ -95,7 +95,7 @@ dbg_err_if(header_del_field(h, f));
 field_free(f);
 ```
 
-The table below lists who owns each of the main types.
+Who owns each of the main types:
 
 | Type | Owner and lifetime |
 | --- | --- |
@@ -126,8 +126,7 @@ read from it.
 ## Global state
 
 klind is single-threaded, and a worker serves one connection at a time.
-The table below lists the process-wide state and what happens to it in a
-forked child.
+This is the process-wide state, and what happens to it in a forked child:
 
 | State | In a forked child |
 | --- | --- |
@@ -167,8 +166,9 @@ inside a read where no alarm can end it.
 The one exception is the prefork worker's own SIGALRM (`setitimer`, in
 server.c), which must be able to interrupt any code, a slow page or
 `accept(2)`. It drives two things: the watchdog, which asks the parent for
-one more worker with a single `write(2)` to its ppc (the parent-process IPC
-channel), and the idle timeout of a spare worker (`server_stop()`).
+one more worker with a single `write(2)` to its PPC channel (the
+parent-process IPC channel, whose messages carry at most 8,192 bytes), and
+the idle timeout of a spare worker (`server_stop()`).
 
 ## Cryptography
 
@@ -188,3 +188,7 @@ Public functions are prefixed with their module (`request_`, `response_`,
 4-space indents and lines of up to 80 columns. Comments say why, not what.
 Messages and comments that mention the KLone name are history, and keep
 it.
+
+See also: [CONTRIBUTING](../CONTRIBUTING.md) for getting a change merged,
+[CRYPTO](CRYPTO.md) for the `kc_*` API, and [FUZZING](FUZZING.md) for the
+fuzz targets and static analysers new code has to pass.

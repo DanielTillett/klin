@@ -39,8 +39,8 @@ belongs to the page. It is closed when the page ends.
 
 ## The connection from start to finish
 
-The figure below shows a connection from the handshake to a close
-started by the browser, with the echo page above doing the work.
+With the echo page above doing the work, a connection runs like this
+from the handshake to a close started by the browser:
 
 ```mermaid
 sequenceDiagram
@@ -117,9 +117,11 @@ could open a connection to your device and use the logged-in user's
 session. That is cross-site WebSocket hijacking.
 
 So, unless the page passes `WS_ANY_ORIGIN`, `ws_accept()` refuses with 403
-any handshake whose `Origin` does not match the `Host` the client
-connected to. A client that is not a browser sends no `Origin` and is
-accepted. I would leave the check on for any device that keeps a login
+any handshake whose `Origin` names another host. It compares the host and
+port in `Origin` (everything after the `://`) with the `Host` header,
+ignoring case. The scheme is not compared. The comparison is of the text
+as sent, so `Origin: https://dev:443` does not match `Host: dev`. A client that is not a browser sends no `Origin` and
+is accepted. I would leave the check on for any device that keeps a login
 session. If you do pass `WS_ANY_ORIGIN`, the page must check
 `request_get_field_value(rq, "Origin")` itself.
 
@@ -136,3 +138,6 @@ worker after a second, and the worker exits after the connection. Size
 `max_streams` (default 100) to keep long-lived connections from taking
 every worker. The single-process server (`-d`) serves nothing else while
 a WebSocket is open.
+
+See also: [SSE.md](SSE.md) when only the server talks, and
+[SESSIONS.md](SESSIONS.md) for the login sessions the Origin check protects.

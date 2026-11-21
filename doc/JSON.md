@@ -1,8 +1,8 @@
 # JSON
 
-`<klin/json.h>` reads and writes JSON (RFC 8259). It lives in libutils,
-so pages, webapp code and tools can all use it. Read this page when you
-write an API page that takes or returns JSON.
+An API page takes JSON in and sends JSON back. `<klin/json.h>` reads and
+writes it (RFC 8259), and because it lives in libutils, pages, webapp
+code and tools can all use it.
 
 ## Reading
 
@@ -24,9 +24,18 @@ json_free(doc);
 ```
 
 Every accessor accepts NULL and returns NULL, 0 or false, so you can chain
-lookups without checking each step. `json_get()` returns NULL only for a
-missing member; use `json_type()` to tell a JSON `null` from a member that
-is not there.
+lookups without checking each step. That includes `json_type()`, which
+returns `JSON_NULL` for a NULL pointer, so it cannot on its own tell a
+missing member from an explicit JSON `null`. Test the pointer first:
+
+```c
+json_t *m = json_get(doc, "note");
+
+if(m == NULL)
+    ...                     /* no "note" member, or doc is not an object */
+else if(json_type(m) == JSON_NULL)
+    ...                     /* "note": null */
+```
 
 Numbers come in two forms. `json_number()` gives any number as a
 `double`. `json_int64()` succeeds only for an integer written without a
@@ -92,3 +101,6 @@ element: `<`, `>`, `&` and U+2028/U+2029 are written as `\u` escapes.
 Invalid UTF-8 is written as U+FFFD. NaN and infinities have no JSON form,
 so `json_double()` treats them as an error. `json_value()` writes a parsed
 document back out, which is handy for echoing part of a request.
+
+See also: [ROUTES.md](ROUTES.md) for API paths such as `/api/users/{id}`,
+and [VALIDATE.md](VALIDATE.md) for checking query and route parameters.

@@ -1,11 +1,6 @@
 # Upgrading from KLone
 
-This page is for anyone moving a KLone 3.x site to Klin. It lists the
-defaults that may change how a deployment behaves, the names that changed,
-the build options that replace the old configure script and what was
-removed.
-
-Klin 4.0.0 is KLone 3.1.0 renamed and brought up to date. A KLone site
+Klin 4.0.0 is KLone 3.1.0 renamed and brought up to date. A KLone 3.x site
 builds with few changes, but 4.0.0 is stricter by default, so read the new
 defaults below before you deploy it. The
 [ChangeLog](https://github.com/DanielTillett/klin/blob/master/ChangeLog)
@@ -26,8 +21,8 @@ Work through these in order. Most sites need only the first four.
 4. Call `session_regenerate_id()` at login. A session id made up by the
    client is no longer accepted ([SESSIONS](SESSIONS.md)).
 5. Test any third-party login or embedding flow, since session cookies are
-   now `SameSite=Lax`, and expect existing client-side sessions to need
-   renewing.
+   now `SameSite=Lax`. Expect every existing client-side session to be
+   rejected once, because klind draws fresh session keys at each start.
 6. Check that numeric settings are in range: `max_child` from 1 to 896 and
    `verify_depth` from 0 to 100. A setting out of range now stops klind at
    startup.
@@ -43,10 +38,10 @@ behaviour back:
 
 | What changed | To change it |
 | --- | --- |
-| TLS 1.2 ciphers: forward-secret AEAD only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)) |
+| TLS 1.2 ciphers: forward-secret authenticated encryption (AEAD) only; old clients with CBC-only or RSA key exchange are refused | `tls_ciphers` ([TLS](TLS.md)); RSA key exchange also needs `key_manager no`, since the key manager does not decrypt with the key ([KEYMGR](KEYMGR.md)) |
 | The TLS private key is held by a separate process (RSA and EC keys) | `key_manager no` ([KEYMGR](KEYMGR.md)) |
 | Workers run under a seccomp sandbox, with argument checks (sockets, W^X memory, signals) | `sandbox no`, `sandbox_allow` ([SANDBOX](SANDBOX.md)) |
-| Worker limits: 1024 MB, 1024 files, `max_child` + 64 processes | `worker_max_memory`, `worker_max_files`, `worker_max_procs`; 0 turns one off ([LIMITS](LIMITS.md)) |
+| Worker limits: 1024 MB, 1024 files, and processes up to the model's maximum workers (`prefork.max_child` or `fork.max_child`, 150 by default) + 64 | `worker_max_memory`, `worker_max_files`, `worker_max_procs`; 0 leaves the inherited system limit unchanged ([LIMITS](LIMITS.md)) |
 | Header limits, a header deadline, connections per client address, SSE and WebSocket streams | `max_header_*`, `idle_timeout`, `max_conn_per_ip`, `max_streams` ([LIMITS](LIMITS.md)) |
 | Symbolic links are followed only inside the document root | `follow_symlinks` ([FILES](FILES.md)) |
 | CGI: 60 s, 30 s of CPU, 512 MB; klind's environment and the Authorization field are not passed | the `cgi` block: `timeout`, `max_cpu`, `max_memory`, `pass_env`, `pass_headers` ([CGI](CGI.md)) |
@@ -97,8 +92,7 @@ be removed in 5.0.0 (TODO lists what goes):
 | `klone_sess_*` session files | `klin_sess_*` | renamed when used |
 | `Server: klone/<version>` | `Server: klin/<version>` | - |
 
-Some things did not change: the `.kl1` (and `.klx`, `.klc`) page
-extensions, the `KL1_CLISES_*` client-session cookies, the configuration
+Some things did not change: the `.kl1` and `.klc` page extensions, the `KL1_CLISES_*` client-session cookies, the configuration
 file format, the Windows service name (`kloned`) and the installed library
 names (`libhttp.a`, `libutils.a` ...). A `kloned.conf` given with `-f`
 works as it is; only the names of the example and the manual changed
@@ -106,102 +100,86 @@ works as it is; only the names of the example and the manual changed
 
 ## Other changes since KLone 3.1.0
 
+Most of what changed needs nothing from you, and the
+[ChangeLog](https://github.com/DanielTillett/klin/blob/master/ChangeLog)
+has all of it. These are the changes a port may have to act on.
+
 ### TLS
 
-TLS 1.2 is the minimum protocol version. TLS 1.0 and 1.1 are rejected and
-cannot be turned back on, though `tls_min_version 1.3` raises the minimum.
-TLS compression and renegotiation are disabled.
+If some of your clients still speak only TLS 1.0 or 1.1, they can no
+longer connect. TLS 1.2 is the minimum and cannot be lowered, though
+`tls_min_version 1.3` raises it. TLS compression and renegotiation are
+off.
 
-OpenSSL 3 is required. Contexts are owned opaque objects accessed through
-public APIs.
-
-Ephemeral 512-bit RSA and the built-in 1024-bit DH group are gone. Without
-`dh_file`, OpenSSL selects suitable DH parameters itself.
+If you build with TLS (`KLIN_WITH_OPENSSL`, on by default), you need
+OpenSSL 3. Ephemeral 512-bit RSA and the built-in 1024-bit DH group are
+gone; without `dh_file`, OpenSSL picks suitable DH parameters itself.
 
 ### Sessions and cookies
 
-Session ids carry 128 bits from a cryptographic random source, replacing
-the MD5(time, pid, rand()) ids KLone made.
-
-Client-side sessions are sealed with AES-256-GCM ([SESSIONS](SESSIONS.md)).
-Sessions in the format before 4.0 are still read, but existing client-side
-sessions may need to be renewed after upgrading.
+Session ids now carry 128 bits from a cryptographic random source, not the
+MD5(time, pid, rand()) KLone used. Client-side sessions are sealed with
+AES-256-GCM ([SESSIONS](SESSIONS.md)). klind can still read the format from
+before 4.0, but it generates new random keys every time it starts, so a
+client-side session cookie issued before the upgrade will not verify and
+the user starts a new session.
 
 Session cookies are sent with `Path=/`, `HttpOnly` and `SameSite=Lax`,
-plus `Secure` on direct TLS connections. Deletion cookies keep the same
-scope and attributes. Third-party login or embedding flows may need a
-different SameSite policy. TLS terminated by a proxy is not inferred from
-forwarded headers, because those headers can't be trusted.
+plus `Secure` on direct TLS connections, and deletion cookies keep the same
+scope and attributes. If you rely on a third-party login or embedding flow,
+it may need a different SameSite policy. If a proxy terminates TLS in front
+of klind, the session cookie is sent without `Secure`, because klind does
+not trust forwarded headers to tell it the client used TLS.
 
-`response_set_cookie()` keeps its previous behaviour for application
-cookies. The new `response_set_cookie_ex()` takes explicit
+`response_set_cookie()` behaves as before for application cookies. To set
+the new attributes on your own cookies, call `response_set_cookie_ex()` with
 `RESPONSE_COOKIE_*` flags (`SECURE`, `HTTPONLY`, `SAMESITE_LAX`,
 `SAMESITE_STRICT`, `SAMESITE_NONE`).
 
-### HTTP request handling
+### HTTP requests
 
-klind now rejects a duplicate or overflowing Content-Length, any
-Transfer-Encoding (chunked request bodies are not supported), invalid
-field names, control characters in field values, folded headers,
-unterminated headers and decoded NUL bytes in URI paths. The limits are
-100 header fields, 8192 bytes per header line and 32768 bytes of headers
-in total, all configurable ([LIMITS](LIMITS.md)).
+If a client sends a chunked request body, it now gets 501: send a
+Content-Length instead. klind also rejects a duplicate or overflowing
+Content-Length, invalid field names, control characters in field values,
+folded or unterminated headers and decoded NUL bytes in URI paths. Headers
+are limited to 100 fields, 8192 bytes per line and 32768 bytes in total,
+all configurable ([LIMITS](LIMITS.md)).
 
 The query string is split off before the path is URL-decoded, so an
-escaped `?` (`%3F`) and a literal `+` in the path are preserved.
+escaped `?` (`%3F`) and a literal `+` in the path now reach your page
+unchanged.
 
 ### Persistent connections (keep-alive)
 
 Connections now stay open for further requests (HTTP/1.1 by default,
-HTTP/1.0 with `Connection: keep-alive`), including pipelined requests. The settings are
-`keep_alive`, `keep_alive_timeout` (5 s) and `keep_alive_max` (100
-requests); see klind.conf(5). Keep-alive is off in the iterative model
+HTTP/1.0 with `Connection: keep-alive`), including pipelined requests. The
+settings are `keep_alive`, `keep_alive_timeout` (5 s) and `keep_alive_max`
+(100 requests); see klind.conf(5). Keep-alive is off in the iterative model
 (`-d`) and in CGI mode.
 
-Responses to HTTP/1.1 requests use an HTTP/1.1 status line. Every body is
-delimited: pages that fit the 4 KB response buffer get a Content-Length,
+Every response body is now delimited, so a page or CGI must not lie about
+its length. Pages that fit the 4 KB response buffer get a Content-Length;
 longer ones use chunked transfer coding (HTTP/1.1) or end with the close
-(HTTP/1.0). A Content-Length set by a page or CGI is enforced, and any
-Transfer-Encoding it sets is replaced.
-
-Several old bugs went with this work. HEAD, 204 and 304 responses never
-carry a body. Empty pages no longer send a stray newline. The built-in
-error page has a Content-Length and is never appended to a response
-already under way. A CGI `Status:` line is no longer passed to the client.
-HEAD on an embedded static file works.
-
-Reading a request body (forms, uploads, pages, CGIs) stops at its end, and
-an unread body is skipped before the next request. Over TLS, connections
-end with close_notify.
+(HTTP/1.0). A Content-Length set by a page or CGI is enforced, any
+Transfer-Encoding it sets is replaced, and a CGI `Status:` line sets the
+status rather than being passed through. Reading a request body stops at
+its end, and an unread body is skipped before the next request.
 
 The catch for prefork sites is that a worker holding a kept-alive
 connection counts as busy. While clients wait, the pool doubles every
 second up to `prefork.max_child`. A worker started beyond
 `prefork.start_child` exits after `prefork.idle_timeout` seconds without a
 client (default 10, 0 means never), so the pool shrinks back after a
-burst. `prefork.max_requests_per_child` now counts connections, not
-requests.
+burst. If you set `prefork.max_requests_per_child`, note that it now counts
+connections, not requests.
 
-### Utility APIs
+### Utility functions
 
-New capacity-aware `u_urlncpy_s()`, `u_hexncpy_s()`, `u_htmlncpy_s()` and
-`u_sqlncpy_s()` reject undersized destinations. Klin's own code uses them.
-The legacy functions remain for compatibility and still need correctly
-sized caller buffers.
-
-SQL quote encoding now processes the whole input instead of truncating
-after quotes.
-
-Fixed along the way: out-of-bounds reads in URL decoding and substring
-search, invalid hex input handling, undefined behaviour in MD5 and path
-normalisation, seeking to the end of memory streams, and negative read
-results being treated as large lengths.
-
-### Reliability
-
-The SIGCHLD handler no longer touches the server object, which may be
-unset during startup or shutdown. Memory leaks found by LeakSanitizer in
-klind shutdown, the page translator and the klin tool are fixed.
+If your pages call `u_urlncpy()`, `u_hexncpy()`, `u_htmlncpy()` or
+`u_sqlncpy()`, consider the capacity-aware `u_urlncpy_s()`,
+`u_hexncpy_s()`, `u_htmlncpy_s()` and `u_sqlncpy_s()`, which reject an
+undersized destination. The old functions remain, and still need a
+correctly sized buffer from the caller.
 
 ## Removed in 4.0.0
 
@@ -211,6 +189,7 @@ klind shutdown, the page translator and the klin tool are fixed.
 | `skin/` packaging system and `pkg/` | `cmake --install`, with the installed CMake package and pkg-config file |
 | the RHEL init script and the old `contrib/` tools | the systemd unit in `contrib/systemd` ([SYSTEMD](SYSTEMD.md)) |
 | CyaSSL backend | OpenSSL 3 |
+| C++ pages (`.klx`) | none: the site import stops with an error |
 | OpenSSL TLS-PSK support | none |
 | Kilt URL module | none; a `routes` block ([ROUTES](ROUTES.md)) is the nearest thing |
 | `autogen.mk` and `autogen.dps` from `klin -c import` | `autogen.cmake`, written by the same command for the site build |
@@ -218,3 +197,7 @@ klind shutdown, the page translator and the klin tool are fixed.
 
 If you need `autogen.mk` or `autogen.dps`, KLone 3.1.0 in the original
 KoanLogic repository still has them.
+
+Next: [SYSTEMD](SYSTEMD.md) to run the upgraded klind as a service,
+[LIMITS](LIMITS.md) for the new request and worker limits, and
+[SESSIONS](SESSIONS.md) for the session changes.

@@ -1,7 +1,7 @@
 # Security policy
 
-This page says which versions of Klin get security fixes, how to report a
-vulnerability, and what happens after you do.
+If you have found a security problem in Klin, report it privately, as
+described below, not in a public issue.
 
 ## Supported versions
 
@@ -50,7 +50,7 @@ before disclosing the problem yourself.
 
 In scope are `klind`, the `klin` page translator, Klin's libraries and
 headers, the build and test scripts in this repository, and the release
-files (source tarball and SBOM).
+files (source tarball and SBOM, the software bill of materials).
 
 Out of scope:
 
@@ -70,3 +70,6 @@ protection off, are in [HARDENING](doc/HARDENING.md),
 [CGI](doc/CGI.md) and [SYSTEMD](doc/SYSTEMD.md). Fuzzing and static analysis
 are in [FUZZING](doc/FUZZING.md). How releases are built and how to verify
 them is in [RELEASES](doc/RELEASES.md).
+
+See also: [CONTRIBUTING](CONTRIBUTING.md) for bug reports and changes
+that are not security problems.

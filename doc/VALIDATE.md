@@ -2,8 +2,6 @@
 
 Klin can check request parameters before a page sees them, with the rules
 written once in the configuration rather than repeated in every page.
-Read this page when a page takes input from the client and you would
-rather it never saw a malformed value.
 
 The simple rule is that a page listed in a `params` block sees only
 values that passed, and a page that is not listed is not checked at all.
@@ -11,9 +9,11 @@ List every page that takes input.
 
 ## The configuration
 
-A vhost's `validators` block defines named checks. Its `params` blocks
-say, per path (and optionally per method), which parameters the page
-takes, where each comes from and which validator checks it:
+The `validators` block of a server or virtual host (vhost) defines named
+checks. Its `params` blocks say, per path (and optionally
+per method), which parameters the page takes, where each comes from and
+which validator checks it. A validator that no `param` names checks
+nothing.
 
 ```conf
 validators
@@ -80,19 +80,19 @@ applies to it.
 ## Where validation runs
 
 Validation runs late in request handling: after access control,
-authentication and routing, and just before the page. The figure below
-shows the order and the two ways out.
+authentication and routing, and just before the page. A request leaves
+early in one of two ways, a 400 or a page that never sees the bad value:
 
 ```mermaid
 flowchart TD
-    A["request parsed"] --> B["ACL and<br/>authentication realms"]
+    A["request parsed"] --> B["access rules and<br/>authentication realms"]
     B --> C["routes<br/>(may answer 405)"]
     C --> D{"a params block matches<br/>path and method?"}
     D -- no --> P["page runs, nothing checked"]
     D -- yes --> E["parse query string<br/>and POST form body"]
     E --> F{"every rule passes?"}
-    F -- "no, on_invalid reject" --> X["400 Bad Request<br/>(page never runs)"]
-    F -- "no, on_invalid drop" --> G["bad value removed"]
+    F -- "no: required missing,<br/>bad header, or<br/>on_invalid reject" --> X["400 Bad Request<br/>(page never runs)"]
+    F -- "no: bad query, form or<br/>route value, on_invalid drop" --> G["bad value removed"]
     F -- yes --> H["apply unknown:<br/>drop, reject or allow"]
     G --> H
     H -- "reject, and an unnamed argument" --> X
@@ -100,48 +100,56 @@ flowchart TD
 ```
 
 A failure answers through klind's normal error path, so an `error.400`
-page in the configuration is shown if you have one. If reading the form
-body fails, the status from that is returned instead (411 for a POST
-without a Content-Length, 413 for one larger than `post_maxsize`).
+page in the configuration is shown if you have one. Two body problems
+are caught earlier, while the header is read, and never reach
+validation: a POST without a Content-Length gets 400, and a body larger
+than `post_maxsize` gets 413. If reading the form body fails during
+validation, the status from that is returned instead.
 
 ## The rules in detail
 
 ### Paths
 
-A `params` block matches the decoded request path the client
-asked for, before routes and aliases are applied. The first block whose
-path and method match applies, and a request that no block matches is not
-validated at all. Methods are compared without regard to case and may be
-separated by blanks or commas.
+A `params` block matches the same path as routes do
+([ROUTES.md](ROUTES.md)): the request path the client asked for, decoded
+and normalised, after index selection (`/` is matched as `/index.kl1`
+when that is the index page), with any PATH_INFO included, and before
+routes and aliases replace it. The first block whose path and method
+match applies, and a request that no block matches is not validated at
+all. Methods are compared without regard to case and may be separated by
+blanks or commas.
 
 ### Sources
 
 `query` is the query string. `form` is a POST body sent as
 `application/x-www-form-urlencoded` or `multipart/form-data`; other
 methods' bodies are not parsed as forms. `route` is a `{name}` found by
-[ROUTES](ROUTES.md). `header` is a request header. `any`, the default,
-means query, form and route, but not header.
+a route. `header` is a request header. `any`, the default, means query,
+form and route, but not header.
 
 ### Repeated values
 
-Every value of a repeated parameter is checked. A
-value with a NUL inside (`%00`) never passes a validator, because whatever
-followed the NUL would escape the check.
+A query or form parameter given more than once has every value checked,
+one by one; with `on_invalid drop` only the bad ones are removed. A
+header rule reads one value, the first field of that name. A value with
+a NUL inside (`%00`) never passes a validator, because whatever followed
+the NUL would escape the check.
 
 ### Failures
 
 A value that fails its validator gets 400 Bad Request. With
-`on_invalid drop` it is removed instead and the page simply does not see
-it. A header that fails always gets 400, since Klin cannot remove a header
-from the request. A required parameter that is missing, or that was
-dropped, gets 400.
+`on_invalid drop`, a bad query, form or route value is removed instead
+and the page simply does not see it. Two failures get 400 whatever
+`on_invalid` says: a header that fails, since Klin cannot remove a header
+from the request, and a required parameter that is missing or was
+dropped.
 
 ### Unknown arguments
 
-Query and form arguments that no `param` of the
-block names are dropped before the page runs. Set `unknown allow` to keep
-them, or `unknown reject` to answer 400. This applies to query and form
-arguments only; route parameters and headers are left alone.
+Query and form arguments that no `param` of the block names are dropped
+before the page runs. Set `unknown allow` to keep them, or
+`unknown reject` to answer 400. This applies to query and form arguments
+only; route parameters and headers are left alone.
 
 ## Mistakes klind refuses
 
@@ -151,3 +159,6 @@ does not compile, a reversed range (or a negative `length`), a validator
 defined twice or referenced but never defined, a `param` without a name,
 an unknown `source`, a value other than those listed for `unknown` or
 `on_invalid`, and a `params` block without a `path`.
+
+See also: [ROUTES.md](ROUTES.md) for `{name}` parameters, and
+[LIMITS.md](LIMITS.md) for the size and time limits on request bodies.

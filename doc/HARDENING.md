@@ -1,15 +1,15 @@
 # Compiler and linker hardening
 
-This page lists the compiler and linker protections Klin builds with,
-what each one guards against, and how to turn them off. You need it when
-a toolchain misbehaves, when you are comparing performance, or when an
-auditor asks how the binary was built.
+Klin is built with the compiler and linker protections in the tables
+below, all on by default. You need the details when a toolchain
+misbehaves, when you are comparing performance, or when an auditor asks
+how the binary was built.
 
 klind, klin, the libraries, LibU and the site's pages are all compiled
-with the flags below, and the programs are linked with the linker flags.
+with these flags, and the programs are linked with the linker flags.
 **Each flag is used only if the compiler or linker accepts it**, so an
 older toolchain quietly gets fewer protections rather than a failed
-build. Hardening is on by default. To build without it:
+build. To build without them:
 
 ```sh
 cmake -S . -B out -DKLIN_HARDENING=OFF
@@ -25,12 +25,12 @@ protector, which has its own option, `KLIN_STACK_PROTECTOR`.
 | `-D_FORTIFY_SOURCE=3` | buffer overflows in libc calls with a known destination size (bounds-checked `__*_chk` versions) | every build type except Debug; level 3 needs glibc 2.34+, older ones treat it as 2 | `KLIN_HARDENING` |
 | `-fstack-protector-all` | stack buffer overflows that overwrite a return address (canary in every function) | all | `KLIN_STACK_PROTECTOR` |
 | `-fstack-clash-protection` | the stack jumping over a guard page into the heap through a big frame | all | `KLIN_HARDENING` |
-| `-fcf-protection=full` | return- and jump-oriented programming: Intel CET indirect branch tracking and shadow stack, where the CPU and kernel have it | x86 | `KLIN_HARDENING` |
+| `-fcf-protection=full` | return- and jump-oriented programming: Intel CET (Control-flow Enforcement Technology) indirect branch tracking and shadow stack, where the CPU and kernel have it | x86 | `KLIN_HARDENING` |
 | `-mbranch-protection=standard` | the same, with ARM pointer authentication (PAC) and BTI | ARM64 | `KLIN_HARDENING` |
 | `-ftrivial-auto-var-init=zero` | reading uninitialised locals: they start as zero | all | `KLIN_HARDENING` |
 | `-Wformat -Werror=format-security` | format string attacks: a format string that is not a literal and has no arguments is a compile error | all | `KLIN_HARDENING` |
-| `-fPIE`, `-pie` | fixed code addresses: position-independent programs get full ASLR | not Windows | `KLIN_HARDENING` |
-| `-Wl,-z,relro` `-Wl,-z,now` | overwriting the GOT: relocations are read-only after start, and every symbol is bound at start | ELF | `KLIN_HARDENING` |
+| `-fPIE`, `-pie` | fixed code addresses: position-independent programs get full ASLR (address space layout randomisation) | not Windows | `KLIN_HARDENING` |
+| `-Wl,-z,relro` `-Wl,-z,now` | overwriting the GOT (global offset table): relocations are read-only after start, and every symbol is bound at start | ELF | `KLIN_HARDENING` |
 | `-Wl,-z,noexecstack` | code injected on the stack: the stack is not executable | ELF | `KLIN_HARDENING` |
 
 `_FORTIFY_SOURCE` needs optimisation to work, which is why Debug builds,
@@ -62,3 +62,6 @@ Linux with readelf and fail unless it is PIE, has `GNU_RELRO` and
 `BIND_NOW`, a non-executable `GNU_STACK`, the stack protector
 (`__stack_chk_fail`), fortified libc calls (`__*_chk`), and, on x86-64,
 the IBT and SHSTK properties.
+
+See also: [SANDBOX](SANDBOX.md) for the run-time restrictions, and
+[FUZZING](FUZZING.md).
