@@ -206,9 +206,10 @@ directory when the rules run, so `max_size` does not save the upload
 time; `post_maxsize` stops a large body early. A file a rule refuses or
 drops is deleted at once.
 
-A file input left empty arrives as a plain field of that name, with no
-file. The `upload` block's name covers it, so it is not an unknown
-argument.
+A file input left empty arrives as a part of that name with an empty
+`filename` and no data. The `upload` block's name covers that part, so it
+is not an unknown argument, but nothing else: a plain form or query
+argument of the same name is unknown unless a `param` names it.
 
 ### Unknown arguments
 

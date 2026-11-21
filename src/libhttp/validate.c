@@ -188,19 +188,21 @@ static int valid_yes(u_config_t *c, const char *key, int def)
     return b;
 }
 
-/* does a rule of the block name the argument 'name' from 'src'? An upload
-   field's name also names a form argument: a file input left empty is sent
-   as a plain field */
-static int valid_named(const valid_params_t *pb, const char *name, int src)
+/* does a rule of the block name the argument 'a'? An upload field's name
+   also covers a file input left empty (a browser sends it as a part with
+   an empty filename and no data), but no other argument of that name */
+static int valid_named(request_t *rq, const valid_params_t *pb,
+        const valid_arg_t *a)
 {
+    const char *name = var_get_name(a->var);
     size_t i;
 
     for(i = 0; i < pb->nrules; ++i)
-        if((pb->rules[i].src & src) && !strcmp(pb->rules[i].name, name))
+        if((pb->rules[i].src & a->src) && !strcmp(pb->rules[i].name, name))
             return 1;
-    for(i = 0; (src & SRC_FORM) && i < pb->nuploads; ++i)
+    for(i = 0; (a->src & SRC_FORM) && i < pb->nuploads; ++i)
         if(!strcmp(pb->uploads[i].name, name))
-            return 1;
+            return request_is_empty_file_input(rq, a->var);
     return 0;
 }
 
@@ -492,8 +494,7 @@ int validate_request(http_t *h, request_t *rq, const char *path)
     /* the arguments no rule names: dropped (default), refused or kept */
     for(i = 0; pb->unknown != UNKNOWN_ALLOW && i < nargs; ++i)
     {
-        if(args[i].var == NULL ||
-                valid_named(pb, var_get_name(args[i].var), args[i].src))
+        if(args[i].var == NULL || valid_named(rq, pb, &args[i]))
             continue;
         if(pb->unknown == UNKNOWN_REJECT)
         {

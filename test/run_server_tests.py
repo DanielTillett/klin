@@ -1476,6 +1476,10 @@ def run_validation_checks(check, plain):
             ("empty file input", b"/u1", [(b"file", b"", b"application/octet-stream", b"")], 200,
              b"file=(none)\nuploads=0\n"),
             ("no file, not required", b"/u1", [(b"field", None, None, b"v")], 200, b"uploads=0"),
+            ("plain field with an upload's name", b"/u1", [(b"file", None, None, b"x")], 400,
+             None),
+            ("empty filename but data", b"/u1", [(b"file", b"", b"text/plain", b"x")], 400,
+             None),
             ("drop: bad file removed", b"/u2", [big, text], 200,
              b"file=a.txt text/plain 9 [file body]\nuploads=1\n"),
             ("drop: required file dropped", b"/u2", [big], 400, None),
@@ -1490,6 +1494,9 @@ def run_validation_checks(check, plain):
         status, data = upload(path, *parts)
         check(status == want and (seen is None or seen in data),
               f"Upload validation ({name}): {status} {data[:200]!r}, expected {want} {seen!r}")
+    # an upload rule's name does not cover a URL-encoded argument either
+    status, _ = get(b"/u1", body=b"file=x")
+    check(status == 400, f"A URL-encoded argument named as an upload passed: {status}")
 
     # pages without params rules are not affected
     status, _ = get(b"/pid.kl1?anything=at%00all")
