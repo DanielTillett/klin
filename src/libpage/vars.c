@@ -83,7 +83,7 @@ err:
 int vars_free(vars_t *vs)
 {
     var_t *v;
-    int t;
+    void *it;
 
     if(vs)
     {
@@ -91,7 +91,7 @@ int vars_free(vars_t *vs)
         if((vs->flags & VARS_FLAG_FOREIGN) == 0)
         {
             /* free all variables */
-            for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+            u_list_foreach(vs->list, v, it)
                 var_free(v);
         }
 
@@ -179,11 +179,11 @@ size_t vars_countn(vars_t *vs, const char *name)
 {
     var_t *v;
     size_t c = 0;
-    int t;
+    void *it;
 
     dbg_return_if (vs == NULL || name == NULL, 0);
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(strcasecmp(u_string_c(v->sname), name) == 0)
             c++;
@@ -330,12 +330,12 @@ err:
 var_t *vars_geti(vars_t *vs, const char *var_name, size_t i)
 {
     var_t *v;
-    int t;
+    void *it;
 
     dbg_goto_if (vs == NULL, notfound);
     dbg_goto_if (var_name == NULL, notfound);
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(strcasecmp(u_string_c(v->sname), var_name) == 0)
         {
@@ -510,12 +510,12 @@ const char *vars_get_value(vars_t *vs, const char *name)
 void vars_foreach(vars_t *vs, int (*cb)(var_t *, void *), void *arg)
 {
     var_t *v;
-    int t;
+    void *it;
 
     dbg_ifb (vs == NULL) return;
     dbg_ifb (cb == NULL) return;
 
-    for(t = 0; (v = u_list_get_n(vs->list, t)) != NULL; ++t)
+    u_list_foreach(vs->list, v, it)
     {
         if(cb(v, arg))
             break;

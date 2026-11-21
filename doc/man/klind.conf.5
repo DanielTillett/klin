@@ -91,6 +91,9 @@ Set the maximum number of seconds the server waits for an HTTP request on an alr
 \fBmax_header_fields\fR, \fBmax_header_line\fR, \fBmax_header_size\fR
 Request header limits: the number of fields (default 100), the bytes of one field line (default 8192) and of the whole header (default 32768). A request over any of them is answered 431 and the connection closed. A request line over 8192 bytes is answered 414. See doc/LIMITS.md.
 .TP
+\fBmax_args\fR
+Maximum number of arguments per request (default 1000, minimum 1). The query string and URL-encoded or multipart form share this limit. Multipart uploads count as arguments. An over-limit request is answered 400.
+.TP
 \fBmax_conn_per_ip\fR
 Connections served at once from one client address (default 32; 0: no limit). Beyond it a new connection is closed as soon as it is accepted, before any TLS handshake.
 .TP

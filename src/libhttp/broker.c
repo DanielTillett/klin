@@ -58,7 +58,7 @@ int broker_serve(broker_t *b, http_t *h, request_t *rq, response_t *rs)
     void *handle;
     time_t mtime, ims;
     int i;
-    int http_status;
+    int http_status, rc;
 
     dbg_err_if (b == NULL);
     dbg_err_if (rq == NULL);
@@ -90,7 +90,13 @@ int broker_serve(broker_t *b, http_t *h, request_t *rq, response_t *rs)
         response_set_status(rs, HTTP_STATUS_NOT_MODIFIED); 
         dbg_err_if(response_print_header(rs));
     } else {
-        dbg_err_if(sup->serve(rq, rs));
+        rc = sup->serve(rq, rs);
+        if(rc > 0)
+        {
+            response_set_status(rs, rc);
+            return rc;
+        }
+        dbg_err_if(rc);
 
         http_status = response_get_status(rs);
 

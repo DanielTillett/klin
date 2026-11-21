@@ -40,50 +40,19 @@ typedef struct enc_ses_mem_s enc_ses_mem_t;
 
 static int so_atom_delete_oldest(session_opt_t *so)
 {
-    atom_t *atom, *oldest;
-    size_t count, i;
+    atom_t *atom, *oldest = NULL;
 
     dbg_err_if (so == NULL);
 
-    count = atoms_count(so->atoms);
-    nop_err_if(count == 0);
-
-    dbg_err_if(atoms_getn(so->atoms, 0, &oldest));
-    for(i = 1; i < count; ++i)
+    LIST_FOREACH(atom, &so->atoms->list, np)
     {
-        dbg_err_if(atoms_getn(so->atoms, i, &atom));
-
-        /* save if older */
-        if(atom->arg <= oldest->arg)
+        if(oldest == NULL || (time_t)atom->arg <= (time_t)oldest->arg)
             oldest = atom;
     }
 
+    nop_err_if(oldest == NULL);
     dbg_err_if(atoms_remove(so->atoms, oldest));
-
-    return 0;
-err:
-    return ~0;
-}
-
-static int session_delete_oldest(session_opt_t *so)
-{
-    ppc_t *ppc;
-
-    dbg_err_if (so == NULL);
-
-    if(ctx->pipc)
-    {   /* children context, delete parent atom */
-        ppc = server_get_ppc(ctx->server);
-        dbg_err_if(ppc == NULL);
-
-        dbg_err_if(ppc_write(ppc, ctx->pipc, PPC_CMD_MSES_DELOLD, "", 1) < 0);
-
-        /* delete it from the local copy of atom list */
-        dbg_err_if(so_atom_delete_oldest(so));
-    } else {
-        /* parent context */
-        dbg_err_if(so_atom_delete_oldest(so));
-    }
+    atom_free(oldest);
 
     return 0;
 err:
@@ -115,50 +84,25 @@ err:
 static int so_atom_add(session_opt_t *so, const char *id, char *buf, 
     size_t size, void *arg)
 {
-    atom_t *atom = NULL, *old = NULL;
-    size_t new_size, old_found = 0;
+    atom_t *atom = NULL;
 
     dbg_err_if (so == NULL);
     dbg_err_if (id == NULL);
     dbg_err_if (buf == NULL);
 
-    /* get the old atom associated to this id */
-    if(!atoms_get(so->atoms, id, &old))
-        old_found = 1;
-
-    /* delete the oldest session if there are already max_count sessions */
-    if(so->max_count && atoms_count(so->atoms) - old_found >= so->max_count)
-        dbg_err_if(session_delete_oldest(so));
-
-    /* delete the oldest session(s) if we are using already mem_limit bytes */
-    if(so->mem_limit)
-    {
-        warn_err_ifm(size > so->mem_limit, 
-            "session size is bigger the memory.limit, save aborted...");
-        for(;;)
-        {
-            /* new_size = size of all atoms + size of the atom we're going to
-               add - the size of the atom (if found) we're going to remove */
-            new_size = atoms_size(so->atoms) + size - (old ? old->size : 0);
-            if(atoms_count(so->atoms) && new_size > so->mem_limit)
-                dbg_err_if(session_delete_oldest(so));
-            else
-                break;
-        }
-    }
-
-    /* create a new atom */
+    warn_err_ifm(so->mem_limit && size > so->mem_limit,
+        "session size exceeds memory.limit, save aborted");
     dbg_err_if(atom_create(id, buf, size, arg, &atom));
 
-    /* add it to the list */
-    dbg_err_if(atoms_add(so->atoms, atom));
+    /* A replacement does not count toward either limit twice. Remove it
+       before choosing eviction victims, after allocating its replacement. */
+    dbg_err_if(so_atom_remove(so, id));
 
-    /* remove the old atom associated to this id */
-    if(old)
-    {
-        dbg_err_if(atoms_remove(so->atoms, old));
-        atom_free(old);
-    }
+    while((so->max_count && atoms_count(so->atoms) >= so->max_count) ||
+            (so->mem_limit && atoms_size(so->atoms) > so->mem_limit - size))
+        dbg_err_if(so_atom_delete_oldest(so));
+
+    dbg_err_if(atoms_add(so->atoms, atom));
 
     return 0;
 err:
@@ -180,23 +124,6 @@ static int session_cmd_remove(ppc_t *ppc, int fd, unsigned char cmd,
     dbg_err_if (vso == NULL);
 
     dbg_err_if(so_atom_remove(so, data /* filename */));
-
-    return 0;
-err:
-    return ~0;
-}
-
-/* [parent] delete oldest session */
-static int session_cmd_delold(ppc_t *ppc, int fd, unsigned char cmd, 
-    char *data, size_t size, void *vso)
-{
-    session_opt_t *so = vso;
-
-    u_unused_args(ppc, fd, cmd, data, size);
-
-    dbg_err_if (vso == NULL);
-
-    dbg_err_if (so_atom_delete_oldest(so));
 
     return 0;
 err:
@@ -278,7 +205,6 @@ err:
 static int session_mem_add(session_opt_t *so, const char *filename, char *buf, 
     size_t size, time_t mtime)
 {
-    atom_t *atom = NULL;
     enc_ses_mem_t *esm = NULL;
     ppc_t *ppc;
     size_t esize;
@@ -298,7 +224,7 @@ static int session_mem_add(session_opt_t *so, const char *filename, char *buf,
         dbg_err_if(esm == NULL);
 
         /* fill esm fields */
-        esm->mtime = time(0);
+        esm->mtime = mtime;
         esm->size = size;
         dbg_err_if(strlen(filename) > SESSION_FILENAME_MAX_LENGTH); 
         u_strlcpy(esm->filename, filename, sizeof esm->filename);
@@ -310,7 +236,8 @@ static int session_mem_add(session_opt_t *so, const char *filename, char *buf,
 
         U_FREE(esm);
 
-        /* add it to the local copy of atom list */
+        /* The parent enforces its limits when it processes SAVE. Apply the
+           same policy locally without asking it to evict a second session. */
         dbg_err_if(so_atom_add(so, filename, buf, size, (void*)mtime));
 
     } else {
@@ -321,8 +248,6 @@ static int session_mem_add(session_opt_t *so, const char *filename, char *buf,
     return 0;
 err:
     U_FREE(esm);
-    if(atom)
-        atom_free(atom);
     return ~0;
 }
 
@@ -497,7 +422,6 @@ int session_mem_module_init(u_config_t *config, session_opt_t *so)
     /* register PPC commands callbacks */
     dbg_err_if(ppc_register(ppc, PPC_CMD_MSES_SAVE, session_cmd_save, so));
     dbg_err_if(ppc_register(ppc, PPC_CMD_MSES_GET, session_cmd_get, so));
-    dbg_err_if(ppc_register(ppc, PPC_CMD_MSES_DELOLD, session_cmd_delold, so));
     dbg_err_if(ppc_register(ppc, PPC_CMD_MSES_REMOVE, session_cmd_remove, so));
 
     return 0;

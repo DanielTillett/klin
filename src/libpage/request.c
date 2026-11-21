@@ -69,6 +69,8 @@ struct request_s
     int parse_status;           /* why request_parse_header() failed        */
     size_t max_fields;          /* header limits (request_parse_header)     */
     size_t max_line, max_header;
+    size_t max_args;            /* query tokens and multipart parts combined */
+    size_t arg_count;
     /* HTTP authentication (see auth.c): the realm the path is in, the user
        who authenticated (both in the configuration), a stale nonce */
     const char *auth_user;
@@ -94,6 +96,7 @@ enum {
     REQUEST_DEFAULT_IDLE_TIMEOUT = 10,         /* 10 secs */
     REQUEST_DEFAULT_POST_TIMEOUT = 600,        /* 10 mins */
     REQUEST_DEFAULT_POST_MAXSIZE = 5*1024000,  /* 5 MB    */
+    REQUEST_DEFAULT_MAX_ARGS = 1000,           /* query and form arguments */
     REQUEST_DEFAULT_MAX_FIELDS = 100,          /* header fields           */
     REQUEST_DEFAULT_MAX_LINE = 8192,           /* bytes in one field      */
     REQUEST_DEFAULT_MAX_HEADER = 32768,        /* bytes in the header     */
@@ -919,12 +922,25 @@ err:
     return ~0;
 }
 
-static int request_cb_add_var(vars_t *args, vars_t *also_to, const char *tok)
+/* Count submitted query tokens and multipart parts before decoding or
+   allocating the next argument. The same budget covers query and body. */
+static int request_count_arg(request_t *rq)
 {
+    if(rq->arg_count >= rq->max_args)
+        return ~0;
+
+    ++rq->arg_count;
+    return 0;
+}
+
+static int request_cb_add_var(request_t *rq, vars_t **source, const char *tok)
+{
+    vars_t *args, *also_to;
     var_t *v = NULL;
 
-    dbg_err_if(args == NULL);
-    dbg_err_if(also_to == NULL);
+    nop_err_if(request_count_arg(rq));
+    dbg_err_if((args = request_vars(rq, &rq->args)) == NULL);
+    dbg_err_if((also_to = request_vars(rq, source)) == NULL);
     dbg_err_if(tok == NULL);
 
     /* may fail with bad var encoding (url?a=b&v); bad vars are ignored */
@@ -946,16 +962,14 @@ static int request_cb_add_post_var(void *arg, const char *tok)
 {
     request_t *rq = (request_t*)arg;
 
-    return request_cb_add_var(request_vars(rq, &rq->args),
-            request_vars(rq, &rq->args_post), tok);
+    return request_cb_add_var(rq, &rq->args_post, tok);
 }
 
 static int request_cb_add_get_var(void *arg, const char *tok)
 {
     request_t *rq = (request_t*)arg;
 
-    return request_cb_add_var(request_vars(rq, &rq->args),
-            request_vars(rq, &rq->args_get), tok);
+    return request_cb_add_var(rq, &rq->args_get, tok);
 }
 
 static int foreach_query_var(const char *urlquery, int offset, 
@@ -1682,7 +1696,10 @@ static int request_parse_multipart_data(request_t *rq)
 
     /* cycle on each MIME part */
     for(eof = 0; eof == 0; )
-        dbg_err_if(request_parse_multipart_chunk(rq, rq->io, nl_boundary,&eof));
+    {
+        nop_err_if(request_count_arg(rq));
+        dbg_err_if(request_parse_multipart_chunk(rq, rq->io, nl_boundary, &eof));
+    }
 
     return 0;
 err:
@@ -2411,6 +2428,7 @@ static int request_load_config(request_t *rq)
         vhost->rq_idle_timeout = REQUEST_DEFAULT_IDLE_TIMEOUT;
         vhost->rq_post_timeout = REQUEST_DEFAULT_POST_TIMEOUT;
         vhost->rq_post_maxsize = REQUEST_DEFAULT_POST_MAXSIZE;
+        vhost->rq_max_args = REQUEST_DEFAULT_MAX_ARGS;
         vhost->rq_max_fields = REQUEST_DEFAULT_MAX_FIELDS;
         vhost->rq_max_line = REQUEST_DEFAULT_MAX_LINE;
         vhost->rq_max_header = REQUEST_DEFAULT_MAX_HEADER;
@@ -2422,6 +2440,9 @@ static int request_load_config(request_t *rq)
             vhost->rq_max_line = U_MIN(65534, U_MAX(256, atoi(v)));
         if((v = u_config_get_subkey_value(c, "max_header_size")) != NULL)
             vhost->rq_max_header = U_MAX(1024, atoi(v));
+
+        if((v = u_config_get_subkey_value(c, "max_args")) != NULL)
+            vhost->rq_max_args = U_MAX(1, atoi(v));
 
         /* idle timeout */
         if((v = u_config_get_subkey_value(c, "idle_timeout")) != NULL)
@@ -2446,6 +2467,7 @@ static int request_load_config(request_t *rq)
     rq->idle_timeout = vhost->rq_idle_timeout;
     rq->post_timeout = vhost->rq_post_timeout;
     rq->post_maxsize = vhost->rq_post_maxsize;
+    rq->max_args = vhost->rq_max_args;
     rq->max_fields = vhost->rq_max_fields;
     rq->max_line = vhost->rq_max_line;
     rq->max_header = vhost->rq_max_header;

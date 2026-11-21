@@ -11,6 +11,7 @@ block of klind.conf.
 | `max_header_line` | 8192 | 431 (bytes of one field, with its CRLF) |
 | `max_header_size` | 32768 | 431 (bytes of the whole header) |
 | (the request line) | 8192 | 414 URI Too Long (not configurable) |
+| `max_args` | 1000 | 400 (query tokens and multipart fields or uploads combined) |
 | `post_maxsize` | 5 MB | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | the connection is closed |
 

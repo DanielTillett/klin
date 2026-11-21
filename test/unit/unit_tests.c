@@ -30,6 +30,9 @@
 #include <klin/crypto.h>
 #include <klin/klog.h>
 #include <klin/klogprv.h>
+#include <klin/context.h>
+#include <klin/vhost.h>
+#include "../../src/libhttp/http_s.h"
 #include <sys/stat.h>
 #ifdef SSL_OPENSSL
 #include <klin/auth.h>
@@ -37,6 +40,8 @@
 
 /* the syslog facility LibU logs with: the program defines it */
 int facility = LOG_LOCAL0;
+static context_t test_context;
+context_t *ctx = &test_context;
 
 static int checks, failures;
 
@@ -901,10 +906,256 @@ static void test_klog(void)
     (void) rmdir(dir);
 }
 
+struct vars_visit
+{
+    size_t count;
+    size_t stop;
+};
+
+static int visit_var(var_t *v, void *arg)
+{
+    struct vars_visit *visit = arg;
+
+    CHECK(var_get_name(v)[0] == (visit->count % 2 ? 'b' : 'a'));
+    return ++visit->count == visit->stop;
+}
+
+static void test_large_vars(void)
+{
+    enum { N = 10000 };
+    vars_t *vars = NULL;
+    struct vars_visit visit = { 0, N + 1 };
+    size_t i;
+    char arg[32];
+    const char *value;
+
+    CHECK(vars_create(&vars) == 0);
+    if(!vars)
+        return;
+
+    for(i = 0; i < N; ++i)
+    {
+        snprintf(arg, sizeof arg, "%c=%u", i % 2 ? 'b' : 'a', (unsigned)i);
+        CHECK(vars_add_urlvar(vars, arg, NULL) == 0);
+    }
+
+    CHECK(vars_count(vars) == N);
+    CHECK(vars_countn(vars, "A") == N / 2);
+    value = vars_geti_value(vars, "A", N / 2 - 1);
+    CHECK(value && !strcmp(value, "9998"));
+    CHECK(vars_geti(vars, "a", N / 2) == NULL);
+    vars_foreach(vars, visit_var, &visit);
+    CHECK(visit.count == N);
+
+    visit.count = 0;
+    visit.stop = 7;
+    vars_foreach(vars, visit_var, &visit);
+    CHECK(visit.count == 7);
+    vars_free(vars);
+}
+
+static int test_http_init(http_t *http, const char *max_args)
+{
+    vhost_t *vhost = NULL;
+
+    if(u_config_create(&http->config) ||
+            (max_args && u_config_add_key(http->config, "max_args", max_args)) ||
+            vhost_list_create(&http->vhosts) || vhost_create(&vhost))
+        return ~0;
+
+    vhost->host = "localhost";
+    vhost->config = http->config;
+    return vhost_list_add(http->vhosts, vhost);
+}
+
+static void test_http_term(http_t *http)
+{
+    if(http->vhosts)
+        vhost_list_free(http->vhosts);
+    if(http->config)
+        u_config_free(http->config);
+}
+
+static void check_request_args(http_t *http, const char *method,
+        const char *query, const char *type, const char *body,
+        int status, size_t get, size_t post, size_t uploads)
+{
+    request_t *rq = NULL;
+    io_t *io = NULL;
+    char headers[8192];
+    int length;
+
+    if(body)
+        length = snprintf(headers, sizeof headers,
+                "%s /?%s HTTP/1.1\r\nHost: localhost\r\nContent-Type: %s\r\n"
+                "Content-Length: %zu\r\n\r\n%s", method, query, type,
+                strlen(body), body);
+    else
+        length = snprintf(headers, sizeof headers,
+                "%s /?%s HTTP/1.1\r\nHost: localhost\r\n\r\n", method, query);
+
+    if(length < 0 || (size_t)length >= sizeof headers ||
+            request_create(http, &rq) ||
+            io_mem_create(headers, length, 0, &io))
+    {
+        CHECK(!"create request fixture");
+        goto end;
+    }
+    request_bind(rq, io);
+    if(request_parse_header(rq, NULL, NULL))
+    {
+        CHECK(!"parse request header");
+        goto end;
+    }
+    CHECK(request_parse_data(rq) == status);
+    CHECK(request_parse_data(rq) == status);
+    CHECK(vars_count(request_get_args(rq)) == get + post);
+    CHECK(vars_count(request_get_getargs(rq)) == get);
+    CHECK(vars_count(request_get_postargs(rq)) == post);
+    CHECK(vars_count(request_get_uploads(rq)) == uploads);
+    CHECK(!timerm_armed());
+
+end:
+    if(rq)
+        request_free(rq);
+}
+
+static void test_request_arg_limit(void)
+{
+    static const char urlencoded[] = "application/x-www-form-urlencoded";
+    static const char multipart[] = "multipart/form-data; boundary=X";
+    static const char form[] =
+        "--X\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nvalue\r\n"
+        "--X\r\nContent-Disposition: form-data; name=\"u\"; filename=\"test.txt\"\r\n"
+        "Content-Type: text/plain\r\n\r\nfile\r\n--X--\r\n";
+    char many[3 * 1001 + 1];
+    http_t http = { 0 }, limited = { 0 };
+    size_t i;
+
+    if(test_http_init(&http, NULL) || test_http_init(&limited, "2"))
+    {
+        CHECK(!"initialize request fixtures");
+        goto end;
+    }
+    for(i = 0; i < 1001; ++i)
+        memcpy(many + 3 * i, "a=&", 3);
+    many[3 * 1001] = '\0';
+    check_request_args(&http, "GET", many, NULL, NULL,
+            HTTP_STATUS_BAD_REQUEST, 1000, 0, 0);
+    check_request_args(&http, "POST", "", urlencoded, many,
+            HTTP_STATUS_BAD_REQUEST, 0, 1000, 0);
+    many[3 * 1000] = '\0';
+    check_request_args(&http, "GET", many, NULL, NULL, 0, 1000, 0, 0);
+    check_request_args(&http, "POST", "", urlencoded, many, 0, 0, 1000, 0);
+
+    check_request_args(&limited, "POST", "a=1", urlencoded, "a=2",
+            0, 1, 1, 0);
+    check_request_args(&limited, "POST", "a=1", urlencoded, "a=2&a=3",
+            HTTP_STATUS_BAD_REQUEST, 1, 1, 0);
+    check_request_args(&limited, "POST", "", multipart, form, 0, 0, 1, 1);
+    check_request_args(&limited, "POST", "a=1", multipart, form,
+            HTTP_STATUS_BAD_REQUEST, 1, 1, 0);
+
+end:
+    test_http_term(&http);
+    test_http_term(&limited);
+}
+
+static int save_test_session(session_t *ss, const char *id, const char *value)
+{
+    strcpy(ss->filename, id);
+    if(session_set(ss, "v", value))
+        return ~0;
+    return ss->save(ss);
+}
+
+static void test_memory_session_eviction(void)
+{
+    http_t http = { 0 };
+    session_opt_t so = { 0 };
+    request_t *rq = NULL;
+    response_t *rs = NULL;
+    session_t *ss = NULL;
+    atom_t *atom;
+    size_t small;
+
+    if(test_http_init(&http, NULL) || request_create(&http, &rq) ||
+            response_create(&http, &rs) || atoms_create(&so.atoms) ||
+            session_mem_create(&so, rq, rs, &ss))
+    {
+        CHECK(!"initialize memory session fixture");
+        goto end;
+    }
+    so.max_count = 2;
+    CHECK(save_test_session(ss, "a", "x") == 0);
+    if(atoms_get(so.atoms, "a", &atom))
+    {
+        CHECK(!"find first saved session");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    small = atom->size;
+    CHECK(small > 0);
+    CHECK(save_test_session(ss, "b", "x") == 0);
+
+    /* Replacing the oldest at the count limit keeps the other session. */
+    CHECK(save_test_session(ss, "a", "y") == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+    CHECK(atoms_get(so.atoms, "b", &atom) == 0);
+    if(atoms_get(so.atoms, "a", &atom))
+    {
+        CHECK(!"find replaced session");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    CHECK(save_test_session(ss, "c", "x") == 0);
+    CHECK(atoms_get(so.atoms, "a", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "c", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 2 && atoms_size(so.atoms) == 2 * small);
+
+    so.max_count = 0;
+    so.mem_limit = 2 * small;
+    if(atoms_get(so.atoms, "b", &atom))
+    {
+        CHECK(!"find session to enlarge at the memory limit");
+        goto end;
+    }
+    atom->arg = (void *)1;
+    CHECK(save_test_session(ss, "b", "xxx") == 0);
+    CHECK(atoms_get(so.atoms, "c", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "b", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small + 2);
+
+    CHECK(save_test_session(ss, "d", "x") == 0);
+    CHECK(atoms_get(so.atoms, "b", &atom) != 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+    CHECK(save_test_session(ss, "d", "too-large-for-the-session-store") != 0);
+    CHECK(atoms_get(so.atoms, "d", &atom) == 0);
+    CHECK(atoms_count(so.atoms) == 1 && atoms_size(so.atoms) == small);
+
+end:
+    if(ss)
+    {
+        ss->removed = 1;
+        session_free(ss);
+    }
+    if(so.atoms)
+        atoms_free(so.atoms);
+    if(rq)
+        request_free(rq);
+    if(rs)
+        response_free(rs);
+    test_http_term(&http);
+}
+
 int main(void)
 {
     test_header_fields();
     test_header_limits();
+    test_large_vars();
+    test_request_arg_limit();
+    test_memory_session_eviction();
     test_field_reuse();
     test_timer();
     test_translate();

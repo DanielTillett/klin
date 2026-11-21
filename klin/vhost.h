@@ -68,7 +68,7 @@ typedef struct vhost_s
     int alias_loaded;
     int rq_config_loaded;   /* the request limits below are set              */
     size_t rq_idle_timeout, rq_post_timeout, rq_post_maxsize;
-    size_t rq_max_fields, rq_max_line, rq_max_header;
+    size_t rq_max_fields, rq_max_line, rq_max_header, rq_max_args;
     char *rq_temp_dir;
 
     /* HTTP authentication (auth.c): the "auth" block, and the users_file

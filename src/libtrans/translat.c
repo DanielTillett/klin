@@ -56,12 +56,12 @@ static int preprocess(io_t *in, io_t *out, ppctx_t*);
 static int kblock_free(kblock_t *block)
 {
     kblock_t *child;
-    int i;
+    void *it;
 
     dbg_err_if(block == NULL);
 
     /* free children first */
-    for(i = 0; (child = u_list_get_n(block->children, i)) != NULL; ++i)
+    u_list_foreach(block->children, child, it)
         kblock_free(child);
     if (block->children)
         u_list_free(block->children);
@@ -126,7 +126,7 @@ err:
 static int ppctx_print_kblock(kblock_t *block, io_t *out)
 {
     kblock_t *b;
-    size_t i;
+    void *it;
 
     if(block->name == NULL)
     {
@@ -135,7 +135,7 @@ static int ppctx_print_kblock(kblock_t *block, io_t *out)
                         u_buf_len(block->ubuf)) < 0);
     } else {
         /* named block */
-        for(i = 0; (b = u_list_get_n(block->children, i)) != NULL; ++i)
+        u_list_foreach(block->children, b, it)
             dbg_err_if(ppctx_print_kblock(b, out));
     }
 
@@ -182,7 +182,7 @@ static int ppctx_print_depend(ppctx_t *ppc, io_t *in, io_t *out, io_t *depend)
     char infile[U_FILENAME_MAX], outfile[U_FILENAME_MAX];
     char fullpath[U_FILENAME_MAX];
     const char *dfile;
-    size_t i;
+    void *it;
 
     dbg_err_if(ppc == NULL);
     dbg_err_if(in == NULL);
@@ -203,7 +203,7 @@ static int ppctx_print_depend(ppctx_t *ppc, io_t *in, io_t *out, io_t *depend)
     dbg_err_if(print_depend_path(depend, outfile, ".kld: "));
     dbg_err_if(print_depend_path(depend, fullpath, " "));
 
-    for(i = 0; (dfile = u_list_get_n(ppc->depend, i)) != NULL; ++i)
+    u_list_foreach(ppc->depend, dfile, it)
     {
         dbg_err_if(translate_makefile_filepath(dfile, "$(srcdir)", fullpath,
             sizeof(fullpath)));
@@ -220,12 +220,12 @@ err:
 static int ppctx_print(ppctx_t *ppc, io_t *out)
 {
     kblock_t *b;
-    size_t i;
+    void *it;
 
     dbg_err_if(ppc == NULL);
     dbg_err_if(out == NULL);
 
-    for(i = 0; (b = u_list_get_n(ppc->top->children, i)) != NULL; ++i)
+    u_list_foreach(ppc->top->children, b, it)
         dbg_err_if(ppctx_print_kblock(b, out));
 
     return 0;
@@ -237,7 +237,7 @@ err:
 static int ppctx_free(ppctx_t *ppc)
 {
     char *str;
-    size_t i;
+    void *it;
 
     if(ppc->top)
         kblock_free(ppc->top);
@@ -247,7 +247,7 @@ static int ppctx_free(ppctx_t *ppc)
 
     if(ppc->depend)
     {
-        for(i = 0; (str = u_list_get_n(ppc->depend, i)) != NULL; ++i)
+        u_list_foreach(ppc->depend, str, it)
             u_free(str);
 
         u_list_free(ppc->depend);
@@ -404,11 +404,12 @@ static int kblock_get_by_name(kblock_t *parent, const char *name,
     kblock_t **pfound, size_t *pidx)
 {
     kblock_t *b;
+    void *it;
     size_t i;
 
     dbg_err_if(parent == NULL);
 
-    for(i = 0; (b = u_list_get_n(parent->children, i)) != NULL; ++i)
+    u_list_iforeach(parent->children, b, it, i)
     {
         if(b->name && strcasecmp(b->name, name) == 0)
         {
@@ -540,7 +541,7 @@ static int process_directive_inherit(parser_t *p)
 {
     ppctx_t *ppc;
     kblock_t *anc, *b;
-    int i;
+    void *it;
 
     dbg_err_if((ppc = parser_get_cb_arg(p)) == NULL);
 
@@ -552,7 +553,7 @@ static int process_directive_inherit(parser_t *p)
 
     /* move all ancestor children to the current block (that's the block whom
      * is extending the ancestor */
-    for(i = 0; (b = u_list_get_n(anc->children, i)) != NULL; ++i)
+    u_list_foreach(anc->children, b, it)
         dbg_err_if(kblock_push_child(ppc->cur, b));
 
     /* remove all elems */
