@@ -192,8 +192,10 @@ and limits them:
 
 The type is the one the client wrote in the part's own Content-Type
 header, so it says what the client claims, not what the file is. A file
-sent without one fails a `type` list. Check the contents in the page if
-they matter.
+sent without one fails a `type` list, and so does one whose header is not
+a whole `type/subtype` followed only by blanks or `;` parameters
+(`text/plain junk` and `image//` both fail). Check the contents in the
+page if they matter.
 
 A file larger than `max_size` gets 413 Content Too Large, the status a
 body over `post_maxsize` gets; a file of a type not listed gets 400. With
@@ -229,7 +231,8 @@ an unknown `source`, a value other than those listed for `unknown` or
 covers a missing name, a field named twice in one block, a key it does
 not know, a `max_size` that is not a whole number of bytes (no `K` or
 `M`), a `max_count` below 1, and a `type` entry that is not `type/subtype`
-or `type/*`.
+or `type/*` with the type and subtype made of the characters an HTTP token
+allows.
 
 See also: [ROUTES.md](ROUTES.md) for `{name}` parameters, and
 [LIMITS.md](LIMITS.md) for the size and time limits on request bodies.

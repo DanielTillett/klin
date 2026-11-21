@@ -1470,6 +1470,13 @@ def run_validation_checks(check, plain):
             ("too large", b"/u1", [big], 413, None),
             ("wrong type", b"/u1", [(b"file", b"a.pdf", b"application/pdf", b"%PDF")], 400, None),
             ("no Content-Type", b"/u1", [(b"file", b"a.txt", None, b"abc")], 400, None),
+            ("type with junk after it", b"/u1",
+             [(b"file", b"a.txt", b"text/plain junk", b"abc")], 400, None),
+            ("type/* with an empty subtype", b"/u1", [(b"file", b"p", b"image//", b"x")], 400,
+             None),
+            ("type without a subtype", b"/u1", [(b"file", b"p", b"image/", b"x")], 400, None),
+            ("blank before parameters", b"/u1",
+             [(b"file", b"c.txt", b"text/plain ; charset=utf-8", b"abc")], 200, b"uploads=1"),
             ("two files, max_count 1", b"/u1", [text, text], 400, None),
             ("unnamed field, unknown reject", b"/u1", [text, (b"other", b"o.txt", b"text/plain",
                                                              b"o")], 400, None),
@@ -2925,6 +2932,8 @@ def run_bad_auth_checks(check, daemon, env, temp):
                        ("max_count 0", upload % "max_count 0"),
                        ("type without subtype", upload % "type text"),
                        ("any type", upload % "type */*"),
+                       ("type not a token", upload % "type text/pl@in"),
+                       ("type with two slashes", upload % "type text/plain/x"),
                        ("empty type list", upload % "type ,"),
                        ("unknown key", upload % "maxsize 5")]:
         check(not validated(good, body), f"klind started with a bad upload rule ({name})")
