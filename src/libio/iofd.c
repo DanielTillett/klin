@@ -149,10 +149,14 @@ err:
 int io_fd_create(int fd, int flags, io_t **pio)
 {
     io_fd_t *ifd = NULL;
+    io_t *io = NULL;
 
     dbg_err_if (pio == NULL);
 
-    dbg_err_if(io_create(io_fd_t, (io_t**)&ifd));
+    /* create through an io_t pointer: storing one in 'ifd' via a cast
+       (io_t**)&ifd breaks strict aliasing (LTO then miscompiled it) */
+    dbg_err_if(io_create(io_fd_t, &io));
+    ifd = (io_fd_t *) io;
 
     ifd->io.type = IO_TYPE_FD;
 
