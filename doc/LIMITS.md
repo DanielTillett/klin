@@ -61,7 +61,7 @@ closes the connection without a response.
 | `max_header_fields` | 100 | 8 | 431 Request Header Fields Too Large |
 | `max_header_line` | 8192 | 256 (maximum 65534) | 431 (the bytes of one field line, with its CRLF) |
 | `max_header_size` | 32768 | 1024 | 431 (the bytes of the whole header) |
-| (the request line) | 8192 | not configurable | 414 URI Too Long when no LF arrives in 8,193 bytes; a shorter line whose target is 4096 bytes or more gets 400 |
+| (the request line) | 8192 | not configurable | 414 URI Too Long when no LF arrives in 8,193 bytes; a line whose LF arrives in time but whose target is 4096 bytes or more gets 400 |
 | `max_args` | 1000 | 1 | 400 (query and form arguments, multipart fields and uploads, counted together, where arguments are parsed) |
 | `post_maxsize` | 5 MB | 1024 | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | 1 s | the connection is closed |

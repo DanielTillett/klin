@@ -203,8 +203,9 @@ worker is replaced after `prefork.max_requests_per_child` connections
 (default 10000). A worker sends the handshake digest to the key manager
 and gets back a signature. With a key file separate from the certificate
 that the workers' user cannot read, and no other server loading it with
-`key_manager no` ([the conditions](doc/KEYMGR.md#why-it-exists)), that is
-all a worker gets: the TLS private key stays out of it. A key embedded in
+`key_manager no` ([all the conditions](doc/KEYMGR.md#why-it-exists)),
+that is all a worker gets: the TLS private key stays out of its memory
+(on Linux, the key manager's memory is closed to it as well). A key embedded in
 `klind` is in every process's memory anyway; with the key manager on,
 `klind` warns about it ([Key manager](doc/KEYMGR.md),
 [Sandbox](doc/SANDBOX.md), [Limits](doc/LIMITS.md)). The `fork` model
@@ -349,7 +350,7 @@ python3 build/build.py [--sanitize] [--test] [--offline] [--incremental]
 
 | Option | What it does |
 | --- | --- |
-| `--sanitize` | build with AddressSanitizer and UndefinedBehaviorSanitizer into `.build/sanitize` instead of `.build/release` |
+| `--sanitize` | build with AddressSanitizer and UndefinedBehaviorSanitizer (and LeakSanitizer on Linux) into `.build/sanitize` instead of `.build/release` |
 | `--test` | run the unit tests, the regression suite and the full-server tests after building (see [Testing](#testing)) |
 | `--offline` | use dependencies already downloaded; fail if one is missing |
 | `--incremental` | reuse the previous build directory during development; omit it for clean, release-quality checks |

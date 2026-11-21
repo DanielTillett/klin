@@ -1,8 +1,9 @@
 # TLS key manager
 
 The key manager keeps an HTTPS server's private key out of the processes
-that serve requests. It is on by default everywhere except native
-Windows, which has no key manager. What you have to do is put the key in
+that serve requests, under the four conditions in
+[Why it exists](#why-it-exists). It is on by default everywhere except
+native Windows, which has no key manager. What you have to do is put the key in
 a file of its own and keep that file from the workers' user; turn the
 key manager off only if your key type is unsupported or you want the old
 behaviour back.
@@ -16,28 +17,31 @@ and a stolen key outlives any fix: the attacker can impersonate the
 device until the certificate expires or is revoked.
 
 I wrote the key manager so that a compromised worker has no private key to
-steal. **The key stays out of the workers only with all four of these: a
-separate `key_file` outside the site, the key manager on, file
-permissions that keep the key file from the workers' user, and no other
-server in the same klind loading that key with `key_manager no`.** Even
-then, the protection of the key manager's memory from other processes
-of the same user is Linux only (see [Limits](#limits)). The rules apply
-to every copy of the key: if two servers use it, both need it in a
-separate file. Separate means not a PEM file that also holds the
-certificate: klind
-reads the certificate in the parent process, and with a combined file
-the key's bytes pass through memory that the workers inherit. The
-permissions matter because a worker that can read the file can simply
-open it. klind and the key manager read their files before dropping to
-`uid` and `gid`, so a key file only root can read works when klind
-starts as root. The last condition is there because a server with
-`key_manager no` has klind decode its key in the parent, and every
-worker of every server is forked from the parent, so they all inherit
-that copy.
+steal. **The key stays out of the workers only with all four of these:**
 
-With all four, a worker can ask for signatures while it runs, but it
-cannot read the key, and the key does not leave with a memory dump or a
-core file of a worker. A key embedded in klind, or a server with
+1. A separate `key_file` outside the site. Separate means not a PEM file
+   that also holds the certificate: klind reads the certificate in the
+   parent process, and with a combined file the key's bytes pass through
+   memory that the workers inherit.
+2. The key manager on (the default, except on native Windows).
+3. File permissions that keep the key file from the workers' user, since
+   a worker that can read the file can simply open it. klind and the key
+   manager read their files before dropping to `uid` and `gid`, so a key
+   file only root can read works when klind starts as root.
+4. No other server in the same klind loading that key with
+   `key_manager no`. Such a server has klind decode its key in the
+   parent, and every worker of every server is forked from the parent.
+
+The rules apply to every copy of the key: if two servers use it, both
+need it in a separate file. Even with all four, the protection of the
+key manager's memory from other processes of the same user is Linux
+only (see [Limits](#limits)).
+
+With all four, a worker can ask for signatures while it runs, but the
+key is not in its memory, so it does not leave with a memory dump or a
+core file of a worker. On Linux the key manager's own memory is also
+closed to other processes of the same user; elsewhere a compromised
+worker running as that user could still read it. A key embedded in klind, or a server with
 `key_manager no`, is in every process (see [Limits](#limits)).
 
 At startup, before any worker is forked, klind starts one key manager per
@@ -173,8 +177,8 @@ case, so the shipped systemd unit (`Restart=on-failure`) does not
 restart it: the service stays down until someone starts it. If you want
 it back automatically, set `Restart=always` in a drop-in
 ([SYSTEMD](SYSTEMD.md)); systemd still does not restart a service you
-stopped yourself. A key manager also exits within a
-second of klind exiting: it checks for its parent once a second.
+stopped yourself. A key manager also exits within a second of klind
+exiting: it checks for its parent once a second.
 
 ### The leak that settled it
 

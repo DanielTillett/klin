@@ -114,9 +114,9 @@ gh attestation verify klin-4.0.0.tar.gz --repo DanielTillett/klin \
 
 `SHA256SUMS` on its own shows only that the files match the list, not
 who made them: anyone who can replace the files can replace the list
-too. The attestations give authenticity. The first two attestation commands check
-the provenance of the tarball and of the SBOM, and the third the SBOM
-attestation for the tarball. `--signer-workflow` and `--source-ref`
+too. The attestations give authenticity: after `sha256sum`, the first
+two `gh` commands check the provenance of the tarball and of the SBOM,
+and the third checks the SBOM attestation for the tarball. `--signer-workflow` and `--source-ref`
 check that it was the release workflow that signed the file, and for
 that tag, not another workflow in the repository or a branch.
 
