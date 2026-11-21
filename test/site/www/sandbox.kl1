@@ -28,11 +28,17 @@
         r = link("/nonexistent-klin-sandbox", "/tmp/klin-sandbox-link");
         io_printf(out, "%s\n", sandbox_errno(r));
     } else if(t && !strcmp(t, "unshare")) {
+#ifdef __linux__    /* the sandbox checks run on Linux only */
         (void) syscall(SYS_unshare, 0x10000000 /* CLONE_NEWUSER */);
+#endif
         io_printf(out, "survived\n");
     } else if(t && (!strcmp(t, "netlink") || !strcmp(t, "inet6"))) {
+#ifdef __linux__
         r = socket(!strcmp(t, "inet6") ? AF_INET6 : AF_NETLINK,
                 !strcmp(t, "inet6") ? SOCK_STREAM : SOCK_RAW, 0);
+#else
+        r = socket(AF_INET6, SOCK_STREAM, 0);
+#endif
         io_printf(out, "%s\n", sandbox_errno(r < 0 ? -1 : 0));
         if(r >= 0)
             close(r);
