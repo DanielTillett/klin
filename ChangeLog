@@ -225,8 +225,14 @@ Klin 4.0.0:
 	  required values get 400 (or are dropped); unnamed arguments are
 	  dropped (or refused); a value hiding a NUL never passes. Checked
 	  before the page, after routing; bad configurations stop klind.
-	  request_parse_data() now runs once per request; request_del_arg(),
-	  request_get_route_params()
+	  "upload" blocks limit the files of a multipart field (max_size, 413
+	  when over; type, the part's Content-Type; max_count; required), and
+	  files in fields no upload names are dropped or refused like unnamed
+	  arguments. The rules, routes and access rules are parsed once, when
+	  the vhost is created (a POST of 900 arguments no longer costs a
+	  quarter of a second to check). request_parse_data() now runs once
+	  per request; request_del_arg(), request_get_route_params(),
+	  request_get_upload_info(), request_del_upload()
 	- IP access control (doc/ACCESS.md): an "access" block of rules, each
 	  for some paths or all, with allow and deny lines of IPv4/IPv6
 	  addresses, networks and "all"; the first rule for the path decides

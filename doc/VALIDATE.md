@@ -8,11 +8,11 @@ validator, in the `params` block that matches a request. Anything else
 reaches the page without a value check: a named parameter with no
 validator (only its presence can be required), route parameters and
 headers you do not name, and, under `unknown allow`, query and form
-arguments you do not name (by default those are dropped). Files sent in
-a `multipart/form-data` body are never checked: they go into a separate
-uploads list that no rule looks at. A request that no `params` block
-matches is not checked at all. List every page that takes input, and
-give every parameter it reads a validator.
+arguments and uploaded files you do not name (by default those are
+dropped). Files sent in a `multipart/form-data` body are checked by
+`upload` rules: size, type and count, not their contents. A request that
+no `params` block matches is not checked at all. List every page that
+takes input, and give every parameter it reads a validator.
 
 ## The configuration
 
@@ -67,6 +67,27 @@ params
         validator   page            # source any: query, form or route
     }
 }
+
+params
+{
+    path        /photos/new
+    method      POST
+    unknown     reject
+
+    param
+    {
+        name        title
+        validator   title
+    }
+    upload
+    {
+        name        photo           # the form field the files come in
+        max_size    2000000         # bytes per file
+        type        image/png image/jpeg   # or image/*
+        max_count   1               # files in the field (default 1)
+        required    yes
+    }
+}
 ```
 
 ## Validator types
@@ -102,11 +123,11 @@ flowchart TD
     D -- yes --> E{"query string and<br/>POST form body parse?"}
     E -- no --> Y["error status from parsing<br/>(no rule runs)"]
     E -- yes --> F{"every rule passes?"}
-    F -- "no: required missing,<br/>bad header, or<br/>on_invalid reject" --> X["400 Bad Request<br/>(page never runs)"]
-    F -- "no: bad query, form or<br/>route value, on_invalid drop" --> G["bad value removed"]
-    F -- yes --> H["apply unknown to query<br/>and form arguments"]
+    F -- "no: required missing,<br/>bad header, or<br/>on_invalid reject" --> X["400 Bad Request<br/>(413 for a file too large;<br/>page never runs)"]
+    F -- "no: bad query, form or<br/>route value or file,<br/>on_invalid drop" --> G["bad value or file removed"]
+    F -- yes --> H["apply unknown to query<br/>and form arguments<br/>and uploaded files"]
     G --> H
-    H -- "reject, and an unnamed argument" --> X
+    H -- "reject, and an unnamed<br/>argument or file" --> X
     H --> Q["page runs: values that passed,<br/>plus unvalidated ones<br/>(see above)"]
 ```
 
@@ -157,14 +178,44 @@ and the page simply does not see it. Two failures get 400 whatever
 from the request, and a required parameter that is missing or was
 dropped.
 
+### Uploaded files
+
+An `upload` block names a `multipart/form-data` field that carries files
+and limits them:
+
+| Key | Means |
+| --- | --- |
+| `max_size` | the largest file in bytes; none: only `post_maxsize` limits it |
+| `type` | the Content-Types allowed, `type/subtype` or `type/*`, compared without regard to case and ignoring parameters such as `; charset=`. None: any type |
+| `max_count` | how many files the field may carry (default 1) |
+| `required` | `yes`: at least one file must arrive |
+
+The type is the one the client wrote in the part's own Content-Type
+header, so it says what the client claims, not what the file is. A file
+sent without one fails a `type` list. Check the contents in the page if
+they matter.
+
+A file larger than `max_size` gets 413 Content Too Large, the status a
+body over `post_maxsize` gets; a file of a type not listed gets 400. With
+`on_invalid drop` the file is deleted instead and the page does not see
+it. Too many files, or none in a required field (including when the
+only ones were dropped), get 400 whatever `on_invalid` says.
+
+The files have already been received and saved to the temporary
+directory when the rules run, so `max_size` does not save the upload
+time; `post_maxsize` stops a large body early. A file a rule refuses or
+drops is deleted at once.
+
+A file input left empty arrives as a plain field of that name, with no
+file. The `upload` block's name covers it, so it is not an unknown
+argument.
+
 ### Unknown arguments
 
-Query and form arguments that no `param` of the block names are dropped
-before the page runs. Set `unknown allow` to keep them, or
-`unknown reject` to answer 400. This applies to query and form arguments
-only; route parameters and headers are left alone, and so are uploaded
-files, which stay available to the page even under `unknown reject`.
-Check an upload's size, type and name in the page itself.
+Query and form arguments that no `param` of the block names, and files
+in fields no `upload` names, are dropped before the page runs (a dropped
+file is deleted). Set `unknown allow` to keep them, or `unknown reject`
+to answer 400. Route parameters and headers are left alone.
 
 ## Mistakes klind refuses
 
@@ -173,7 +224,11 @@ unchecked. That covers a validator without a name or a type, a regex that
 does not compile, a reversed range (or a negative `length`), a validator
 defined twice or referenced but never defined, a `param` without a name,
 an unknown `source`, a value other than those listed for `unknown` or
-`on_invalid`, and a `params` block without a `path`.
+`on_invalid`, and a `params` block without a `path`. For an `upload`, it
+covers a missing name, a field named twice in one block, a key it does
+not know, a `max_size` that is not a whole number of bytes (no `K` or
+`M`), a `max_count` below 1, and a `type` entry that is not `type/subtype`
+or `type/*`.
 
 See also: [ROUTES.md](ROUTES.md) for `{name}` parameters, and
 [LIMITS.md](LIMITS.md) for the size and time limits on request bodies.

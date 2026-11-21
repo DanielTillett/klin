@@ -1065,7 +1065,7 @@ static int http_serve(http_t *h, int fd, int keep_alive)
     /* a client the server's access rules refuse everywhere is dropped
        before the TLS handshake */
     if(!cgi && (top = vhost_list_get_n(h->vhosts, 0)) != NULL &&
-            acl_check_conn(top->access, ca.peer))
+            acl_check_conn(top, ca.peer))
     {
         close(fd);
         return 0;

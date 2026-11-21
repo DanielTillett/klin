@@ -21,4 +21,6 @@
                 (unsigned long) size, data);
     } else
         io_printf(out, "file=(none)\n");
+    io_printf(out, "uploads=%lu\n",
+            (unsigned long) vars_count(request_get_uploads(request)));
 %>

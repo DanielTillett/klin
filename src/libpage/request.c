@@ -1450,7 +1450,39 @@ err:
     return ~0;
 }
 
-static ssize_t request_read_until_boundary(request_t *rq, io_t *io, 
+/* the size and the Content-Type (may be "") of an upload, a var_t of the
+   list request_get_uploads() returns */
+int request_get_upload_info(var_t *v, size_t *size, const char **mime_type)
+{
+    upload_info_t *info;
+
+    dbg_return_if (v == NULL || size == NULL || mime_type == NULL, ~0);
+    dbg_return_if ((info = var_get_opaque(v)) == NULL, ~0);
+
+    *size = info->size;
+    *mime_type = info->mime_type;
+
+    return 0;
+}
+
+static int request_unlink_uploads(var_t *v, void *arg);
+
+/* remove an upload from the request, delete its temporary file and free
+   it (request validation drops a file that fails its rule) */
+int request_del_upload(request_t *rq, var_t *v)
+{
+    dbg_return_if (rq == NULL || v == NULL || rq->uploads == NULL, ~0);
+
+    dbg_err_if(vars_del(rq->uploads, v));
+    (void) request_unlink_uploads(v, NULL);
+    var_free(v);
+
+    return 0;
+err:
+    return ~0;
+}
+
+static ssize_t request_read_until_boundary(request_t *rq, io_t *io,
         const char *boundary, char *buf, size_t size, u_buf_t **pubuf)
 {
     u_buf_t *ubuf = NULL;

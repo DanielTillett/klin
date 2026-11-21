@@ -19,9 +19,13 @@ extern "C" {
 
 /* IP access control of a server or vhost (doc/ACCESS.md), used by the HTTP
  * server */
+struct acl_rule_s;
+typedef struct acl_rule_s acl_rule_t;
+
 int acl_load(vhost_t *vhost);
+void acl_free(vhost_t *vhost);
 int acl_check(http_t *h, request_t *rq);
-int acl_check_conn(u_config_t *access, const char *peer);
+int acl_check_conn(const vhost_t *vhost, const char *peer);
 
 #ifdef __cplusplus
 }

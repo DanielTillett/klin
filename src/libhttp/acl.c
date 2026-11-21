@@ -119,87 +119,95 @@ static int acl_in_net(const acl_addr_t *ad, const acl_addr_t *net,
     return 1;
 }
 
-/* does a list of entries (blank or comma separated) name the address?
- * ~0 if an entry is not valid */
-static int acl_list_has(const char *list, const acl_addr_t *ad, int *found)
+/* a rule, parsed once by acl_load(): its paths (none: every path) and its
+ * allow and deny entries in the order written, so that the first entry
+ * naming an address decides, as its line would */
+typedef struct acl_entry_s
 {
-    const char *p, *e;
     acl_addr_t net;
     unsigned bits;
+    int allow;
+} acl_entry_t;
 
-    *found = 0;
+struct acl_rule_s
+{
+    const char **paths;     /* the configuration's strings                   */
+    size_t npaths;
+    acl_entry_t *entries;
+    size_t nentries;
+};
+
+/* add the entries of a list (blank or comma separated) to a rule or, with
+ * rule NULL, count them in *n. ~0 if an entry is not valid */
+static int acl_list_add(const char *list, int allow, acl_rule_t *rule,
+        size_t *n)
+{
+    const char *p, *e;
+    acl_entry_t en;
+
     for(p = list; p && *p; p = e)
     {
         p += strspn(p, " \t,");
         e = p + strcspn(p, " \t,");
         if(e == p)
             continue;
-        if(acl_parse_net(p, (size_t) (e - p), &net, &bits))
+        if(acl_parse_net(p, (size_t) (e - p), &en.net, &en.bits))
             return ~0;
-        if(ad && acl_in_net(ad, &net, bits))
-            *found = 1;
+        en.allow = allow;
+        if(rule)
+            rule->entries[rule->nentries++] = en;
+        else
+            ++*n;
     }
     return 0;
 }
 
-static int acl_rule_has_path(u_config_t *rule)
+static int acl_rule_matches(const acl_rule_t *rule, const char *path)
 {
-    return u_config_get_child(rule, "path") != NULL;
-}
+    size_t i;
 
-static int acl_rule_matches(u_config_t *rule, const char *path)
-{
-    u_config_t *pc;
-    const char *pat;
-    int i;
-
-    if(!acl_rule_has_path(rule))
+    if(rule->npaths == 0)
         return 1;
-    for(i = 0; path && (pc = u_config_get_child_n(rule, "path", i)); ++i)
-        if((pat = u_config_get_value(pc)) && !fnmatch(pat, path, 0))
+    for(i = 0; path && i < rule->npaths; ++i)
+        if(!fnmatch(rule->paths[i], path, 0))
             return 1;
     return 0;
 }
 
 /* the decision of a rule: 1 allow, 0 deny, -1 no line names the address */
-static int acl_rule_decide(u_config_t *rule, const acl_addr_t *ad)
+static int acl_rule_decide(const acl_rule_t *rule, const acl_addr_t *ad)
 {
-    u_config_t *line;
-    const char *key;
-    int i, found;
+    size_t i;
 
-    for(i = 0; (line = u_config_get_child_n(rule, NULL, i)); ++i)
-    {
-        key = u_config_get_key(line);
-        if(strcmp(key, "allow") && strcmp(key, "deny"))
-            continue;
-        if(acl_list_has(u_config_get_value(line), ad, &found) == 0 && found)
-            return !strcmp(key, "allow");
-    }
+    for(i = 0; i < rule->nentries; ++i)
+        if(acl_in_net(ad, &rule->entries[i].net, rule->entries[i].bits))
+            return rule->entries[i].allow;
     return -1;
 }
 
 /* 0 to let the client in, ~0 to refuse it; 'path' NULL: at connection
  * time, only rules for every path apply */
-static int acl_decide(u_config_t *access, const char *peer, const char *path)
+static int acl_decide(const vhost_t *vhost, const char *peer,
+        const char *path)
 {
-    u_config_t *rule;
+    const acl_rule_t *rule;
     acl_addr_t ad;
-    int i, d;
+    size_t i;
 
-    if(access == NULL)
+    if(vhost->nacl == 0)
         return 0;
     if(acl_peer_addr(peer, &ad))
         return 0;   /* not an IP client (e.g. a UNIX socket, CGI mode) */
 
-    for(i = 0; (rule = u_config_get_child_n(access, "rule", i)); ++i)
+    for(i = 0; i < vhost->nacl; ++i)
     {
+        rule = &vhost->acl[i];
         if(path == NULL)
         {
             /* a connection is dropped only if the first rule (for every
                path) denies it: a rule for some paths before it may let the
                client in there */
-            if(acl_rule_has_path(rule))
+            if(rule->npaths)
                 return 0;
             return acl_rule_decide(rule, &ad) == 0 ? ~0 : 0;
         }
@@ -207,8 +215,7 @@ static int acl_decide(u_config_t *access, const char *peer, const char *path)
             continue;
         /* the first rule for the path decides; no line naming the client:
            let in */
-        d = acl_rule_decide(rule, &ad);
-        return d == 0 ? ~0 : 0;
+        return acl_rule_decide(rule, &ad) == 0 ? ~0 : 0;
     }
     return 0;
 }
@@ -224,10 +231,10 @@ int acl_check(http_t *h, request_t *rq)
 
     dbg_return_if (h == NULL || rq == NULL, HTTP_STATUS_FORBIDDEN);
 
-    if((vhost = http_get_vhost(h, rq)) == NULL || vhost->access == NULL)
+    if((vhost = http_get_vhost(h, rq)) == NULL)
         return 0;
 
-    return acl_decide(vhost->access, request_get_peer_addr(rq),
+    return acl_decide(vhost, request_get_peer_addr(rq),
             request_get_filename(rq)) ? HTTP_STATUS_FORBIDDEN : 0;
 }
 
@@ -235,57 +242,100 @@ int acl_check(http_t *h, request_t *rq)
  * \brief   Check a new connection against the server's rules for every
  *          path (before the TLS handshake)
  *
- * \param access  the server's "access" block (may be NULL)
+ * \param vhost   the server's own vhost, the first (may be NULL)
  * \param peer    the client address ("a.b.c.d:port" or "[v6]:port")
  *
  * \return \c 0 to serve it, \c ~0 to drop it
  */
-int acl_check_conn(u_config_t *access, const char *peer)
+int acl_check_conn(const vhost_t *vhost, const char *peer)
 {
-    return acl_decide(access, peer, NULL);
+    return vhost ? acl_decide(vhost, peer, NULL) : 0;
 }
 
 /**
  * \brief   Load and check a vhost's "access" block when it is created (a
- *          bad entry stops the server)
+ *          bad entry stops the server); acl_free() frees what it makes
  */
 int acl_load(vhost_t *vhost)
 {
     u_config_t *access, *rule, *line;
+    acl_rule_t *r;
     const char *key;
-    int i, j, found, lines;
+    int i, j, n, lines;
+    size_t npaths, nentries;
 
     dbg_return_if (vhost == NULL, ~0);
 
     if((access = u_config_get_child(vhost->config, "access")) == NULL)
         return 0;
 
+    for(n = 0; u_config_get_child_n(access, "rule", n); ++n)
+        ;
+    if(n)
+        dbg_err_if((vhost->acl = u_zalloc(n * sizeof *r)) == NULL);
+
     for(i = 0; (rule = u_config_get_child_n(access, "rule", i)); ++i)
     {
-        for(lines = 0, j = 0; (line = u_config_get_child_n(rule, NULL, j)); ++j)
+        /* check the rule and count its paths and entries, then fill it */
+        npaths = nentries = 0;
+        for(lines = 0, j = 0; (line = u_config_get_child_n(rule, NULL, j));
+                ++j)
         {
             key = u_config_get_key(line);
             if(!strcmp(key, "path"))
             {
                 warn_err_ifm(u_config_get_value(line) == NULL,
                         "access: an empty path");
+                npaths++;
                 continue;
             }
             warn_err_ifm(strcmp(key, "allow") && strcmp(key, "deny"),
                     "access: unknown key '%s' in a rule (path, allow, deny)",
                     key);
             warn_err_ifm(u_config_get_value(line) == NULL ||
-                    acl_list_has(u_config_get_value(line), NULL, &found),
+                    acl_list_add(u_config_get_value(line), 0, NULL,
+                        &nentries),
                     "access: bad address or network in '%s %s'", key,
                     u_config_get_value(line) ? u_config_get_value(line) : "");
             lines++;
         }
         warn_err_ifm(lines == 0, "access: a rule without allow or deny");
-    }
 
-    vhost->access = access;
+        r = &vhost->acl[vhost->nacl++];
+        if(npaths)
+            dbg_err_if((r->paths = u_zalloc(npaths * sizeof *r->paths))
+                    == NULL);
+        if(nentries)
+            dbg_err_if((r->entries = u_zalloc(nentries * sizeof *r->entries))
+                    == NULL);
+        for(j = 0; (line = u_config_get_child_n(rule, NULL, j)); ++j)
+        {
+            key = u_config_get_key(line);
+            if(!strcmp(key, "path"))
+                r->paths[r->npaths++] = u_config_get_value(line);
+            else
+                dbg_err_if(acl_list_add(u_config_get_value(line),
+                            !strcmp(key, "allow"), r, NULL));
+        }
+    }
 
     return 0;
 err:
     return ~0;
+}
+
+/* free what acl_load() made */
+void acl_free(vhost_t *vhost)
+{
+    size_t i;
+
+    if(vhost == NULL)
+        return;
+    for(i = 0; i < vhost->nacl; ++i)
+    {
+        U_FREE(vhost->acl[i].paths);
+        U_FREE(vhost->acl[i].entries);
+    }
+    U_FREE(vhost->acl);
+    vhost->nacl = 0;
 }

@@ -26,26 +26,54 @@ enum { ROUTE_PATH_MAX = 4096 };
 static const char *route_methods[] = { "GET", "HEAD", "POST", "PUT",
     "DELETE", "PATCH", NULL };
 
-/* is 'method' one the route accepts? (no "method" key: any; GET also
- * serves HEAD) */
-static int route_method_ok(u_config_t *route, const char *method)
-{
-    const char *list = u_config_get_subkey_value(route, "method"), *p, *e;
-    size_t n = strlen(method);
+/* a route, parsed once by route_load(): the methods it takes are bits,
+ * 1 << i for route_methods[i], with ROUTE_ANY ("*" or no "method" key)
+ * also taking methods outside the table */
+#define ROUTE_ANY   (~0U)
 
-    if(list == NULL)
-        return 1;
-    for(p = list; *p; p = e)
+struct route_s
+{
+    const char *path;       /* the configuration's strings                   */
+    const char *page;
+    unsigned methods;
+};
+
+/* the bit of a method; one outside the table only matches ROUTE_ANY */
+static unsigned route_method_bit(const char *method, size_t n)
+{
+    unsigned i;
+
+    for(i = 0; route_methods[i]; ++i)
+        if(strlen(route_methods[i]) == n &&
+                !strncasecmp(route_methods[i], method, n))
+            return 1U << i;
+    return 1U << 31;
+}
+
+/* the methods of a "method" list (NULL: any; GET also serves HEAD); ~0 if
+ * it names one outside the table */
+static int route_method_mask(const char *list, unsigned *pmask)
+{
+    const char *p, *e;
+    unsigned mask = 0, bit;
+    int any = (list == NULL);
+
+    for(p = list; p && *p; p = e)
     {
         p += strspn(p, " \t,");
         e = p + strcspn(p, " \t,");
-        if((size_t) (e - p) == 1 && *p == '*')
-            return 1;
-        if((size_t) (e - p) == n && !strncasecmp(p, method, n))
-            return 1;
-        if(e - p == 3 && !strncasecmp(p, "GET", 3) && !strcmp(method, "HEAD"))
-            return 1;
+        if(e == p)
+            continue;
+        if(e - p == 1 && *p == '*')
+            any = 1;
+        else if((bit = route_method_bit(p, (size_t) (e - p))) == 1U << 31)
+            return ~0;
+        else if(bit == route_method_bit("GET", 3))
+            mask |= bit | route_method_bit("HEAD", 4);
+        else
+            mask |= bit;
     }
+    *pmask = any ? ROUTE_ANY : mask;
     return 0;
 }
 
@@ -132,33 +160,35 @@ err:
 int route_dispatch(http_t *h, request_t *rq, int *routed)
 {
     char path[ROUTE_PATH_MAX];
-    const char *pat, *method;
-    u_config_t *route;
+    const char *method;
+    const route_t *route;
     vhost_t *vhost;
-    int i, other = 0;
+    unsigned bit;
+    size_t i;
+    int other = 0;
 
     dbg_return_if (h == NULL || rq == NULL || routed == NULL, ~0);
 
     *routed = 0;
-    if((vhost = http_get_vhost(h, rq)) == NULL || vhost->routes == NULL)
+    if((vhost = http_get_vhost(h, rq)) == NULL || vhost->nroutes == 0)
         return 0;
     if(route_path(rq, path, sizeof path))
         return 0;
 
     method = request_get_method_name(rq);
-    for(i = 0; (route = u_config_get_child_n(vhost->routes, "route", i)); ++i)
+    bit = route_method_bit(method, strlen(method));
+    for(i = 0; i < vhost->nroutes; ++i)
     {
-        pat = u_config_get_subkey_value(route, "path");
-        if(!route_match(pat, path, NULL))
+        route = &vhost->routes[i];
+        if(!route_match(route->path, path, NULL))
             continue;
-        if(!route_method_ok(route, method))
+        if(!(route->methods & bit))
         {
             other = 1;
             continue;
         }
-        dbg_err_if(request_set_route(rq,
-                    u_config_get_subkey_value(route, "page")));
-        (void) route_match(pat, path, rq);
+        dbg_err_if(request_set_route(rq, route->page));
+        (void) route_match(route->path, path, rq);
         *routed = 1;
         return 0;
     }
@@ -174,29 +204,26 @@ err:
 int route_allow(http_t *h, request_t *rq, response_t *rs)
 {
     char path[ROUTE_PATH_MAX], allow[128] = "";
-    const char **m;
-    u_config_t *route;
+    unsigned mask = 0, i;
     vhost_t *vhost;
-    int i, any;
+    size_t r;
 
     dbg_return_if (h == NULL || rq == NULL || rs == NULL, ~0);
 
-    nop_err_if((vhost = http_get_vhost(h, rq)) == NULL || vhost->routes == NULL);
+    nop_err_if((vhost = http_get_vhost(h, rq)) == NULL || vhost->nroutes == 0);
     nop_err_if(route_path(rq, path, sizeof path));
 
-    for(m = route_methods; *m; ++m)
+    for(r = 0; r < vhost->nroutes; ++r)
+        if(route_match(vhost->routes[r].path, path, NULL))
+            mask |= vhost->routes[r].methods;
+
+    for(i = 0; route_methods[i]; ++i)
     {
-        for(any = 0, i = 0;
-                (route = u_config_get_child_n(vhost->routes, "route", i)); ++i)
-            if(route_match(u_config_get_subkey_value(route, "path"), path,
-                        NULL) && route_method_ok(route, *m))
-                any = 1;
-        if(any)
-        {
-            if(allow[0])
-                (void) u_strlcat(allow, ", ", sizeof allow);
-            (void) u_strlcat(allow, *m, sizeof allow);
-        }
+        if(!(mask & (1U << i)))
+            continue;
+        if(allow[0])
+            (void) u_strlcat(allow, ", ", sizeof allow);
+        (void) u_strlcat(allow, route_methods[i], sizeof allow);
     }
 
     return response_set_field(rs, "Allow", allow);
@@ -236,47 +263,51 @@ static int route_pattern_ok(const char *pat)
 
 /**
  * \brief   Load and check a vhost's "routes" block when it is created (a bad
- *          route stops the server)
+ *          route stops the server); route_free() frees what it makes
  */
 int route_load(vhost_t *vhost)
 {
-    u_config_t *routes, *route;
-    const char *v, *p, *e, **m;
-    int i;
+    u_config_t *routes, *rc;
+    route_t *route;
+    int i, n;
 
     dbg_return_if (vhost == NULL, ~0);
 
     if((routes = u_config_get_child(vhost->config, "routes")) == NULL)
         return 0;
 
-    for(i = 0; (route = u_config_get_child_n(routes, "route", i)); ++i)
-    {
-        v = u_config_get_subkey_value(route, "path");
-        warn_err_ifm(!route_pattern_ok(v), "routes: bad path pattern '%s' "
-                "(a '/', then segments or {name}, {name*} last)",
-                v ? v : "(none)");
-        v = u_config_get_subkey_value(route, "page");
-        warn_err_ifm(v == NULL || v[0] != '/', "routes: route %s needs a "
-                "page (an absolute path)",
-                u_config_get_subkey_value(route, "path"));
-        for(p = u_config_get_subkey_value(route, "method"); p && *p; p = e)
-        {
-            p += strspn(p, " \t,");
-            e = p + strcspn(p, " \t,");
-            if(e == p || (e - p == 1 && *p == '*'))
-                continue;
-            for(m = route_methods; *m; ++m)
-                if(strlen(*m) == (size_t) (e - p) &&
-                        !strncasecmp(*m, p, (size_t) (e - p)))
-                    break;
-            warn_err_ifm(*m == NULL, "routes: route %s: unknown method",
-                    u_config_get_subkey_value(route, "path"));
-        }
-    }
+    for(n = 0; u_config_get_child_n(routes, "route", n); ++n)
+        ;
+    if(n)
+        dbg_err_if((vhost->routes = u_zalloc(n * sizeof *route)) == NULL);
 
-    vhost->routes = routes;
+    for(i = 0; (rc = u_config_get_child_n(routes, "route", i)); ++i)
+    {
+        route = &vhost->routes[vhost->nroutes];
+        route->path = u_config_get_subkey_value(rc, "path");
+        warn_err_ifm(!route_pattern_ok(route->path), "routes: bad path "
+                "pattern '%s' (a '/', then segments or {name}, {name*} last)",
+                route->path ? route->path : "(none)");
+        route->page = u_config_get_subkey_value(rc, "page");
+        warn_err_ifm(route->page == NULL || route->page[0] != '/',
+                "routes: route %s needs a page (an absolute path)",
+                route->path);
+        warn_err_ifm(route_method_mask(u_config_get_subkey_value(rc,
+                        "method"), &route->methods),
+                "routes: route %s: unknown method", route->path);
+        vhost->nroutes++;
+    }
 
     return 0;
 err:
     return ~0;
+}
+
+/* free what route_load() made */
+void route_free(vhost_t *vhost)
+{
+    if(vhost == NULL)
+        return;
+    U_FREE(vhost->routes);
+    vhost->nroutes = 0;
 }

@@ -80,17 +80,17 @@ typedef struct vhost_s
        the order of http.c's http_sec_headers table */
     const char *sec_header[VHOST_SEC_HEADERS];
 
-    /* the "routes" block (route.c), or NULL */
-    u_config_t *routes;
-
-    /* the "access" block (acl.c), or NULL */
-    u_config_t *access;
-
-    /* request validation (validate.c): the validators, owned, and whether
-       there are "params" blocks */
+    /* the "routes", "access", "validators" and "params" blocks, parsed
+       when the vhost is created (route.c, acl.c, validate.c) and owned by
+       it; they point into the configuration for strings */
+    struct route_s *routes;
+    size_t nroutes;
+    struct acl_rule_s *acl;
+    size_t nacl;
     struct validator_s *validators;
     size_t nvalidators;
-    int has_params;
+    struct valid_params_s *params;
+    size_t nparams;
 } vhost_t;
 
 typedef struct vhost_list_s vhost_list_t;
