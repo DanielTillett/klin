@@ -13,8 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         make perl pkg-config zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# CMake 3.24 or later (Ubuntu 20.04 has 3.16), and Ninja
-RUN pip3 install --no-cache-dir cmake==3.31.6 ninja==1.11.1.4
+# CMake 3.24 or later (Ubuntu 20.04 has 3.16), and Ninja: pinned by hash
+COPY .clusterfuzzlite/requirements.txt /tmp/klin-requirements.txt
+RUN pip3 install --no-cache-dir --require-hashes -r /tmp/klin-requirements.txt && \
+    rm /tmp/klin-requirements.txt
 
 ARG OPENSSL_TAG=openssl-3.5.9
 ARG OPENSSL_COMMIT=45e844fa2a14ec92d146bd8f5778ac130b6625fb

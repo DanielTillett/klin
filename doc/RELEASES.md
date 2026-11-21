@@ -109,9 +109,11 @@ them, with zizmor's pedantic checks; they are not run in CI.
 
 Dependabot (.github/dependabot.yml) opens weekly pull requests for new
 releases of the actions, updating the SHA and the comment (minor and patch
-updates together, each new major version on its own), and for the digest
-of the ClusterFuzzLite base image. LibU, and the OpenSSL tag, CMake and
-Ninja in .clusterfuzzlite/Dockerfile, are pinned and updated by hand.
+updates together, each new major version on its own), for the digest of
+the ClusterFuzzLite base image, and for the CMake and Ninja that image
+installs with pip (`.clusterfuzzlite/requirements.txt`, pinned by version
+and hash, installed with `--require-hashes`). LibU and the OpenSSL tag in
+`.clusterfuzzlite/Dockerfile` are pinned and updated by hand.
 
 OpenSSF Scorecard (`.github/workflows/scorecard.yml`) checks the
 repository's supply-chain practices weekly and on pushes to master. Its
