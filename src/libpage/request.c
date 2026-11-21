@@ -45,6 +45,7 @@ struct request_s
     vars_t *args;               /* mixed get/post args                      */
     vars_t *args_get;           /* get variables                            */
     vars_t *args_post;          /* post variables                           */
+    vars_t *args_nofile;        /* file inputs sent empty (in args too)     */
     vars_t *cookies;            /* cookies                                  */
     vars_t *uploads;            /* uploaded file list                       */
     char *content_type;         /* type/subtype                             */
@@ -181,8 +182,10 @@ static vars_t *request_vars(request_t *rq, vars_t **pvars)
     {
         dbg_err_if(vars_create(pvars));
 
-        /* args_get and args_post link to var_t owned by the rq->args list */
-        if(pvars == &rq->args_get || pvars == &rq->args_post)
+        /* args_get, args_post and args_nofile link to var_t owned by the
+           rq->args list */
+        if(pvars == &rq->args_get || pvars == &rq->args_post ||
+                pvars == &rq->args_nofile)
             dbg_err_if(vars_set_flags(*pvars, VARS_FLAG_FOREIGN));
     }
 
@@ -1175,7 +1178,7 @@ static inline int is_quote(char c)
 }
 
 static int parse_content_disposition(header_t *h, char *name, char *filename,
-    size_t prmsz)
+    size_t prmsz, int *has_filename)
 {
     enum { BUFSZ = 512 };
     char *pp, *tok, *src, buf[BUFSZ];
@@ -1197,6 +1200,7 @@ static int parse_content_disposition(header_t *h, char *name, char *filename,
     dbg_err_if(strncmp(cd, "form-data", strlen("form-data")));
 
     name[0] = filename[0] = '\0';
+    *has_filename = 0;
 
     /* save a copy to tokenize it */
     u_strlcpy(buf, cd, sizeof buf);
@@ -1241,6 +1245,7 @@ static int parse_content_disposition(header_t *h, char *name, char *filename,
                 tok[strlen(tok) - 1] = '\0';
 
             dbg_if (u_strlcpy(filename, tok, prmsz));
+            *has_filename = 1;
         } 
         /* else ignore unknown fields */
     }
@@ -1599,9 +1604,11 @@ err:
 }
 
 /* a form field part: its data, up to the boundary, becomes a (binary)
- * request argument, also listed in the POST arguments */
+ * request argument, also listed in the POST arguments. 'nofile': the part
+ * had an empty filename parameter, so if it is empty too it is a file
+ * input left empty (see request_is_empty_file_input) */
 static int request_save_field(request_t *rq, io_t *io, const char *boundary,
-    const char *name)
+    const char *name, int nofile)
 {
     char buf[MULTIPART_BUFSZ];
     u_buf_t *ubuf = NULL;
@@ -1633,6 +1640,8 @@ static int request_save_field(request_t *rq, io_t *io, const char *boundary,
     dbg_err_if((args = request_vars(rq, &rq->args)) == NULL);
     dbg_err_if(vars_add(args, v));
     dbg_if(vars_add(request_vars(rq, &rq->args_post), v));
+    if(nofile && rc == 0)
+        dbg_if(vars_add(request_vars(rq, &rq->args_nofile), v));
 
     return 0;
 err:
@@ -1662,6 +1671,7 @@ static int request_parse_multipart_chunk(request_t *rq, io_t *io,
     enum { PRMSZ = 512 };
     header_t *h = NULL;
     char name[PRMSZ], filename[PRMSZ], buf[2];
+    int has_filename;
 
     /* create an header object to parse MIME part headers */
     dbg_err_if(header_create(&h));
@@ -1676,12 +1686,13 @@ static int request_parse_multipart_chunk(request_t *rq, io_t *io,
     warn_err_ifm(is_encoded(h),
         "encoded file upload is not supported");
 
-    dbg_err_if(parse_content_disposition(h, name, filename, PRMSZ));
+    dbg_err_if(parse_content_disposition(h, name, filename, PRMSZ,
+                &has_filename));
 
     if(filename[0] != '\0')
         dbg_err_if(request_save_upload(rq, io, boundary, name, filename, h));
     else
-        dbg_err_if(request_save_field(rq, io, boundary, name));
+        dbg_err_if(request_save_field(rq, io, boundary, name, has_filename));
 
     /* will read "\r\n" for not-ending boundaries, "--" otherwise */
     dbg_err_if(io_read(io, buf, 2) <= 0);
@@ -2201,12 +2212,38 @@ int request_del_arg(request_t *rq, var_t *v)
         (void) vars_del(rq->args_get, v);
     if(rq->args_post)
         (void) vars_del(rq->args_post, v);
+    if(rq->args_nofile)
+        (void) vars_del(rq->args_nofile, v);
     dbg_err_if(vars_del(rq->args, v));
     var_free(v);
 
     return 0;
 err:
     return ~0;
+}
+
+static int request_cb_is_var(var_t *v, void *arg)
+{
+    var_t **pfind = arg;
+
+    if(v != *pfind)
+        return 0;
+    *pfind = NULL;      /* found: stop */
+    return 1;
+}
+
+/* is the argument 'v' a multipart file input sent empty (an empty
+   filename parameter and no data)? A browser sends one for a file input
+   left empty; validate.c lets an upload rule's name cover it */
+int request_is_empty_file_input(request_t *rq, var_t *v)
+{
+    var_t *find = v;
+
+    if(rq == NULL || v == NULL || rq->args_nofile == NULL)
+        return 0;
+    vars_foreach(rq->args_nofile, request_cb_is_var, &find);
+
+    return find == NULL;
 }
 
 /* the route parameters (NULL if none) */
@@ -2588,6 +2625,9 @@ int request_free(request_t *rq)
 
         if(rq->args_post)
             vars_free(rq->args_post);
+
+        if(rq->args_nofile)
+            vars_free(rq->args_nofile);
 
         if(rq->args)
             vars_free(rq->args);
