@@ -23,6 +23,7 @@
 #include <klin/ioprv.h>
 #include <klin/http.h>
 #include <klin/vars.h>
+#include <klin/varprv.h>
 #include <klin/timer.h>
 #include <klin/vhost.h>
 #include <klin/supplier.h>
@@ -432,7 +433,7 @@ err:
  * \ingroup request
  * \brief   Get the query string field of a request
  *  
- * Return the query string field of request \p rq.
+ * Return the URI query string of request \p rq.
  *
  * \param rq    request object
  *  
@@ -972,43 +973,35 @@ static int request_cb_add_get_var(void *arg, const char *tok)
     return request_cb_add_var(rq, &rq->args_get, tok);
 }
 
-static int foreach_query_var(const char *urlquery, int offset, 
-        int(*cb)(void*,const char*), void *arg)
+static int foreach_query_var(char *query, int(*cb)(void*,const char*), void *arg)
 {
-    char *pp, *tok, *src, *query = NULL;
+    char *pp, *tok, *src;
 
-    dbg_err_if(offset < 0);
-    dbg_err_if(cb == NULL);
-
-    if(!urlquery)
-        return 0; /* no args */
-
-    /* dup to tokenize it */
-    query = u_strdup(urlquery + offset);
-    dbg_err_if(query == NULL);
-
-    /* foreach name=value pair... */
     for(src = query; (tok = strtok_r(src, "&", &pp)) != NULL; src = NULL)
     {
-        /* call the callback that will save this var */
         dbg_err_if(cb(arg, tok));
     }
 
-    U_FREE(query);
-
     return 0;
 err:
-    U_FREE(query);
     return ~0;
 }
 
 static int request_parse_query_args(request_t *rq)
 {
-    dbg_err_if(rq == NULL);
+    char *query;
+    int rc;
 
-    return foreach_query_var(rq->query, 0, request_cb_add_get_var, (void*)rq); 
-err:
-    return ~0;
+    dbg_return_if(rq == NULL, ~0);
+    if(!rq->query)
+        return 0;
+
+    /* Tokenize a copy to preserve the raw URI query string. */
+    query = u_strdup(rq->query);
+    dbg_return_if(query == NULL, ~0);
+    rc = foreach_query_var(query, request_cb_add_get_var, rq);
+    u_free(query);
+    return rc;
 }
 
 /* set is-cgi flag */
@@ -1073,39 +1066,22 @@ static int request_is_urlencoded(request_t *rq)
 
 static int request_parse_urlencoded_data(request_t *rq)
 {
-    ssize_t qsz, len;
+    char *body = NULL;
+    size_t len;
 
-    dbg_err_if (rq == NULL);
+    dbg_err_if(rq == NULL);
+    len = rq->content_length;
+    dbg_err_if((ssize_t)len < 0 || len == (size_t)-1);
+    body = u_malloc(len + 1);
+    dbg_err_if(body == NULL);
+    dbg_err_if(io_read(rq->io, body, len) != (ssize_t)len);
+    body[len] = 0;
 
-    len = rq->content_length; /* shortcut */
-
-    qsz = (rq->query ? strlen(rq->query) : 0);
-
-    /* alloc or enlarge the query string buffer */
-    rq->query = u_realloc(rq->query, len + qsz + 2);
-    dbg_err_if(rq->query == NULL);
-
-    /* u_dbg("rq->query %x  size %u", rq->query, len+qsz+2); */
-
-    rq->query[qsz] = 0; /* must be zero-term for strcat to work */
-    if(qsz)
-    {   /* append a '&' */
-        strcat(rq->query, "&");
-        ++qsz;
-    }
-
-    /* append to current query string */
-    dbg_err_if(io_read(rq->io, rq->query + qsz, len) != len);
-
-    /* zero terminate it */
-    rq->query[qsz + len] = 0;
-
-    /* parse and add post vars to the rq->args and rq->args_post array */
-    dbg_err_if(foreach_query_var(rq->query, qsz, 
-                request_cb_add_post_var, (void*)rq));
-
+    dbg_err_if(foreach_query_var(body, request_cb_add_post_var, rq));
+    u_free(body);
     return 0;
 err:
+    U_FREE(body);
     return ~0;
 }
 
@@ -1483,14 +1459,9 @@ static ssize_t request_read_until_boundary(request_t *rq, io_t *io,
             /* zero-term the buffer (removing the boundary) */
             buf[rc] = 0;
 
-        } else {
-
-            /* buffer too small, alloc (and use) a dynamic buffer */
-            if(ubuf == NULL)
-            {
-                dbg_err_if(u_buf_create(&ubuf));
-                dbg_err_if(u_buf_reserve(ubuf, 2 * size));
-            }
+        } else if(ubuf == NULL) {
+            /* This field spans multiple chunks. */
+            dbg_err_if(u_buf_create(&ubuf));
         }
 
         /* total read bytes */
@@ -1502,7 +1473,14 @@ static ssize_t request_read_until_boundary(request_t *rq, io_t *io,
          * be zero if the last read returned just the boundary (that it's  not
          * going to be written to the output buffer) */
         if(ubuf && rc)
+        {
+            /* The variable will keep this allocation. Limit spare capacity
+               while still growing geometrically for large fields. */
+            if(trb > (size_t)u_buf_size(ubuf))
+                dbg_err_if(u_buf_reserve(ubuf,
+                    trb + U_MIN(trb / 2, rq->post_maxsize - trb)));
             dbg_err_if(u_buf_append(ubuf, buf, rc));
+        }
     }
 
     *pubuf = ubuf;
@@ -1587,19 +1565,24 @@ static int request_save_field(request_t *rq, io_t *io, const char *boundary,
     rc = request_read_until_boundary(rq, io, boundary, buf, sizeof(buf), &ubuf);
     dbg_err_if(rc < 0);
 
-    dbg_err_if(var_bin_create(name,
-                (ubuf ? u_buf_ptr(ubuf) : buf),
-                (ubuf ? u_buf_len(ubuf) : rc),
-                &v));
+    if(ubuf)
+    {
+        char *data = u_buf_ptr(ubuf);
+
+        /* LibU leaves a NUL after the last byte. Transfer that allocation
+           to the variable, including any embedded NULs in the field. */
+        dbg_err_if(var_bin_adopt(name, data, rc, &v));
+        u_buf_detach(ubuf);
+        u_buf_free(ubuf);
+        ubuf = NULL;
+    } else {
+        dbg_err_if(var_bin_create(name, (unsigned char *)buf, rc, &v));
+    }
 
     /* rq->args owns v (args_post only links to it, see request_vars) */
     dbg_err_if((args = request_vars(rq, &rq->args)) == NULL);
     dbg_err_if(vars_add(args, v));
     dbg_if(vars_add(request_vars(rq, &rq->args_post), v));
-    v = NULL;
-
-    if(ubuf)
-        u_buf_free(ubuf);
 
     return 0;
 err:

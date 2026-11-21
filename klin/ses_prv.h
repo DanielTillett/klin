@@ -77,6 +77,7 @@ typedef struct session_opt_s
     atoms_t *atoms; /* atom list used to store in-memory sessions    */
     size_t max_count;   /* max # of in-memory sessions               */
     size_t mem_limit;   /* max (total) size of in-memory sessions    */
+    time_t last_mem_sweep;  /* last idle-session expiry sweep       */
 
     #ifdef SSL_ON
     char keyvar[128]; /* name of the session variable w/ the description key */
