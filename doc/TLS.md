@@ -1,11 +1,13 @@
 # TLS settings
 
-An HTTPS server accepts TLS 1.2 and 1.3 with forward-secret AEAD ciphers
-(authenticated encryption with associated data) and nothing older. Read
+An HTTPS server accepts TLS 1.2 and 1.3, nothing older, and by default
+only forward-secret AEAD ciphers (authenticated encryption with associated
+data). Read
 on when a client cannot connect, or when you want a stricter policy than
 the default.
 
-An https server block (klind.conf(5), SSL/TLS) needs only `cert_file`,
+An https server block ([klind.conf(5)](man/klind.conf.5), SSL/TLS) needs
+only `cert_file`,
 plus `key_file` if the private key is in a file of its own. Without
 `key_file`, klind warns and looks for the key in `cert_file`. Everything
 else has a secure default.
@@ -30,15 +32,17 @@ tls_min_version  1.3
 The only values are `1.2` (the default) and `1.3`; anything else stops
 klind at startup.
 
-TLS compression and renegotiation are always refused. TLS 1.3 has no
+TLS compression and renegotiation are refused, and no setting turns them
+back on. TLS 1.3 has no
 renegotiation at all, and a TLS 1.2 client that asks for one gets a "no
 renegotiation" alert.
 
 ## Ciphers
 
-The simple rule is forward-secret key exchange (ECDHE or DHE, ephemeral
-Diffie-Hellman) and AEAD ciphers only. For TLS 1.2 Klin uses Mozilla's "intermediate" list, in the server's
-order, so the best cipher both sides share wins:
+By default the rule is forward-secret key exchange (ECDHE or DHE,
+ephemeral Diffie-Hellman) and AEAD ciphers only. For TLS 1.2 Klin uses
+Mozilla's "intermediate" list unless you set `tls_ciphers`, in the
+server's order, so the best cipher both sides share wins:
 
 ```text
 ECDHE-ECDSA-AES128-GCM-SHA256  ECDHE-RSA-AES128-GCM-SHA256
@@ -48,11 +52,13 @@ DHE-RSA-AES128-GCM-SHA256      DHE-RSA-AES256-GCM-SHA384
 DHE-RSA-CHACHA20-POLY1305
 ```
 
-For TLS 1.3 it uses OpenSSL's default suites, which are all AEAD.
+For TLS 1.3 it uses OpenSSL's default suites unless you set
+`tls_ciphersuites`; the defaults are all AEAD.
 
-The catch is old clients. This list is new in 4.0, and a client that has
-only CBC ciphers or RSA key exchange (very old browsers and libraries)
-can no longer connect. I made that trade on purpose, but you can change
+The catch is old clients. This default list is new in 4.0, and a client
+that has only CBC ciphers or RSA key exchange (very old browsers and
+libraries) cannot connect to a server that keeps it. I made that trade on
+purpose, but you can change
 either list:
 
 ```conf
@@ -61,11 +67,11 @@ tls_ciphersuites  <OpenSSL suite list>       # TLS 1.3 (default: OpenSSL's)
 ```
 
 A list OpenSSL cannot use stops klind at startup. With the key manager
-([KEYMGR](KEYMGR.md), on by default) RSA key exchange is always left out,
-whatever `tls_ciphers` says, because the key manager signs but never
-decrypts.
+on ([KEYMGR](KEYMGR.md), the default except on native Windows) RSA key
+exchange is left out whatever `tls_ciphers` says, because the key manager
+signs but does not decrypt.
 
-A handshake ends up with its protocol and cipher like this:
+This is how a handshake ends up with its protocol and cipher:
 
 ```mermaid
 flowchart TD
@@ -85,9 +91,9 @@ flowchart TD
 Session tickets let a returning client skip the full handshake. Their
 keys change every `tls_ticket_key_lifetime` (default 12 hours). A ticket
 made with the previous key is still accepted, and the client gets a new
-one in return, so a ticket is good for between 12 and 24 hours. The
-session's own lifetime is three periods, so it is always the ticket's key
-that ends it. With tickets on, the server-side session cache is off:
+one in return, so with the default lifetime a ticket is good for between
+12 and 24 hours. The session's own lifetime is three periods, so it is
+the ticket's key, not the session timeout, that ends it. With tickets on, the server-side session cache is off:
 the tickets themselves carry a session from one worker to another.
 
 ```conf

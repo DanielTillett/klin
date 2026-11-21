@@ -1,6 +1,6 @@
 # Files from the file system
 
-Pages built into klind (the embedded site) are always served. Anything
+Pages built into klind (the embedded site) need no build option. Anything
 on the file system needs one of two optional suppliers: the file system
 one (static files) or the CGI one ([CGI](CGI.md)). Both are left out of a
 build unless you ask for them:
@@ -10,7 +10,8 @@ cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
 ```
 
 **A build without them cannot serve or run anything from the file
-system**, whatever the configuration says. That is the way to turn them
+system**, whatever the configuration says (your own page code can still
+open files). That is the way to turn them
 off entirely, and on a device that only serves its embedded pages it is
 what I would do. A build with them can still turn them off for a server or
 a virtual host:
@@ -29,7 +30,8 @@ slashes, `.` and `..` segments are resolved and repeated slashes are
 reduced, all before the path is used. A NUL (`%00`) is refused with 400.
 The path is then appended to the `dir_alias` target whose prefix it
 matches, or to `dir_root`, and the file is opened under the
-`follow_symlinks` policy:
+`follow_symlinks` policy. This is the POSIX path; Windows differs at
+the open, as described [below](#windows).
 
 ```mermaid
 flowchart TD
@@ -39,9 +41,12 @@ flowchart TD
     C -- "no" --> D["normalise: backslash to slash,<br/>resolve . and .., merge repeated slashes"]
     D --> F["append to the matching<br/>dir_alias target, or dir_root"]
     F --> P{"follow_symlinks?"}
-    P -- "inside or no" --> G{"open under that<br/>directory, segment<br/>by segment"}
+    P -- "inside" --> I{"resolve links in the directory<br/>and the file (realpath):<br/>file inside the directory?"}
+    P -- "no" --> G{"open under the directory,<br/>segment by segment,<br/>O_NOFOLLOW on each"}
     P -- "yes" --> Y{"open the path,<br/>links followed<br/>wherever they lead"}
-    G -- "outside it, or not found" --> E404["404 Not Found"]
+    I -- "yes" --> G
+    I -- "no, or not found" --> E404["404 Not Found"]
+    G -- "a link, or not found" --> E404
     Y -- "not found" --> E404
     G -- "opened" --> R{"regular file?"}
     Y -- "opened" --> R
@@ -49,8 +54,9 @@ flowchart TD
     R -- "yes" --> S["served"]
 ```
 
-A request path is never looked up from the file system's root. Before
-4.0 it was, when the request arrived, so `If-Modified-Since` could tell
+A request path is looked up only under `dir_root` or an alias target,
+not from the file system's root (unless you set one of those to `/`).
+Before 4.0 it was, when the request arrived, so `If-Modified-Since` could tell
 whether any file on the host existed, and when it changed.
 
 The path info (`/page/extra`) is split against the files of the virtual
@@ -75,13 +81,13 @@ With `no`, no link is followed below that directory.
 With `yes`, links are followed wherever they lead. That was the behaviour
 before 4.0.
 
-With `inside` and `no`, the file is opened one path segment at a time
-from the directory, with `O_NOFOLLOW` for each segment, after the links
-are resolved (for `inside`). A link swapped in between the check and the
-open is not followed, so the file opened is always under the directory.
-With `yes` the path is opened as it is. Under every policy only regular
-files are served; a FIFO, a device or a directory is not found. CGI
-scripts are checked the same way when the request comes in, and the
+On POSIX systems, with `inside` and `no`, the file is opened one path
+segment at a time from the directory, with `O_NOFOLLOW` for each segment,
+after the links are resolved (for `inside`). A link swapped in between the
+check and the open is not followed, so the file opened is under the
+directory. With `yes` the path is opened as it is. Under every policy only
+regular files are served; a FIFO, a device or a directory is not found.
+CGI scripts are checked the same way when the request comes in, and the
 script is then run by its path.
 
 The setting goes in a server block or a virtual host's block, and a
@@ -91,7 +97,10 @@ virtual host inherits it from its server.
 
 On Windows, unless `follow_symlinks` is `yes`, no segment below the
 directory may be a symbolic link, junction or other reparse point
-(`inside` acts as `no`). These names are refused whatever the setting:
+(`inside` acts as `no`). Klin checks each segment's attributes first and
+then opens the whole path, so there is no segment-by-segment open as on
+POSIX, and a link swapped in between the check and the open would be
+followed. These names are refused whatever the setting:
 
 - a segment ending in a dot or a blank (Windows drops them, so
   `page.kl1.` would name page.kl1);

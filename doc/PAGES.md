@@ -17,13 +17,17 @@ mysite/
 Everything under the site directory becomes klind's embedded file system.
 With `dir_root /www` in a server block (as in the example site), the URL
 `/index.kl1` is served from `www/index.kl1`, `/style.css` from
-`www/style.css`, and `/` from the index page (`index` in klind.conf(5)).
+`www/style.css`, and `/` from the index page (`index` in
+[klind.conf(5)](man/klind.conf.5)).
 Keep anything secret out of `www/`: whatever is under `dir_root` can be
 fetched.
 
 Files ending in `.kl1` are pages, and so are `.klin`, `.klc` and the
-`.klone` files left over from KLone. Every other file is static: Klin
-serves it with a content type taken from its extension and an ETag.
+`.klone` files left over from KLone. KLone's C++ pages, `.klx`, are the
+exception: the import accepts them, but the site's CMake configure step
+then stops with "C++ page ... is not supported by this build". Every
+other file is static: Klin serves it with a content type taken from its
+extension and, unless it is encrypted, an ETag.
 
 ## The configuration
 
@@ -79,27 +83,30 @@ my_https
 
 `server_list` names the servers to run, and each name has a block of its
 own. Settings for the whole process (`allow_root`, `uid`, `gid`, `chroot`
-and a `log` block) sit at the top level. Inside a server block, any block
-that has its own `dir_root` is a virtual host (vhost), chosen by the
-`Host` header the client sends. A vhost inherits the server's settings
-except `addr`, `model`, `type`, `dir_root`, `dir_alias`, `script_alias`
-and `access_log`. The tree looks like this:
+and a `log` block) sit at the top level, and a server block can have a
+`log` block of its own. Inside a server block, any block that has its
+own `dir_root` is a virtual host (vhost), chosen by the `Host` header the
+client sends. A vhost inherits the server's settings except `addr`,
+`model`, `type`, `dir_root`, `dir_alias` and `script_alias`. `access_log`
+works differently: a vhost without one uses the server's access log, and
+`access_log no` turns it off for that vhost. As a tree:
 
 ```mermaid
 flowchart TD
     T["klind.conf"] --> L["server_list my_http"]
     T --> P["allow_root, uid, gid, chroot,<br/>log block"]
     T --> S["my_http block<br/>(a server)"]
-    S --> K["type, addr, dir_root, model,<br/>prefork.*, limits, cert_file"]
+    S --> K["type, addr, dir_root, model,<br/>prefork.*, limits, cert_file,<br/>log, access_log"]
     S --> B["blocks: session, access, auth,<br/>routes, validators, params,<br/>security_headers"]
     S --> V["www.example.com block<br/>(a vhost: has its own dir_root)"]
     V --> VB["dir_root, access, auth, routes,<br/>validators, params, security_headers"]
 ```
 
 The limits ([LIMITS.md](LIMITS.md)) are a server block's settings only; a
-vhost cannot change them. klind.conf(5) (`doc/man/klind.conf.5`) lists
-every setting, and `etc/` in the source tree has sample configurations
-for vhosts, HTTPS and the other cases.
+vhost cannot change them. [klind.conf(5)](man/klind.conf.5) lists the
+main settings (it leaves out `script_alias` and `access_log`), and `etc/`
+in the source tree has sample configurations for vhosts, HTTPS and the
+other cases.
 
 ## Your first page, then a login in front of it
 
@@ -112,11 +119,13 @@ the checkout.
 Make the site:
 
 ```sh
-mkdir -p ~/mysite/etc ~/mysite/www/admin
+mkdir -p "$HOME/mysite/etc" "$HOME/mysite/www/admin"
 ```
 
-`~/mysite/etc/klind.conf` holds one plain HTTP server. With no `log`
-block klind logs nothing, which is fine for now:
+`~/mysite/etc/klind.conf` holds one plain HTTP server, listening on the
+loopback address only, so nothing else on the network can reach it while
+you try it out. With no `log` block klind logs nothing, which is fine for
+now:
 
 ```conf
 server_list     my_http
@@ -124,7 +133,7 @@ server_list     my_http
 my_http
 {
     type            http
-    addr            tcp4://*:8080
+    addr            tcp4://127.0.0.1:8080
     dir_root        /www
 }
 ```
@@ -163,13 +172,13 @@ Build it and start klind in the foreground, as yourself rather than root
 `gid` are set):
 
 ```sh
-cmake -S . -B out -G Ninja -DKLIN_SITE_DIR=$HOME/mysite
+cmake -S . -B out -G Ninja -DKLIN_SITE_DIR="$HOME/mysite"
 cmake --build out
 out/bin/klind -F
 ```
 
-In another terminal, `curl http://localhost:8080/` shows the first page,
-and `curl -i http://localhost:8080/admin/` answers 200 with the settings
+In another terminal, `curl http://127.0.0.1:8080/` shows the first page,
+and `curl -i http://127.0.0.1:8080/admin/` answers 200 with the settings
 page, open to anyone. Stop klind with Ctrl-C.
 
 Now the login. Make a user with the `klin` tool, which the build put next
@@ -179,8 +188,8 @@ to klind. It reads the password from the first line of stdin and prints a
 into klind:
 
 ```sh
-echo 'wonder land' | out/bin/klin -c passwd -r "Private Area" alice > ~/mysite-users.conf
-chmod 600 ~/mysite-users.conf
+echo 'wonder land' | out/bin/klin -c passwd -r "Private Area" alice > "$HOME/mysite-users.conf"
+chmod 600 "$HOME/mysite-users.conf"
 ```
 
 Add an `auth` block to the server in `~/mysite/etc/klind.conf`, giving
@@ -192,7 +201,7 @@ server_list     my_http
 my_http
 {
     type            http
-    addr            tcp4://*:8080
+    addr            tcp4://127.0.0.1:8080
     dir_root        /www
 
     auth
@@ -212,8 +221,8 @@ my_http
 The realm's `name` must match the `-r` you gave the tool. The two `path`
 lines cover `/admin` and everything under `/admin/` without also catching
 `/administrator`, which a single `/admin*` would. With no `roles`, any
-user of the realm gets in, and with no `scheme` the realm uses Digest,
-which is what plain HTTP needs.
+user of the realm gets in, and with no `scheme` the realm uses Digest.
+Use HTTPS when you deploy this ([TLS.md](TLS.md)).
 
 The configuration is embedded, so rebuild, then start klind again:
 
@@ -223,9 +232,9 @@ out/bin/klind -F
 ```
 
 ```text
-$ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/admin/
+$ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/admin/
 401
-$ curl -s --digest -u 'alice:wonder land' http://localhost:8080/admin/
+$ curl -s --digest -u 'alice:wonder land' http://127.0.0.1:8080/admin/
 <!DOCTYPE html>
 <html>
   <body>
@@ -394,19 +403,23 @@ out/bin/klind -F
 `-F` keeps klind in the foreground. `-d` also turns on debug logging and
 serves requests one at a time in a single process. Without `-f`, klind
 uses the `etc/klind.conf` embedded with the site; `-f file` uses that file
-instead (see klind(8)).
+instead (see [klind(8)](man/klind.8)).
 
 Build with `-DKLIN_IMPORT_ARGS=-z` and files of compressible MIME types
-are stored compressed. klind decompresses them as it sends them, unless
-the server block sets `send_enc_deflate yes`: then a client that accepts
-`deflate` gets the stored compressed form as it is.
+are compressed in the build, in two different ways. A static file is
+stored deflated, and klind inflates it as it sends it. The exception is
+a server block or vhost that sets `send_enc_deflate yes`: a client that
+accepts `deflate` then gets the stored form as it is, with
+`Content-Encoding: deflate`. For a page, the HTML blocks are stored
+compressed in the generated C and inflated as the page runs, so the
+saving is in the size of klind, not on the wire.
 
 You can encrypt pages in the build. Give the import the pages to encrypt
 and a key file with an absolute path, for example
 `-DKLIN_IMPORT_ARGS="-e;*.kl1;-k;/path/to/key"`. Pages are re-encrypted
-when the key file changes. The catch is a key given in the
-`KLIN_CIPHER_KEY` environment variable: the build does not track it, so
-rebuild from clean after changing it (klin(1)).
+when the key file changes. A key given in the `KLIN_CIPHER_KEY`
+environment variable is different: the build does not track it, so
+rebuild from clean after changing it ([klin(1)](man/klin.1)).
 
 ## Application code and hooks
 
@@ -417,8 +430,9 @@ is a small example.
 
 With `-DKLIN_ENABLE_HOOKS=ON`, klind calls a `hooks_setup()` function you
 provide. It registers functions to run when the server starts and stops,
-when each worker starts and stops, and for every request once its page
-has run (`klin/hook.h`: `hook_server_init()`, `hook_child_init()`,
+when each worker starts and stops, and once for each request: after its
+page has run, or before the error page when the request fails
+(`klin/hook.h`: `hook_server_init()`, `hook_child_init()`,
 `hook_request()` and others). A worker's `child_init` hook runs before its
 sandbox ([SANDBOX.md](SANDBOX.md)), so use it to open whatever the pages
 will need.

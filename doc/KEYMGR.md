@@ -1,8 +1,9 @@
 # TLS key manager
 
 The key manager keeps an HTTPS server's private key out of the processes
-that serve requests. It is on by default, so you only need to act if
-your key type is unsupported or you want the old behaviour back.
+that serve requests. It is on by default everywhere except native
+Windows, which has no key manager, so you only need to act if your key
+type is unsupported or you want the old behaviour back.
 
 ## Why it exists
 
@@ -12,7 +13,7 @@ worker's memory is theirs. Before 4.0 that included the TLS private key,
 and a stolen key outlives any fix: the attacker can impersonate the
 device until the certificate expires or is revoked.
 
-I wrote the key manager so that a compromised worker has nothing to
+I wrote the key manager so that a compromised worker has no private key to
 steal. **With the key in a `key_file` outside the site and the key manager
 on, the worker never holds the key.** It can ask for signatures while it
 runs, but it cannot read the key, and the key does not leave with a memory
@@ -20,10 +21,14 @@ dump or a core file of a worker. A key embedded in klind, or a server with
 `key_manager no`, is in every process (see [Limits](#limits)).
 
 At startup, before any worker is forked, klind starts one key manager
-per HTTPS server. The key manager is a small process of its own that
-reads the key file itself and tells klind only the public key, so klind
-never decodes the private key. Workers, and klind itself, hold only a
-proxy key:
+per HTTPS server. With the key in an external `key_file`, the key manager
+is a small process of its own that reads the file itself and tells klind
+only the public key, so klind never decodes the private key, and workers
+and klind itself hold only a proxy key. A key embedded in the site is
+different: klind decodes it first and then forks the key manager with
+that copy, so the key stays in klind's memory and every worker inherits
+it. With an external `key_file` (prefork, key manager on), the key
+stays on one side of a socket:
 
 ```mermaid
 flowchart LR
@@ -38,9 +43,9 @@ flowchart LR
 When a TLS handshake needs a signature, the worker sends the digest to
 the key manager, which signs it and sends the signature back. In TLS 1.3
 that signature goes into the server's CertificateVerify message; in TLS
-1.2 it signs the ECDHE or DHE parameters. Here is one TLS 1.3 handshake,
-simplified (in TLS 1.2 the signature travels in ServerKeyExchange
-instead):
+1.2 it signs the ECDHE or DHE parameters. Here is one TLS 1.3
+handshake, simplified (in TLS 1.2 the signature travels in
+ServerKeyExchange instead):
 
 ```mermaid
 sequenceDiagram
@@ -75,7 +80,8 @@ secure
 
 Each key manager closes every descriptor except its control socket,
 ignores HUP and ALRM, and, when klind runs as root with `uid` and `gid`
-set, drops to them as klind does. It signs once to warm OpenSSL up, then
+set, drops to them as klind does (it stops rather than carry on as root
+when klind would not). It signs once to warm OpenSSL up, then
 turns on its sandbox ([SANDBOX](SANDBOX.md)) unless the server has
 `sandbox no`. Only then does it tell klind it is ready. A key manager
 that is not ready within 10 s is killed, and klind does not start.
@@ -85,10 +91,10 @@ Servers sharing a key file still get one key manager each.
 ### Its memory is private
 
 On Linux, other processes of the same user, the workers included, cannot
-read a key manager's memory. Before it reads the key, and again after dropping
+read a key manager's memory (root still can). Before it reads the key, and again after dropping
 to `uid` and `gid` (which resets it), it makes itself undumpable. On Linux
 that is `PR_SET_DUMPABLE 0`, so `/proc/<pid>/mem` and ptrace are refused.
-It also sets `RLIMIT_CORE` to 0, so it never writes a core file. This
+It also sets `RLIMIT_CORE` to 0, so it does not write a core file. This
 matters most when klind runs as its own user from the start (systemd
 `User=`), because nothing else would make it undumpable. Other systems
 get the core limit only.
@@ -98,7 +104,8 @@ wiped when freed, not through stdio.
 
 ### What it will sign
 
-It signs only requests shaped like what a TLS handshake asks for:
+It signs requests shaped like what a TLS handshake asks for, and nothing
+else:
 
 - a SHA-1, SHA-224, SHA-256, SHA-384 or SHA-512 digest of the right length;
 - for RSA, PKCS #1 v1.5 or PSS (probabilistic signature scheme) padding,
@@ -108,8 +115,10 @@ It signs only requests shaped like what a TLS handshake asks for:
 Raw RSA, other paddings and digests, and data of the wrong length are
 refused. It checks the form of a request only: it cannot tell whether the
 digest really came from a handshake, so a compromised worker can still
-have any digest of the right length signed (see [Limits](#limits)). A request carries exactly one descriptor, for the answer. A
-request with more is not answered, and the extra descriptors are closed.
+have any digest of the right length signed (see [Limits](#limits)).
+
+A request carries exactly one descriptor, for the answer. A request with
+more is not answered, and the extra descriptors are closed.
 
 ### The proxy key
 
@@ -131,13 +140,15 @@ control socket is closed on exec, so CGI scripts do not inherit it.
 With the key manager, `:!kRSA` is added to the TLS 1.2 cipher list,
 whether that is `tls_ciphers` or the default in [TLS](TLS.md). RSA key
 exchange decrypts with the private key, which the key manager does not
-do, and it has no forward secrecy anyway. Every current client uses
-ECDHE.
+do, and it has no forward secrecy anyway. Current browsers and TLS
+libraries all offer ECDHE, so in practice this costs nothing.
 
 ### When a key manager dies
 
-If a key manager exits, klind stops: nothing else holds the key, so no
-handshake could succeed. A key manager also exits when klind does.
+If a key manager exits, klind stops. With an external `key_file`
+nothing else holds the key, so no handshake could succeed, and klind
+treats an embedded key the same way. A key manager also exits within a
+second of klind exiting: it checks for its parent once a second.
 
 ### The leak that settled it
 
@@ -145,13 +156,16 @@ During 4.0 development, klind decoded the key itself and handed it over.
 OpenSSL's decoder leaves copies of the key in ordinary freed memory, and
 every worker inherited that memory. I saw it
 with two servers sharing a key file, the second with a `ca_file`. Now the
-key manager reads the file, so klind's memory never contains the key.
+key manager reads an external key file itself, so klind's memory does not
+contain that key.
 
 ## Limits
 
 - A key embedded in klind (a `key_file` inside the site, picked up by the
   import) is part of the program, so it is in every process's memory.
-  klind warns about this at startup. Keep keys in files outside the site.
+  With the key manager on, klind warns about this at startup; with
+  `key_manager no` there is no warning, since the key is in every process
+  by design. Keep keys in files outside the site.
 - The key manager signs digests for the workers while they run, and it
   checks only that a request is shaped like a handshake signature. A
   compromised worker can have digests of its choosing signed for as long

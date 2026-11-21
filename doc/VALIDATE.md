@@ -3,9 +3,11 @@
 Klin can check request parameters before a page sees them, with the rules
 written once in the configuration rather than repeated in every page.
 
-The simple rule is that a page listed in a `params` block sees only
-values that passed, and a page that is not listed is not checked at all.
-List every page that takes input.
+Validation checks the parameters you name in the `params` block that
+matches a request. Query and form arguments you do not name are dropped
+by default, but with `unknown allow` they reach the page unchecked, and a
+request that no `params` block matches is not checked at all. List every
+page that takes input, and name every parameter it reads.
 
 ## The configuration
 
@@ -80,8 +82,9 @@ applies to it.
 ## Where validation runs
 
 Validation runs late in request handling: after access control,
-authentication and routing, and just before the page. A request leaves
-early in one of two ways, a 400 or a page that never sees the bad value:
+authentication and routing, and just before the page. A failed check
+ends in one of two ways: a 400, or the bad value is removed before the
+page runs. In order:
 
 ```mermaid
 flowchart TD
@@ -96,7 +99,7 @@ flowchart TD
     F -- yes --> H["apply unknown:<br/>drop, reject or allow"]
     G --> H
     H -- "reject, and an unnamed argument" --> X
-    H --> Q["page runs with only<br/>the parameters let through"]
+    H --> Q["page runs: checked values,<br/>plus unnamed ones<br/>under unknown allow"]
 ```
 
 A failure answers through klind's normal error path, so an `error.400`
@@ -110,11 +113,13 @@ validation, the status from that is returned instead.
 
 ### Paths
 
-A `params` block matches the same path as routes do
-([ROUTES.md](ROUTES.md)): the request path the client asked for, decoded
-and normalised, after index selection (`/` is matched as `/index.kl1`
-when that is the index page), with any PATH_INFO included, and before
-routes and aliases replace it. The first block whose path and method
+A `params` block matches the same path as routes do: the request path
+the client asked for, decoded and normalised, after index selection (`/`
+is matched as `/index.kl1` when that is the index page), with any
+PATH_INFO included, and before routes and aliases replace it. That is
+not the path access rules and realms see;
+[Which path each check sees](ROUTES.md#which-path-each-check-sees) shows
+both. The first block whose path and method
 match applies, and a request that no block matches is not validated at
 all. Methods are compared without regard to case and may be separated by
 blanks or commas.
@@ -122,8 +127,9 @@ blanks or commas.
 ### Sources
 
 `query` is the query string. `form` is a POST body sent as
-`application/x-www-form-urlencoded` or `multipart/form-data`; other
-methods' bodies are not parsed as forms. `route` is a `{name}` found by
+`application/x-www-form-urlencoded` or `multipart/form-data`, or with no
+`Content-Type` at all, which is read as URL-encoded. Other methods'
+bodies, and POST bodies of other types, are not parsed as forms. `route` is a `{name}` found by
 a route. `header` is a request header. `any`, the default, means query,
 form and route, but not header.
 
@@ -131,9 +137,9 @@ form and route, but not header.
 
 A query or form parameter given more than once has every value checked,
 one by one; with `on_invalid drop` only the bad ones are removed. A
-header rule reads one value, the first field of that name. A value with
-a NUL inside (`%00`) never passes a validator, because whatever followed
-the NUL would escape the check.
+header rule reads one value, the first field of that name. A query or
+form value with a NUL inside (`%00`) fails whatever validator checks it,
+because whatever followed the NUL would escape the check.
 
 ### Failures
 

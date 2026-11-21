@@ -1,14 +1,16 @@
 # HTTP authentication
 
-A page in an authentication realm is served only to a user who has one
-of the realm's roles. Klin does this with HTTP authentication, Basic
-(RFC 7617) or Digest (RFC 7616), set up per server or virtual host (vhost)
-in an `auth` block. Authentication needs a build with OpenSSL.
+A page in an authentication realm is served only to a user who logs in
+and, if the realm lists roles, has one of them. Klin does this with HTTP
+authentication, Basic (RFC 7617) or Digest (RFC 7616), set up per server
+or virtual host (vhost) in an `auth` block. Authentication needs a build
+with OpenSSL.
 
 ## Users
 
-Passwords are never written in the configuration, only hashes made by the
-klin tool. The password is read from the first line of stdin:
+klind refuses a plaintext password in the configuration and stops at
+startup; it takes only hashes made by the klin tool. The tool reads the
+password from the first line of stdin:
 
 ```sh
 $ echo 'wonder land' | klin -c passwd -r "Private Area" alice
@@ -62,10 +64,9 @@ auth
 ```
 
 The realms are tried in order, and the first with a matching path
-applies. They match the same name as the access rules
-([ACCESS](ACCESS.md)): the decoded, normalised path after the index page
-is chosen, without path info, and before aliases and routes. So `/admin/`
-with an index page is matched as `/admin/index.kl1`.
+applies. They match the request's file name, without path info and before
+routing, as the access rules ([ACCESS](ACCESS.md)) do; see
+[Which path each check sees](ROUTES.md#which-path-each-check-sees).
 
 Patterns use fnmatch(3) with no flags, so `*` also matches `/`.
 `/admin/*` covers `/admin/` and everything below it, but not `/admin`
@@ -107,8 +108,9 @@ MD5, as RFC 7616 says, and is refused unless the realm sets `md5`.
 ## Security notes
 
 **Basic sends the password with every request**, readable on plain HTTP.
-klind offers Basic only over HTTPS. A realm that is Basic-only on a plain
-HTTP server stops klind at startup, unless `basic_over_http` is set.
+klind offers Basic only over HTTPS unless `basic_over_http` is set. A
+realm that is Basic-only on a plain HTTP server stops klind at startup,
+unless `basic_over_http` is set.
 
 Digest uses SHA-256. MD5 is offered only in realms that set `md5`, for
 clients that lack SHA-256.
@@ -116,14 +118,15 @@ clients that lack SHA-256.
 Digest nonces are signed with a key drawn when klind starts (before the
 prefork workers fork, so every worker accepts the others' nonces), and
 expire after `nonce_lifetime`. The client is then told `stale=true` and
-retries without asking the user. The trade-off is replay. Nonce counts are
-not tracked across prefork workers, so a captured Digest request can be
-replayed until its nonce expires. Over plain HTTP the page content is also
-readable. Use HTTPS for anything that matters.
+retries without asking the user. The trade-off is replay. Klin does not
+track nonce counts at all, in any process model, so a captured Digest
+request can be replayed until its nonce expires. Over plain HTTP the page
+content is also readable. Use HTTPS for anything that matters.
 
-PBKDF2 is slow on purpose. Each worker remembers the last 8 Basic
+PBKDF2 is slow on purpose. Each klind process remembers the last 8 Basic
 credentials it verified for 5 minutes, so a kept-alive client is not
-slowed down on every request.
+slowed down on every request. Under prefork that is each worker; under the
+fork model a child lives for one connection, so its cache does too.
 
 A configuration error in a realm or user (a plaintext password, a realm
 without a path, an unknown scheme, a `users_file` that cannot be read)

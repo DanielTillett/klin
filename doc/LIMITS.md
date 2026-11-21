@@ -5,13 +5,18 @@ refusal has a status code and a setting that moves the line. Read this
 before you put klind on a network you don't control, or when a client
 reports a 413, 414 or 431 you didn't expect.
 
-Every setting here goes in a server block of klind.conf.
+Every setting here goes in a server block of klind.conf
+([klind.conf(5)](man/klind.conf.5)).
 
 ## Where each limit applies
 
-A connection passes through the same stages every time, and each stage has
-its own cap. Here is the order, with the setting at each step and what a
-client gets for going past it:
+A request passes through a series of stages, and each stage has its own
+cap. In order, with the setting at each step and what a client gets
+for going past it: Arguments are parsed, and `max_args`
+and the form-body deadline apply, only when something needs them: a
+`params` block ([VALIDATE](VALIDATE.md)) that matches the request, or an
+active page. A static file, or a CGI script with no matching `params`
+block, skips that stage.
 
 ```mermaid
 flowchart TD
@@ -22,20 +27,23 @@ flowchart TD
     C -->|"max_header_fields, _line, _size"| R431["431"]
     C -->|"bad framing or field"| R400["400 or 501"]
     C -->|"Content-Length over post_maxsize"| R413["413"]
-    C --> D["Query and body arguments<br/>form body deadline: post_timeout (10 min)"]
-    D -->|"query + body over max_args"| R400b["400"]
-    D --> E["Page runs in a worker<br/>worker_max_memory, _files, _procs"]
+    C --> S{"Matching params block<br/>or active page?"}
+    S -- "no (static file or CGI)" --> E
+    S -- yes --> D["Parse query and body arguments<br/>form body deadline: post_timeout (10 min)"]
+    D -->|"over max_args, or a malformed body"| R400b["400"]
+    D --> E["Request served<br/>worker limits under prefork and fork"]
     E -->|"SSE or WebSocket over max_streams"| R503["503, Retry-After: 5"]
     E --> F["Response"]
     F -->|"keep-alive, up to keep_alive_max"| K["Next request line and header<br/>deadline: keep_alive_timeout (5 s)"]
     K -->|"same header checks"| R2["414, 431, 400, 501 or 413"]
-    K --> D
+    K --> S
 ```
 
 A refusal at the header stage (the 414, 431, 400 or 501 and 413 boxes)
-ends the connection. A later error, such as the 400 for too many arguments,
-gets an error page and the connection can stay open for the next request.
-A deadline that runs out closes the connection without a response.
+ends the connection. A later error, such as the 400 for too many
+arguments or a form body the parser cannot read, gets an error page and
+the connection can stay open for the next request. A deadline that runs
+out closes the connection without a response.
 
 ## The request
 
@@ -45,7 +53,7 @@ A deadline that runs out closes the connection without a response.
 | `max_header_line` | 8192 | 256 (maximum 65534) | 431 (the bytes of one field line, with its CRLF) |
 | `max_header_size` | 32768 | 1024 | 431 (the bytes of the whole header) |
 | (the request line) | 8192 | not configurable | 414 URI Too Long |
-| `max_args` | 1000 | 1 | 400 (query and form arguments, multipart fields and uploads, counted together) |
+| `max_args` | 1000 | 1 | 400 (query and form arguments, multipart fields and uploads, counted together, where arguments are parsed) |
 | `post_maxsize` | 5 MB | 1024 | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | 1 s | the connection is closed |
 | `post_timeout` | 10 min | 5 s | the connection is closed |
@@ -62,8 +70,10 @@ kept-alive connection the next request's line and header get
 (100) klind closes the connection.
 
 `post_timeout` bounds the body only where klind reads it for you: when it
-parses a POSTed form (URL-encoded or multipart) and when a page calls
-`request_read_body()`. A page that reads the raw request stream (`in`)
+parses a POSTed form (URL-encoded or multipart) for a matching `params`
+block or an active page, and when a page calls `request_read_body()`. A
+POST with no Content-Type is parsed as URL-encoded; one with any other
+media type is left for the page to read. A page that reads the raw request stream (`in`)
 itself has no blanket deadline, so set your own if the client is not
 trusted.
 
@@ -145,7 +155,8 @@ worker, and the total has to stay below `FD_SETSIZE` (1024) less 128.
 A worker limit of 0 leaves the inherited system limit unchanged. klind
 never sets a limit above the hard limit it inherited. Past a limit,
 `malloc()` returns NULL, `open()` fails with EMFILE and `fork()` with
-EAGAIN. The page sees the error and the worker carries on.
+EAGAIN. The page sees the error, and if it handles it, the worker
+carries on.
 
 klind sets both the soft and the hard limit, so a worker running as an
 ordinary user (with `uid` and `gid` set, see [SYSTEMD](SYSTEMD.md)) cannot

@@ -1,9 +1,10 @@
 # Security headers
 
-klind adds a set of security headers to every response, pages and error
-pages alike. Each can be changed or left out per server or virtual host
-in a `security_headers` block. The value you give replaces the default,
-and `no` leaves the header out:
+klind adds a set of security headers to its responses, pages and error
+pages alike (an `nph-` CGI script is the exception, below). Each can be
+changed or left out per server or virtual host in a `security_headers`
+block. The value you give replaces the default, and `no` leaves the header
+out:
 
 ```conf
 security_headers
@@ -34,7 +35,9 @@ certificate, because browsers remember it for the whole max-age.
 
 A page can still change a header with `response_set_field()` or remove it
 with `response_del_field()`, because the headers are set before the page
-runs.
+runs. A CGI script's own header fields replace klind's of the same name. An
+`nph-` script's output goes to the client untouched, so it gets none of
+these headers unless it prints them itself ([CGI](CGI.md)).
 
 ## Upgrading
 

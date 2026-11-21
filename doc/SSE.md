@@ -6,10 +6,15 @@ browser only listens; for two-way traffic, see [WEBSOCKET.md](WEBSOCKET.md).
 
 ## A streaming page
 
-Include `<klin/sse.h>`, start the stream, then loop on `sse_wait()`:
+Include `<klin/sse.h>`, start the stream, then loop on `sse_wait()`.
+The loop below waits on `my_fd`, a pipe or socket of your own that
+carries one event's text per read:
 
 ```html
-<%! #include <klin/sse.h> %><%
+<%!
+#include <unistd.h>
+#include <klin/sse.h>
+%><%
     if(sse_start(request, response))
         return;
 
@@ -22,11 +27,27 @@ Include `<klin/sse.h>`, start the stream, then loop on `sse_wait()`:
             break;                      /* the client went away */
         if(w == SSE_TIMEOUT && sse_comment(response, "ping"))
             break;
-        if(w == SSE_READY && sse_send(response, "update", id, data))
-            break;
+        if(w == SSE_READY)
+        {
+            char buf[256];
+            ssize_t n = read(my_fd, buf, sizeof buf - 1);
+
+            if(n <= 0)
+                break;                  /* your source closed or failed */
+            buf[n] = '\0';
+            if(sse_send(response, "update", NULL, buf))
+                break;
+        }
     }
 %>
 ```
+
+Read the descriptor before sending: `sse_wait()` only says it is
+readable, and if you leave the data there the next wait returns
+`SSE_READY` again straight away.
+
+**The wait loop is Unix-only.** On a native Windows build `sse_wait()`
+returns `SSE_CLOSED` at once, so the loop above ends on its first pass.
 
 Put nothing before the code block, not even a line break. `sse_start()`
 sends the response header, and from then on everything the page prints
@@ -34,8 +55,8 @@ goes to the client as it is written.
 
 ## How the stream runs
 
-Here is a stream from the browser's first request to the moment it
-closes the tab:
+A stream, from the browser's first request to the moment it closes the
+tab:
 
 ```mermaid
 sequenceDiagram
@@ -44,10 +65,10 @@ sequenceDiagram
     participant S as Your event source (my_fd)
     B->>P: GET /events.kl1 (Last-Event-ID on reconnect)
     P->>B: 200, text/event-stream, then ": klin" comment
-    loop until a send fails or the client closes
+    loop until a send fails or the client closes (Unix only)
         P->>P: sse_wait() polls client socket and my_fd
         alt my_fd readable
-            S-->>P: data on my_fd, SSE_READY
+            S-->>P: SSE_READY, page reads my_fd
             P->>B: event, id and data lines
         else timeout passes
             P->>B: ": ping" comment
@@ -72,9 +93,12 @@ until the first event.
 | `sse_last_event_id(rq)` | The id of the last event the browser got, sent in `Last-Event-ID` when it reconnects, so the page can carry on from there. NULL on a first connection. |
 | `sse_wait(rq, fd, ms)` | Waits until `fd` is readable (`SSE_READY`; pass -1 for no descriptor), `ms` milliseconds pass (`SSE_TIMEOUT`; -1 for no limit) or the client closes the connection (`SSE_CLOSED`). It waits in poll(2) on the client socket and `fd`, and runs the timer's alarms meanwhile. |
 
-Every send returns non-zero when the client is gone. When that happens,
-stop streaming. A send the client does not take within 30 s closes the
-connection, so a client that stops reading cannot hold a worker forever.
+Every send returns non-zero once writing to the client fails, which is
+how a page finds out the client has gone. When that happens, stop
+streaming. (`sse_send()` also returns non-zero for an `event` or `id`
+with a line break in it.) A send the client does not take within 30 s
+closes the connection, so a client that stops reading holds a worker for
+at most that long per send.
 
 On HTTP/1.1 the stream is chunked, and the connection can be reused when
 the page ends. On HTTP/1.0 the end of the stream closes the connection.
@@ -86,8 +110,9 @@ TLS works the same way.
 lasts.** In the prefork model the watchdog asks the parent for another
 worker after a second (as it does for any slow page), and the streaming
 worker exits when its stream ends. Size `prefork.max_child` for the
-number of streams you expect. The single-process server (`-d`) serves
-nothing else while a stream is open.
+number of streams you expect. The iterative model (`-d`, or `model
+iterative`) runs one process, which serves nothing else while a stream is
+open.
 
 To stop streams taking every worker, `max_streams` caps the SSE and
 WebSocket connections open at once across all of a server's workers
