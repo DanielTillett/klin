@@ -141,11 +141,13 @@ err:
 int io_mem_create(char *buf, size_t size, int flags, io_t **pio)
 {
     io_mem_t *im = NULL;
+    io_t *io = NULL;
 
     dbg_err_if (buf == NULL);
     dbg_err_if (pio == NULL);
-    
-    dbg_err_if(io_create(io_mem_t, (io_t**)&im));
+
+    dbg_err_if(io_create(io_mem_t, &io));   /* not (io_t**)&im: aliasing */
+    im = (io_mem_t *) io;
 
     im->io.type = IO_TYPE_MEM;
 

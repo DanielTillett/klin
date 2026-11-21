@@ -51,6 +51,8 @@ option(KLIN_INSTALL_DAEMON_ONLY "Install only the daemon [--install_daemon_only]
 option(KLIN_WITH_OPENSSL "HTTPS, encrypted pages and client sessions (OpenSSL 3)" ON)
 option(KLIN_WITH_ZLIB "Compressed pages and responses (zlib)" ON)
 option(LIBU_ENABLE_SCTP "Build LibU with SCTP support" OFF)
+option(KLIN_LTO "Link-time optimisation in Release builds, where the toolchain has it" ON)
+option(KLIN_GC_SECTIONS "Leave unused functions and data out of the programs" ON)
 option(KLIN_BUILD_TESTS "Build the unit tests (run them with ctest)" OFF)
 option(KLIN_FUZZ "Build the fuzz targets in fuzz/ (doc/FUZZING.md)" OFF)
 set(KLIN_FUZZ_ENGINE "-fsanitize=fuzzer" CACHE STRING
@@ -71,6 +73,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
+
+# Link-time optimisation: a smaller klind. Set before any target is made so
+# all of them, LibU too, get it; not for Debug (sanitizer) or fuzz builds.
+if(KLIN_LTO AND NOT KLIN_FUZZ
+        AND CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel|RelWithDebInfo)$")
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT KLIN_HAVE_LTO OUTPUT _klin_lto_output LANGUAGES C)
+    if(KLIN_HAVE_LTO)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    else()
+        message(STATUS "Link-time optimisation not available: ${_klin_lto_output}")
+    endif()
+endif()
 
 include(cmake/LibU.cmake)
 
@@ -221,6 +236,17 @@ elseif(KLIN_HARDENING AND MSVC)
     list(APPEND KLIN_C_OPTIONS /GS /guard:cf)
     list(APPEND KLIN_LINK_OPTIONS /guard:cf /DYNAMICBASE /HIGHENTROPYVA
         /NXCOMPAT)
+endif()
+# Each function and object in its own section, so the linker drops the ones
+# nothing calls (much of LibU)
+if(KLIN_GC_SECTIONS AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    klin_harden_c(-ffunction-sections KLIN_HAVE_FUNCTION_SECTIONS)
+    klin_harden_c(-fdata-sections KLIN_HAVE_DATA_SECTIONS)
+    if(APPLE)
+        klin_harden_link(-Wl,-dead_strip KLIN_HAVE_DEAD_STRIP)
+    else()
+        klin_harden_link(-Wl,--gc-sections KLIN_HAVE_GC_SECTIONS)
+    endif()
 endif()
 target_compile_options(klin_settings INTERFACE ${KLIN_C_OPTIONS})
 # Compile settings only: the static libraries link nothing themselves, so the

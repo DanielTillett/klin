@@ -189,6 +189,9 @@ cmake --build out
 cmake --install out           # optional; honors CMAKE_INSTALL_PREFIX
 ```
 
+`cmake --install out --strip` installs the programs without their symbol
+tables (about 15% smaller).
+
 Options (KLone 3.x configure equivalents in brackets):
 
 | Option | Default | What it does |
@@ -203,6 +206,8 @@ Options (KLone 3.x configure equivalents in brackets):
 | `KLIN_WITH_ZLIB=OFF` | `ON` | build without compression |
 | `KLIN_HARDENING=OFF` | `ON` | compiler and linker hardening ([HARDENING](doc/HARDENING.md)) |
 | `KLIN_STACK_PROTECTOR=OFF` | `ON` | `-fstack-protector-all` where the compiler has it |
+| `KLIN_LTO=OFF` | `ON` | link-time optimisation in Release builds (a smaller klind), where the toolchain has it |
+| `KLIN_GC_SECTIONS=OFF` | `ON` | leave unused functions and data out of the programs |
 | `KLIN_DEBUG=ON` | `OFF` | debug logging and symbols [`--enable_debug`] |
 | `KLIN_ENABLE_WARNINGS=ON` | `OFF` | extra warnings [`--enable_warns`] |
 | `KLIN_DAEMON_NAME=<name>` | `klind` | the daemon's file name [`--daemon_name`] |

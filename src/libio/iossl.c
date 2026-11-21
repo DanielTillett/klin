@@ -245,12 +245,14 @@ int io_ssl_create(int fd, int flags, int client_mode,
 {
     SSL_CTX *ssl_ctx = (SSL_CTX *) ctx;     /* see klin/tls.h */
     io_ssl_t *io_ssl = NULL;
+    io_t *io = NULL;
     long vfy;
 
     dbg_return_if (pio == NULL, ~0);
     dbg_return_if (ssl_ctx == NULL, ~0);
 
-    dbg_err_if(io_create(io_ssl_t, (io_t**)&io_ssl));
+    dbg_err_if(io_create(io_ssl_t, &io));   /* not (io_t**)&io_ssl: aliasing */
+    io_ssl = (io_ssl_t *) io;
 
     io_ssl->io.type = IO_TYPE_SSL;
 
