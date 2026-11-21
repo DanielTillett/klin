@@ -470,7 +470,7 @@ def digest_header(challenge, user, password, uri, realm=PRIVATE, alg="SHA-256",
             f'cnonce="{cnonce}"\r\n').encode()
 
 
-def run_auth_checks(check, plain, secure):
+def run_auth_checks(args, check, plain, secure):
     """HTTP authentication (doc/AUTH.md): Digest and Basic, realms, roles."""
     tls = client_context(ssl.TLSVersion.TLSv1_3)
 
@@ -496,6 +496,24 @@ def run_auth_checks(check, plain, secure):
     status, _, body = get(plain, "/static/secret.txt",
                           digest_header(first, "alice", "wonder land", "/static/secret.txt"))
     check(" 200 " in status and body == b"top secret\n", f"Digest login failed: {status}")
+    # the same request again (the same nonce count) is a replay: stale=true,
+    # so a real client retries with a new nonce; a higher count is accepted.
+    # The counts are kept per process, so only the iterative server, with
+    # one, refuses the replay every time (doc/AUTH.md)
+    def alice(nc):
+        return get(plain, "/static/secret.txt",
+                   digest_header(first, "alice", "wonder land", "/static/secret.txt", nc=nc))
+    status, challenges, _ = alice("00000001")
+    if not args.prefork:
+        check(" 401 " in status and "stale=true" in challenges[0],
+              f"Replayed Digest request accepted: {status} {challenges}")
+    status, _, body = alice("00000002")
+    check(" 200 " in status and body == b"top secret\n", f"A higher nonce count refused: {status}")
+    if not args.prefork:
+        for nc in ["00000002", "00000001"]:
+            status, challenges, _ = alice(nc)
+            check(" 401 " in status and "stale=true" in challenges[0],
+                  f"Digest nonce count {nc} accepted after 00000002: {status}")
     for user, password, uri, want in [
             ("alice", "wonder lanD", "/static/secret.txt", " 401 "),    # wrong password
             ("nobody", "wonder land", "/static/secret.txt", " 401 "),   # unknown user
@@ -516,10 +534,12 @@ def run_auth_checks(check, plain, secure):
     status, _, _ = get(plain, "/static/secret.txt", basic)
     check(" 401 " in status, "Basic accepted over plain HTTP")
 
-    # the page sees the user
+    # the page sees the user (a new cnonce: within the same second the
+    # nonce is the one carol has just used)
     status, challenges, _ = get(plain, "/whoami.kl1")
     status, _, body = get(plain, "/whoami.kl1",
-                          digest_header(challenges[0], "carol", "c4rol!", "/whoami.kl1"))
+                          digest_header(challenges[0], "carol", "c4rol!", "/whoami.kl1",
+                                        cnonce="5e1f2a3b"))
     check(" 200 " in status and body.strip() == b"user=carol", f"Page did not see the user: {body!r}")
 
     # a realm that also offers MD5, and requires no role
@@ -2929,7 +2949,7 @@ def run_server_checks(args, env, output, daemon):
                     check(b"200 OK" in reply and
                           b"memlog probe line 0123456789" in reply.partition(b"\r\n\r\n")[2],
                           f"memory log not read back whole: {reply[:600]!r}")
-                run_auth_checks(check, plain, secure)
+                run_auth_checks(args, check, plain, secure)
                 run_header_checks(check, plain, client, secure)
                 run_conditional_checks(check, plain, files)
                 run_sse_checks(args, check, plain, secure, temp)

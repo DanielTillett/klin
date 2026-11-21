@@ -112,7 +112,8 @@ sequenceDiagram
 ```
 
 Nonces carry their own time and an HMAC-SHA256 over the time and realm,
-so klind keeps no nonce table. The `uri` in the Authorization field must
+so klind needs no table to check them. It keeps a small one against
+replays (see [Security notes](#security-notes)). The `uri` in the Authorization field must
 be the request's own target, so a response computed for one page cannot
 be used for another. A client that names no algorithm is taken to mean
 MD5, as RFC 7616 says, and is refused unless the realm sets `md5`.
@@ -130,10 +131,26 @@ clients that lack SHA-256.
 Digest nonces are signed with a key drawn when klind starts (before the
 prefork workers fork, so every worker accepts the others' nonces), and
 expire after `nonce_lifetime`. The client is then told `stale=true` and
-retries without asking the user. The trade-off is replay. Klin does not
-track nonce counts at all, in any process model, so a captured Digest
-request can be replayed until its nonce expires. Over plain HTTP the page
-content is also readable. Use HTTPS for anything that matters.
+retries without asking the user.
+
+Each klind process also remembers the highest nonce count (`nc`) it has
+accepted for the last 128 combinations of nonce, `cnonce` and user. A
+request that repeats a count, or goes back to a lower one, gets the same
+`stale=true` answer as an expired nonce. A browser then retries with a
+new nonce without asking the user; someone replaying a captured request
+cannot, as the retry needs the password. When the table is full the
+oldest entry goes, and nonces issued up to that one's time are treated as
+spent, so pushing entries out opens no gap. A client that sends requests
+on several connections at once can see an occasional `stale=true` when
+they arrive out of order, and retries.
+
+The table is per process, so this protection is partial. The iterative
+model has one process and catches every replay. Under prefork each worker
+has its own table, and a captured request replayed to a different worker
+is accepted until its nonce expires. Under the fork model a child lives
+for one connection, so only a replay on the same connection is caught.
+Over plain HTTP the page content is also readable. Use HTTPS for anything
+that matters.
 
 PBKDF2 is slow on purpose. Each klind process remembers the last 8 Basic
 credentials it verified for 5 minutes, so a kept-alive client is not

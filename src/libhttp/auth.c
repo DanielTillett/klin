@@ -13,9 +13,17 @@
  * Digest nonces are stateless: "<time><HMAC-SHA256(secret, time:realm)>",
  * with a secret drawn when the server starts (before the prefork workers
  * fork, so every worker accepts the others' nonces). A nonce older than
- * nonce_lifetime is answered with stale=true. Nonce counts are not tracked
- * across workers: a captured request can be replayed within the lifetime,
- * as with most servers; use TLS. */
+ * nonce_lifetime is answered with stale=true.
+ *
+ * Replays: each process remembers the highest nonce count (nc) it has
+ * accepted for the last AUTH_NC_SLOTS (nonce, cnonce, user) triples, and
+ * answers a repeated or lower count with stale=true, as for an old nonce:
+ * a real client retries with a fresh nonce without asking the user, and a
+ * replay has no password to do so. A nonce issued no later than one pushed
+ * out of the full table is treated the same way, so eviction opens no
+ * gap. The table is per process: under prefork a request replayed to
+ * another worker is not caught, and under the fork model a child lives for
+ * one connection. Use TLS. */
 
 #include "klin_conf.h"
 #include <stdio.h>
@@ -38,7 +46,8 @@ enum {
     AUTH_SCHEME_DIGEST = 2,
     AUTH_NONCE_LIFETIME = 300,          /* default, seconds                */
     AUTH_BASIC_CACHE = 8,               /* verified Basic credentials kept */
-    AUTH_BASIC_CACHE_TTL = 300          /* seconds                         */
+    AUTH_BASIC_CACHE_TTL = 300,         /* seconds                         */
+    AUTH_NC_SLOTS = 128                 /* Digest nonce counts kept        */
 };
 
 /* the scheme(s) a realm accepts */
@@ -237,6 +246,67 @@ err:
     return ~0;
 }
 
+/* the highest nonce count accepted for each (nonce, cnonce, user), keyed
+ * by an HMAC of the three, with the time the nonce was issued */
+static struct {
+    unsigned char key[16];
+    unsigned long issued, nc;
+} auth_nc[AUTH_NC_SLOTS];
+
+/* nonces issued up to this time, if not in auth_nc, are spent */
+static unsigned long auth_nc_floor;
+
+/* 0 if 'nc' is above every count accepted so far for this nonce, cnonce
+ * and user (it is remembered); the nonce has been checked */
+static int auth_nc_check(http_t *h, const char *nonce, const char *cnonce,
+        const char *user, const char *nc)
+{
+    unsigned char mac[KC_MD_MAX];
+    char msg[1600], ts[17];
+    unsigned long count, issued;
+    int i, n, slot = -1;
+
+    nop_err_if(nc[0] == '\0' || strlen(nc) > 8 ||
+            nc[strspn(nc, "0123456789abcdefABCDEF")] != '\0');
+    nop_err_if((count = strtoul(nc, NULL, 16)) == 0);
+
+    memcpy(ts, nonce, 16);
+    ts[16] = '\0';
+    issued = strtoul(ts, NULL, 16);
+
+    n = snprintf(msg, sizeof msg, "%s\n%s\n%s", nonce, cnonce, user);
+    dbg_err_if(n < 0 || (size_t) n >= sizeof msg);
+    dbg_err_if(kc_hmac(KC_SHA256, h->auth_secret, sizeof h->auth_secret,
+                msg, (size_t) n, mac, NULL));
+
+    for(i = 0; i < AUTH_NC_SLOTS; ++i)
+    {
+        if(auth_nc[i].issued && kc_memeq(auth_nc[i].key, mac, 16))
+        {
+            nop_err_if(count <= auth_nc[i].nc);     /* a replay */
+            auth_nc[i].nc = count;
+            return 0;
+        }
+        /* an empty slot, else the one of the oldest nonce */
+        if(slot < 0 || (auth_nc[slot].issued &&
+                    auth_nc[i].issued < auth_nc[slot].issued))
+            slot = i;
+    }
+
+    /* its count may have been pushed out of the table */
+    nop_err_if(issued <= auth_nc_floor);
+
+    if(auth_nc[slot].issued > auth_nc_floor)
+        auth_nc_floor = auth_nc[slot].issued;
+    memcpy(auth_nc[slot].key, mac, 16);
+    auth_nc[slot].issued = issued;
+    auth_nc[slot].nc = count;
+
+    return 0;
+err:
+    return ~0;
+}
+
 /* split the next 'name=value' or 'name="value"' of a Digest header;
  * values are written to 'buf' unquoted */
 static const char *auth_next_param(const char *p, char *name, size_t nsz,
@@ -318,6 +388,12 @@ static u_config_t *auth_digest(http_t *h, request_t *rq, vhost_t *vhost,
     nop_err_if(!auth_equal(want, p[DP_RESPONSE]));
 
     /* right password, old nonce: ask again (stale=true), no new password */
+    nop_err_if(*stale);
+
+    /* a nonce count seen before: the same answer (a replay cannot follow
+       it, as the retry needs the password) */
+    *stale = auth_nc_check(h, p[DP_NONCE], p[DP_CNONCE], p[DP_USER],
+            p[DP_NC]) != 0;
     nop_err_if(*stale);
 
     return user;
