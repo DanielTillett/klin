@@ -1,19 +1,20 @@
-KLIN SECURITY HEADERS
----------------------
+# Security headers
 
 klind adds security headers to every response, pages and error pages
 alike. Each can be changed or left out per server or vhost in a
 "security_headers" block; the value given replaces the default, and "no"
 leaves the header out:
 
-    security_headers
-    {
-        x_content_type_options     nosniff                # default
-        x_frame_options            SAMEORIGIN             # default
-        referrer_policy            strict-origin-when-cross-origin  # default
-        content_security_policy    default-src 'self'     # default: not sent
-        strict_transport_security  max-age=31536000       # default, HTTPS only
-    }
+```
+security_headers
+{
+    x_content_type_options     nosniff                # default
+    x_frame_options            SAMEORIGIN             # default
+    referrer_policy            strict-origin-when-cross-origin  # default
+    content_security_policy    default-src 'self'     # default: not sent
+    strict_transport_security  max-age=31536000       # default, HTTPS only
+}
+```
 
 - X-Content-Type-Options: nosniff stops browsers from guessing a content
   type other than the one sent.

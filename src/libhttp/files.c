@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* Opening the files the fs and cgi suppliers serve (doc/FILES): a path
+/* Opening the files the fs and cgi suppliers serve (doc/FILES.md): a path
  * resolved for a request (dir_root or an alias target, then the normalized
  * URI) is opened under that directory with the vhost's symlink policy */
 
@@ -210,7 +210,7 @@ static int files_open(int policy, const char *root, const char *fqn,
  * \brief   Open a file resolved for a request
  *
  * Open \p fqn, a path resolved for request \p rq (http_alias_resolv), with
- * the symlink policy of its virtual host (\c follow_symlinks, doc/FILES):
+ * the symlink policy of its virtual host (\c follow_symlinks, doc/FILES.md):
  * a path that is not under the vhost's dir_root or an alias target is
  * refused.
  *

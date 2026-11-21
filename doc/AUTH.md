@@ -1,5 +1,4 @@
-KLIN HTTP AUTHENTICATION
-------------------------
+# HTTP authentication
 
 Pages can be protected with HTTP authentication, Basic (RFC 7617) or
 Digest (RFC 7616), set up per server or vhost in an "auth" block. A path in
@@ -7,19 +6,21 @@ a realm is served only to a user of the realm who has one of its roles.
 Authentication needs a build with OpenSSL.
 
 
-USERS
+## Users
 
 Passwords are never written in the configuration, only hashes made by the
 klin tool. The password is read from the first line of stdin:
 
-    $ echo 'wonder land' | klin -c passwd -r "Private Area" alice
-    user
-    {
-        name alice
-        roles
-        password pbkdf2-sha256$100000$...$...
-        digest SHA-256 6f1c...e0 Private Area
-    }
+```
+$ echo 'wonder land' | klin -c passwd -r "Private Area" alice
+user
+{
+    name alice
+    roles
+    password pbkdf2-sha256$100000$...$...
+    digest SHA-256 6f1c...e0 Private Area
+}
+```
 
 - password: a salted PBKDF2-SHA256 hash (100000 iterations, -n to change),
   checked by Basic authentication.
@@ -33,34 +34,36 @@ Users go in the "auth" block, or in a separate file (same syntax) named by
 users_file and read at startup.
 
 
-CONFIGURATION
+## Configuration
 
-    auth
+```
+auth
+{
+    users_file      /etc/klin/users     # optional
+    nonce_lifetime  300                 # seconds a Digest nonce lasts
+    basic_over_http no                  # see below
+
+    user
     {
-        users_file      /etc/klin/users     # optional
-        nonce_lifetime  300                 # seconds a Digest nonce lasts
-        basic_over_http no                  # see below
-
-        user
-        {
-            ...                             # as printed by klin -c passwd
-        }
-
-        realm
-        {
-            name    Private Area            # shown to the user
-            path    /admin/*                # fnmatch(3) patterns of the
-            path    /report.kl1             # request path; may repeat
-            scheme  digest                  # digest (default), basic or any
-            roles   admin                   # any of these; none: any user
-            md5     no                      # also offer MD5 Digest
-        }
+        ...                             # as printed by klin -c passwd
     }
+
+    realm
+    {
+        name    Private Area            # shown to the user
+        path    /admin/*                # fnmatch(3) patterns of the
+        path    /report.kl1             # request path; may repeat
+        scheme  digest                  # digest (default), basic or any
+        roles   admin                   # any of these; none: any user
+        md5     no                      # also offer MD5 Digest
+    }
+}
+```
 
 A request path is matched (decoded and normalized, before aliases and the
 index page are applied) against the realms in order; the first realm with
-a matching path applies. "/admin/*" covers "/admin/" and everything below
-it, not "/admin": use "/admin*" for both.
+a matching path applies. `"/admin/*"` covers "/admin/" and everything below
+it, not "/admin": use `"/admin*"` for both.
 
 The answer is 401 with the challenges when the credentials are missing or
 wrong, 403 when they are right but the user has none of the realm's roles.
@@ -68,7 +71,7 @@ Pages read the user with request_get_auth_user(); CGI scripts get it in
 REMOTE_USER.
 
 
-SECURITY NOTES
+## Security notes
 
 - Basic sends the password with every request, readable on plain HTTP.
   klind offers Basic only over HTTPS. A realm that is Basic-only on a plain

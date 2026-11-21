@@ -35,7 +35,7 @@ typedef struct cgi_env_s
     int size, count;
 } cgi_env_t;
 
-/* limits of a cgi run (doc/CGI): seconds of wall-clock time and of CPU
+/* limits of a cgi run (doc/CGI.md): seconds of wall-clock time and of CPU
  * time, MB of address space; 0 sets none */
 enum { CGI_TIMEOUT = 60, CGI_MAX_CPU = 30, CGI_MAX_MEMORY = 512 };
 
@@ -52,7 +52,7 @@ typedef struct cgi_run_s
 } cgi_run_t;
 
 /* request fields not passed to cgis unless "pass_headers" lists them:
- * credentials, which are for the server (doc/AUTH), not for every script */
+ * credentials, which are for the server (doc/AUTH.md), not for every script */
 static const char *cgi_private_fields[] = {
     "Authorization", "Proxy-Authorization", NULL
 };
@@ -234,7 +234,7 @@ static int cgi_is_valid_uri(http_t *h, request_t *rq, const char *uri,
     if((vhost = http_get_vhost(h, rq)) == NULL || !vhost->run_cgi)
         return 0;
 
-    /* the vhost's symlink policy (doc/FILES); the script needs no read
+    /* the vhost's symlink policy (doc/FILES.md); the script needs no read
        permission (a binary may be execute-only) */
 #ifdef O_PATH
     fd = http_open_file(h, rq, fqn, O_PATH);
@@ -410,7 +410,7 @@ static int cgi_makeenv(request_t *rq, response_t *rs, cgi_env_t *env)
     /* method */
     dbg_err_if(cgi_setenv(env, "REQUEST_METHOD", request_get_method_name(rq)));
 
-    /* the user of an authentication realm (doc/AUTH) */
+    /* the user of an authentication realm (doc/AUTH.md) */
     if((cstr = request_get_auth_user(rq)) != NULL)
         dbg_err_if(cgi_setenv(env, "REMOTE_USER", cstr));
 
@@ -615,7 +615,7 @@ static int cgi_exec(request_t *rq, response_t *rs, const cgi_limits_t *lim,
             argv[1] = cgi_file;
         }
 
-        /* its limits (doc/CGI), set last: the memory one would also bind
+        /* its limits (doc/CGI.md), set last: the memory one would also bind
            this process (a sanitizer build maps far more than a script) */
         if(lim->max_cpu > 0)
         {

@@ -1,4 +1,4 @@
-# Fuzz targets: fuzz/fuzz_<name>.c, seeds in fuzz/seeds/<name>/ (doc/FUZZING)
+# Fuzz targets: fuzz/fuzz_<name>.c, seeds in fuzz/seeds/<name>/ (doc/FUZZING.md)
 request
 multipart
 header

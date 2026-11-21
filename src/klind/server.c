@@ -890,7 +890,7 @@ static int server_config_has(u_config_t *c, const char *key)
     return 0;
 }
 
-/* sandbox a worker of 'be' after its init hook (doc/SANDBOX); on by
+/* sandbox a worker of 'be' after its init hook (doc/SANDBOX.md); on by
  * default, "sandbox no" turns it off. A worker that cannot be sandboxed
  * does not serve */
 #ifdef OS_UNIX
@@ -920,7 +920,7 @@ static void server_rlimit(int res, rlim_t value, const char *name)
 }
 #endif
 
-/* a worker's resource limits (doc/LIMITS, WORKERS): its address space,
+/* a worker's resource limits (doc/LIMITS.md, WORKERS): its address space,
  * open files and processes (its user's, CGIs included). Set before the
  * sandbox, in the worker only: klind and the key manager keep theirs */
 static void server_limits(backend_t *be)
@@ -1199,7 +1199,7 @@ int server_spawn_child(server_t *s, backend_t *be)
     hook_call(child_init);
 
     /* then its resource limits, and nothing an attacker needs is left to
-       it (doc/SANDBOX) */
+       it (doc/SANDBOX.md) */
     server_limits(be);
     server_sandbox(be);
 

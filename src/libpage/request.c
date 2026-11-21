@@ -2115,7 +2115,7 @@ const char *request_get_method_name(request_t *rq)
  * \param rq  request object
  *
  * \return the user name, or \c NULL if the page is not in an
- *         authentication realm (see doc/AUTH)
+ *         authentication realm (see doc/AUTH.md)
  */
 const char *request_get_auth_user(request_t *rq)
 {
@@ -2195,7 +2195,7 @@ err:
  * \brief   Get a parameter of the route that matched the request
  *
  * For a route "/api/users/{id}" and the path "/api/users/42",
- * request_get_route_param(rq, "id") is "42" (see doc/ROUTES).
+ * request_get_route_param(rq, "id") is "42" (see doc/ROUTES.md).
  *
  * \param rq    request object
  * \param name  parameter name

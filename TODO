@@ -38,7 +38,7 @@ PLANNED: FEATURES AND TESTING
   reports the fuzzers' coverage only), to show what the tests miss.
 * Longer fuzzing campaigns: ClusterFuzzLite fuzzes half an hour a day per
   sanitizer; OSS-Fuzz would run far longer (the ClusterFuzzLite files are
-  written to serve an OSS-Fuzz application, doc/FUZZING).
+  written to serve an OSS-Fuzz application, doc/FUZZING.md).
 * Platform coverage: *BSD is untested; native Windows (MinGW) builds and
   serves in the single-process model only, with a smoke test rather than the
   full server tests; MSVC needs LibU ported. C++ pages (.klx) are not

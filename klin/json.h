@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-/* A small JSON (RFC 8259) reader and writer, see doc/JSON.
+/* A small JSON (RFC 8259) reader and writer, see doc/JSON.md.
  *
  * Reading builds a tree:
  *

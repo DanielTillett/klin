@@ -1,4 +1,4 @@
-# ClusterFuzzLite on pull requests (doc/FUZZING): every fuzz target, built
+# ClusterFuzzLite on pull requests (doc/FUZZING.md): every fuzz target, built
 # with libFuzzer under ASan and under UBSan, fuzzed for a few minutes in
 # code-change mode (the targets whose code the pull request changes). The
 # corpus is read from the cflite-corpus branch that the batch run keeps.
@@ -10,7 +10,8 @@ on:
       - "doc/**"
       - "**.md"
       - "ChangeLog"
-      - "README"
+      - "TODO"
+      - "_config.yml"
 
 permissions: {}
 

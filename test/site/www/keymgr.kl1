@@ -8,7 +8,7 @@
     #include <sys/un.h>
 
     /* a worker that asks the TLS key manager for what a handshake never
-       does (doc/KEYMGR): the request and answer of src/libtls/keyproxy.c */
+       does (doc/KEYMGR.md): the request and answer of src/libtls/keyproxy.c */
     typedef struct
     {
         uint32_t magic, tbslen;

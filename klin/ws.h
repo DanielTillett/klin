@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-/* WebSockets (RFC 6455) from a page, see doc/WEBSOCKET:
+/* WebSockets (RFC 6455) from a page, see doc/WEBSOCKET.md:
  *
  *     ws_t *ws;
  *     if(ws_accept(request, response, NULL, 0, &ws) == 0)

@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-/* the TLS key manager (doc/KEYMGR): the private key lives in a separate
+/* the TLS key manager (doc/KEYMGR.md): the private key lives in a separate
  * process, workers sign through it (tls_keyproxy_use_key: tlsprv.h) */
 int tls_keyproxy_is_manager(pid_t pid);
 void tls_keyproxy_stop(void);

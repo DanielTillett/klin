@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-/* REST-style routes of a vhost (doc/ROUTES), used by the HTTP server */
+/* REST-style routes of a vhost (doc/ROUTES.md), used by the HTTP server */
 int route_load(vhost_t *vhost);
 int route_dispatch(http_t *h, request_t *rq, int *routed);
 int route_allow(http_t *h, request_t *rq, response_t *rs);

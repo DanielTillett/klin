@@ -1,4 +1,4 @@
-# Klin fuzz targets for ClusterFuzzLite (doc/FUZZING). Written to work
+# Klin fuzz targets for ClusterFuzzLite (doc/FUZZING.md). Written to work
 # unchanged as an OSS-Fuzz project's Dockerfile: OSS-Fuzz projects keep
 # theirs in the oss-fuzz repository and clone the source instead of the
 # COPY below.

@@ -1,24 +1,27 @@
-KLIN FILES FROM THE FILE SYSTEM
--------------------------------
+# Files from the file system
 
 Pages built into klind (the embedded site) are always served. Files from
 the file system are served by two optional suppliers: the file system one
-(static files) and the CGI one (doc/CGI). Both are left out of a build
+(static files) and the CGI one ([CGI](CGI.md)). Both are left out of a build
 unless asked for:
 
-    cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
+```
+cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
+```
 
 A build without them cannot serve or run anything from the file system,
 whatever the configuration says. That is the way to turn them off
 entirely. A build with them can still turn them off for a server or a
 virtual host:
 
-    serve_files     no      no static files from the file system
-    run_cgi         no      no CGI scripts
+```
+serve_files     no      no static files from the file system
+run_cgi         no      no CGI scripts
+```
 
 Both default to yes (when built in).
 
-WHERE FILES COME FROM
+## Where files come from
 
 A request path is decoded (%xx), then normalized: backslashes become
 slashes, "." and ".." segments are resolved and repeated slashes are
@@ -32,11 +35,13 @@ host existed, and when it changed).
 The path info (/page/extra) is split against the files of the virtual
 host the Host field names.
 
-SYMBOLIC LINKS
+## Symbolic links
 
-    follow_symlinks     inside      (the default)
-                        no
-                        yes
+```
+follow_symlinks     inside      (the default)
+                    no
+                    yes
+```
 
 inside: a link is followed if its target is inside the directory the path
 was resolved under (dir_root, or the dir_alias or script_alias target).
@@ -57,7 +62,7 @@ same way when the request comes in; the script is then run by its path.
 The setting goes in a server block or a virtual host's block, and a
 virtual host inherits it from its server.
 
-WINDOWS
+## Windows
 
 On Windows, unless follow_symlinks is yes, no segment below the directory
 may be a symbolic link, junction or other reparse point (inside acts as
@@ -68,7 +73,7 @@ page.kl1), one with a colon (an NTFS stream, "file::$DATA"), a short
 long name), and device names (CON, NUL, COM1, ...). This code is not
 tested: there is no Windows machine in the test setup.
 
-TESTED
+## Tested
 
 test/run_server_tests.py (both server models) requests a file next to a
 dir_alias target through ../, %2e%2e, %2f, %5c, backslashes, double

@@ -1,17 +1,16 @@
-KLIN SESSIONS
--------------
+# Sessions
 
 A page's session (the 'session' variable of a .kl1 page) is kept on the
 server (type file or memory) or in the client's cookies (type client),
 with the configuration in the server's 'session' block (klind.conf(5)).
 
-COOKIES
+## Cookies
 
 The session id cookie (klin_sid) and the cookies of client sessions are
 sent with Path=/, HttpOnly and SameSite=Lax, and Secure when the
 connection is TLS. Ids are 128 random bits.
 
-SESSION FIXATION
+## Session fixation
 
 An id the client sends is taken on only if it names a stored session
 (for client sessions: if the cookies carrying the session are genuine).
@@ -22,13 +21,15 @@ a file for an unknown id.
 
 At login, and at any change of privilege, give the session a new id:
 
-    <%
-        if(password_ok(user, pw))
-        {
-            session_regenerate_id(session);    /* before any output */
-            session_set(session, "user", user);
-        }
-    %>
+```
+<%
+    if(password_ok(user, pw))
+    {
+        session_regenerate_id(session);    /* before any output */
+        session_set(session, "user", user);
+    }
+%>
+```
 
 The data is kept and the copy stored under the old id removed (file and
 memory sessions), so the old id is worth nothing. Call it before the page
@@ -36,14 +37,16 @@ prints anything: the new id goes out in a cookie. Client sessions have
 nothing stored on the server to remove: an old set of cookies stays valid
 until its timeouts, as with any session kept by the client.
 
-TIMEOUTS
+## Timeouts
 
-    session
-    {
-        type            memory
-        idle_timeout    20      # minutes unused (also max_age); "90s": seconds
-        absolute_timeout 480    # minutes from creation or login; 0: none
-    }
+```
+session
+{
+    type            memory
+    idle_timeout    20      # minutes unused (also max_age); "90s": seconds
+    absolute_timeout 480    # minutes from creation or login; 0: none
+}
+```
 
 A session ends when it has not been used for idle_timeout, or
 absolute_timeout after it was created or given a new id, however much it
@@ -53,7 +56,7 @@ variable KLIN_SESSION_CREATED (in whole seconds); a session saved before
 4.0 starts counting when it is first loaded. An ended session's stored
 copy and cookie go, and the same request may start a new session.
 
-CLIENT SESSIONS
+## Client sessions
 
 The data is sealed with AES-256-GCM (klin/crypto.h, kc_aead_seal and
 kc_aead_open), with a random 96-bit nonce for each save; the tag also
@@ -67,25 +70,29 @@ rewritten in the new format; 5.0 removes that. The keys of both are drawn
 when klind starts, so in practice only sessions made by the running
 server can be in the old format.
 
-CSRF
+## CSRF
 
 A form (or a script that changes something) carries the session's token:
 
-    <form method="post" action="/change.kl1">
-      <input type="hidden" name="csrf_token"
-             value="<%= session_csrf_token(session) %>">
-      ...
+```
+<form method="post" action="/change.kl1">
+  <input type="hidden" name="csrf_token"
+         value="<%= session_csrf_token(session) %>">
+  ...
+```
 
 or sends it in an X-CSRF-Token header field, and the page that acts on it
 checks it first:
 
-    <%
-        if(session_csrf_check(session, request))
-        {
-            response_set_status(response, 403);
-            return;
-        }
-    %>
+```
+<%
+    if(session_csrf_check(session, request))
+    {
+        response_set_status(response, 403);
+        return;
+    }
+%>
+```
 
 GET and HEAD requests pass the check (they must not change anything).
 The token is 256 random bits kept in the session (KLIN_CSRF_TOKEN) and
@@ -93,7 +100,7 @@ compared in constant time. SameSite=Lax cookies already stop most
 cross-site posts in current browsers; the token covers older ones and
 same-site attackers.
 
-TESTED
+## Tested
 
 test/run_server_tests.py, on memory, file and client sessions: a planted
 id is not kept (and creates no file); session_regenerate_id() changes the

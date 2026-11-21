@@ -1,4 +1,4 @@
-# Coverity Scan (doc/FUZZING, STATIC ANALYSIS): weekly, a build under
+# Coverity Scan (doc/FUZZING.md, STATIC ANALYSIS): weekly, a build under
 # cov-build uploaded to scan.coverity.com. It does nothing until the
 # repository has the COVERITY_SCAN_TOKEN secret (the project's token on
 # scan.coverity.com) and the COVERITY_EMAIL variable (the account's email);

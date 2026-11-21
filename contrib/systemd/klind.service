@@ -1,4 +1,4 @@
-# Hardened systemd unit for klind (see doc/SYSTEMD).
+# Hardened systemd unit for klind (see doc/SYSTEMD.md).
 #
 # klind starts as root so that it can bind ports below 1024, read a TLS key
 # only root can read and chroot; it then drops to the uid and gid set in
@@ -58,7 +58,7 @@ DevicePolicy=closed
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 
 # System calls: the usual service set, plus chroot(2); klind installs its
-# own, narrower seccomp filter in each worker (doc/SANDBOX).
+# own, narrower seccomp filter in each worker (doc/SANDBOX.md).
 SystemCallArchitectures=native
 SystemCallFilter=@system-service chroot
 SystemCallFilter=~@privileged @mount @debug @cpu-emulation @obsolete @raw-io @reboot @swap @clock @module

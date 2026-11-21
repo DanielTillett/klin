@@ -1,16 +1,17 @@
-KLIN SANDBOX
-------------
+# Sandbox
 
-klind's worker processes, and the TLS key manager (doc/KEYMGR), run in a
+klind's worker processes, and the TLS key manager ([KEYMGR](KEYMGR.md)), run in a
 sandbox that limits what the kernel lets them do. It is on by default; a
 server turns it off for its workers (and its key manager) with:
 
-    www
-    {
-        type    http
-        ...
-        sandbox no
-    }
+```
+www
+{
+    type    http
+    ...
+    sandbox no
+}
+```
 
 LINUX (seccomp)
 
@@ -57,15 +58,17 @@ for a JIT; kill or tgkill: any target). Sanitizer builds do not check
 kill and tgkill: LeakSanitizer signals its threads.
 
 A server whose configuration has a script_alias or an extension's
-handler (CGI, doc/CGI) also allows fork, clone, execve, wait, chdir and
+handler (CGI, [CGI](CGI.md)) also allows fork, clone, execve, wait, chdir and
 (x86-64) arch_prctl, which every new program calls at start: the CGI
 scripts inherit the filter. A page that
 needs a call outside the list names it:
 
-    sandbox_allow   flock, inotify_init1, inotify_add_watch
+```
+sandbox_allow   flock, inotify_init1, inotify_add_watch
+```
 
-Only calls from a known list can be named (bind, listen, epoll_*,
-eventfd2, timerfd_*, inotify_*, flock, fallocate, fchown(at), linkat,
+Only calls from a known list can be named (bind, listen, `epoll_*`,
+eventfd2, `timerfd_*`, `inotify_*`, flock, fallocate, fchown(at), linkat,
 symlinkat, mknodat, msync, mlock, utimensat, memfd_create, splice, ...;
 and fork/clone/execve/wait for CGI-like uses); others stop klind at
 startup. Calls from the fatal group cannot be allowed.
@@ -77,14 +80,14 @@ what it needs.
 Sanitizer builds (AddressSanitizer) also allow clone and ptrace:
 LeakSanitizer uses them at exit.
 
-OTHER SYSTEMS
+## Other systems
 
 OpenBSD: workers pledge(2) "stdio rpath wpath cpath fattr inet unix dns
 sendfd recvfd" (plus "proc exec" for CGI), the key manager "stdio sendfd
 recvfd". This code is not tested: there is no OpenBSD machine in the
 test setup. macOS and others: no sandbox.
 
-WHAT IS NOT SANDBOXED
+## What is not sandboxed
 
 klind itself (it forks workers, reaps them, writes logs) and the
 single-process server of -d, which is meant for development. CGI

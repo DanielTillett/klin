@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* The TLS key manager (doc/KEYMGR). The private key of an HTTPS server is
+/* The TLS key manager (doc/KEYMGR.md). The private key of an HTTPS server is
  * read from its file by a separate process, the key manager, forked at
  * startup before any worker: klind itself never decodes it (a decoded key
  * leaves copies in freed memory that every worker would inherit), and only
@@ -137,7 +137,7 @@ static size_t kp_tls_digest(const char *name)
 /* a worker may ask only for what a TLS handshake signs: a digest of the
    length its name says, PKCS #1 v1.5 or PSS padding (RSA), a PSS salt
    length by name or number and an MGF1 digest TLS uses. A compromised
-   worker can still have handshake digests signed (doc/KEYMGR), but not
+   worker can still have handshake digests signed (doc/KEYMGR.md), but not
    raw RSA, other paddings, or data of its choosing */
 static int kp_request_allowed(EVP_PKEY *key, const kp_request_t *r)
 {

@@ -17,7 +17,7 @@ extern "C" {
 
 /* Connections being served, shared by every worker of klind, for the caps
  * on connections per client address and on long-lived (SSE, WebSocket)
- * responses (doc/LIMITS). A worker serves one connection at a time and
+ * responses (doc/LIMITS.md). A worker serves one connection at a time and
  * holds one slot meanwhile. */
 enum { CONNTAB_SLOTS = 1024, CONNTAB_CLASSES = 64 };
 

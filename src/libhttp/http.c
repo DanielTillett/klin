@@ -501,7 +501,7 @@ err:
 
 /* Security headers sent by default with every response, pages and error
  * pages alike, set in a "security_headers" block: each key takes the
- * header's value, or "no" to leave it out (doc/HEADERS). A page can still
+ * header's value, or "no" to leave it out (doc/HEADERS.md). A page can still
  * change or remove them (response_set_field, response_del_field) */
 static const struct {
     const char *key, *name, *value;
@@ -1205,7 +1205,7 @@ static int http_add_vhost(http_t *http, const char *host, u_config_t *c)
     dbg_err_if(u_config_get_subkey_value_b(c, "send_enc_deflate", 0,
         &vhost->send_enc_deflate));
 
-    /* the file system and CGI suppliers (doc/FILES) */
+    /* the file system and CGI suppliers (doc/FILES.md) */
     dbg_err_if(u_config_get_subkey_value_b(c, "serve_files", 1,
         &vhost->serve_files));
     dbg_err_if(u_config_get_subkey_value_b(c, "run_cgi", 1, &vhost->run_cgi));
@@ -1357,7 +1357,7 @@ static int http_create(u_config_t *config, int ssl, http_t **ph)
     h->ka_max = U_MAX(1, h->ka_max);
 
     /* connections at once from one address, and SSE/WebSocket ones, so
-       that neither can take every worker (0: no cap; doc/LIMITS) */
+       that neither can take every worker (0: no cap; doc/LIMITS.md) */
     dbg_err_if(u_config_get_subkey_value_i(config, "max_conn_per_ip",
                 HTTP_MAX_CONN_PER_IP, &per_ip));
     dbg_err_if(u_config_get_subkey_value_i(config, "max_streams",

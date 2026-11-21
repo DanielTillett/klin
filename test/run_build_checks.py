@@ -91,7 +91,7 @@ def fetch_all(daemon, temp, paths, embedded_port=None):
 
 
 # the only sources that may call OpenSSL: the crypto backend and the TLS
-# layer (doc/CRYPTO); everything else goes through klin/crypto.h and tls.h
+# layer (doc/CRYPTO.md); everything else goes through klin/crypto.h and tls.h
 OPENSSL_ALLOWED = {"src/libutils/crypto.c", "src/libtls/tls.c", "src/libtls/tls_glue.c",
                    "src/libtls/keyproxy.c", "src/libio/iossl.c", "klin/tlsprv.h"}
 
@@ -109,7 +109,7 @@ def check_openssl_confined():
 
 def check_hardening(daemon):
     """The protections of KLIN_HARDENING are really in the program
-    (doc/HARDENING): read the ELF headers of klind (Linux, readelf)."""
+    (doc/HARDENING.md): read the ELF headers of klind (Linux, readelf)."""
     if not sys.platform.startswith("linux") or shutil.which("readelf") is None:
         return
     rc, out = run(["readelf", "-W", "-h", "-l", "-d", "-n", "--dyn-syms", str(daemon)])

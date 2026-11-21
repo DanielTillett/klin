@@ -1,35 +1,36 @@
-KLIN ROUTES
------------
+# Routes
 
 A "routes" block in a server or vhost maps methods and path patterns to
 the page that serves them, for REST-style APIs:
 
-    routes
+```
+routes
+{
+    route
     {
-        route
-        {
-            method  GET
-            path    /api/users/{id}
-            page    /api/user.kl1
-        }
-        route
-        {
-            method  PUT, PATCH DELETE
-            path    /api/users/{id}
-            page    /api/user_edit.kl1
-        }
-        route
-        {
-            path    /files/{path*}          # any method
-            page    /files.kl1
-        }
+        method  GET
+        path    /api/users/{id}
+        page    /api/user.kl1
     }
+    route
+    {
+        method  PUT, PATCH DELETE
+        path    /api/users/{id}
+        page    /api/user_edit.kl1
+    }
+    route
+    {
+        path    /files/{path*}          # any method
+        page    /files.kl1
+    }
+}
+```
 
 - path: segments separated by '/'. A {name} segment matches one
-  non-empty segment; a {name*} segment, which must be last, matches the
+  non-empty segment; a {`name*`} segment, which must be last, matches the
   rest of the path, slashes included (it may be empty). Names are
   letters, digits and '_'. The match is exact: "/a" does not match "/a/".
-- method: GET, HEAD, POST, PUT, DELETE, PATCH or *, separated by blanks
+- method: GET, HEAD, POST, PUT, DELETE, PATCH or `*`, separated by blanks
   or commas; none means any. A route for GET also serves HEAD.
 - page: the page (or file) that serves the route, an absolute path in
   the site.
@@ -42,10 +43,10 @@ URL-decoded (an encoded slash, %2F, is a slash by then, so it ends a
 answer is 405 Method Not Allowed with an Allow header listing them. A
 path no route matches is served as before.
 
-Authentication realms (doc/AUTH) match the path the client asked for,
-before routing: protect /api/* and every route under it is protected.
+Authentication realms ([AUTH](AUTH.md)) match the path the client asked for,
+before routing: protect `/api/*` and every route under it is protected.
 
 A route that cannot work (a relative path or page, a bad parameter, a
-{name*} that is not last, an unknown method) stops klind at startup.
+{`name*`} that is not last, an unknown method) stops klind at startup.
 
-See doc/JSON for reading request bodies and writing JSON responses.
+See [JSON](JSON.md) for reading request bodies and writing JSON responses.

@@ -463,7 +463,7 @@ def digest_header(challenge, user, password, uri, realm=PRIVATE, alg="SHA-256",
 
 
 def run_auth_checks(check, plain, secure):
-    """HTTP authentication (doc/AUTH): Digest and Basic, realms, roles."""
+    """HTTP authentication (doc/AUTH.md): Digest and Basic, realms, roles."""
     tls = client_context(ssl.TLSVersion.TLSv1_3)
 
     def get(port, path, extra=b"", context=None):
@@ -556,7 +556,7 @@ SECURITY_HEADERS = """security_headers
 
 
 def run_header_checks(check, plain, client, secure):
-    """Security headers (doc/HEADERS): the defaults, a vhost's own values,
+    """Security headers (doc/HEADERS.md): the defaults, a vhost's own values,
     HSTS over HTTPS only, and on error pages too."""
     def fields(port, path, context=None):
         reply = exchange(port, b"GET " + path + b" HTTP/1.1\r\nHost: localhost\r\n\r\n", context)
@@ -734,7 +734,7 @@ class EventStream:
 
 
 def run_sse_checks(args, check, plain, secure, temp):
-    """Server-Sent Events (doc/SSE): header, events sent as written,
+    """Server-Sent Events (doc/SSE.md): header, events sent as written,
     reconnecting with Last-Event-ID, HTTP/1.0, TLS, and a page that sees
     the client go away."""
     stream = EventStream(plain, b"/sse.kl1")
@@ -907,7 +907,7 @@ class WebSocket:
 
 
 def run_websocket_checks(check, plain, secure):
-    """WebSockets (doc/WEBSOCKET): handshake, echo of every frame form,
+    """WebSockets (doc/WEBSOCKET.md): handshake, echo of every frame form,
     control frames, protocol errors and limits, refused handshakes, TLS."""
     ws = WebSocket(plain, extra=b"Sec-WebSocket-Protocol: echo, chat\r\n")
     check(ws.accepted() and ws.fields.get("sec-websocket-protocol") == "chat",
@@ -1055,7 +1055,7 @@ ROUTES = """routes
 
 
 def run_route_checks(args, check, plain):
-    """REST routes and JSON (doc/ROUTES, doc/JSON): methods, parameters,
+    """REST routes and JSON (doc/ROUTES.md, doc/JSON.md): methods, parameters,
     405 with Allow, JSON bodies and their errors."""
     def call(method, path, body=None, ctype=b"application/json"):
         extra = b""
@@ -1180,7 +1180,7 @@ BLOCKED = """access
 
 
 def run_access_checks(check, client, blocked, temp):
-    """IP access control (doc/ACCESS): rules per path, the first matching
+    """IP access control (doc/ACCESS.md): rules per path, the first matching
     rule decides, networks, and clients dropped at connection time."""
     (temp / "private.txt").write_text("private\n")
     (temp / "local.txt").write_text("local\n")
@@ -1302,7 +1302,7 @@ VALIDATION = """validators
     }"""
 
 def run_validation_checks(check, plain):
-    """Declarative validation (doc/VALIDATE): sources, validator types,
+    """Declarative validation (doc/VALIDATE.md): sources, validator types,
     required, repeated values, NUL smuggling, drop/reject, unknown."""
     def get(path, extra=b"", body=None):
         method = b"POST" if body is not None else b"GET"
@@ -1499,7 +1499,7 @@ def run_blind_chroot_checks(check, daemon, env, temp):
 
 
 def run_keymgr_checks(check, root_pid, key, sanitized):
-    """The TLS key manager (doc/KEYMGR): after TLS requests, only the key
+    """The TLS key manager (doc/KEYMGR.md): after TLS requests, only the key
     manager's memory holds the private key, not klind's or any worker's;
     and processes of the same user (a worker) cannot read the key
     manager's memory at all (it is not dumpable)."""
@@ -1847,7 +1847,7 @@ def seccomp_mode(pid):
 
 
 def run_sandbox_checks(args, check, root_pid, plain, unsandboxed, cgi_port=None, sanitized=False):
-    """Sandboxes (doc/SANDBOX, Linux seccomp): workers and the key manager
+    """Sandboxes (doc/SANDBOX.md, Linux seccomp): workers and the key manager
     are filtered, a call outside the list fails with EPERM, one the
     sandbox kills for ends the worker; 'sandbox no' turns it off."""
     if not Path("/proc/self/status").exists():
@@ -1891,7 +1891,7 @@ def run_sandbox_checks(args, check, root_pid, plain, unsandboxed, cgi_port=None,
 
 
 def run_limit_checks(args, check, plain, limits, temp):
-    """Request limits and request smuggling (doc/LIMITS): each refused
+    """Request limits and request smuggling (doc/LIMITS.md): each refused
     request gets its status and the connection is closed (a request sent
     after it on the connection is not answered); then the header deadline,
     and (prefork) the caps on connections per address and on streams."""
@@ -2029,7 +2029,7 @@ def run_limit_checks(args, check, plain, limits, temp):
 
 
 def run_session_checks(check, plain, client, files, limits, sessions):
-    """Session hardening (doc/SESSIONS), on memory (plain), file (files)
+    """Session hardening (doc/SESSIONS.md), on memory (plain), file (files)
     and client-side (client) sessions: an unknown id is not taken on
     (session fixation), session_regenerate_id() at login, CSRF tokens,
     client sessions sealed with AES-256-GCM; then the idle and absolute
@@ -2139,7 +2139,7 @@ def make_client_ca(temp):
 
 
 def run_tls_checks(check, secure, mtls, client_cert):
-    """TLS settings (doc/TLS): TLS 1.3 when the client has it; for TLS 1.2,
+    """TLS settings (doc/TLS.md): TLS 1.3 when the client has it; for TLS 1.2,
     forward-secret AEAD ciphers only; no renegotiation; session tickets
     whose keys change (2 s on 'mtls'); client certificates ('mtls'
     requires one)."""
@@ -2243,7 +2243,7 @@ def run_tls_checks(check, secure, mtls, client_cert):
 
 
 def run_worker_limit_checks(args, check, plain, limits, sanitized):
-    """Worker resource limits (doc/LIMITS): the defaults on 'plain' (1024
+    """Worker resource limits (doc/LIMITS.md): the defaults on 'plain' (1024
     MB, 1024 files, max_child 2 + 64 processes), 256 MB, 64 files and no
     process limit on 'limits'; past them, malloc() and open() fail and the
     worker goes on. Prefork only (-d has no workers); the memory limit is
@@ -2276,7 +2276,7 @@ def run_worker_limit_checks(args, check, plain, limits, sanitized):
 
 
 def make_file_tree(temp):
-    """Files for run_file_checks (doc/FILES): /pub (pub) with links whose
+    """Files for run_file_checks (doc/FILES.md): /pub (pub) with links whose
     targets are inside and outside it, a FIFO, the CGI scripts (cgi-bin)
     and the files of the open.test vhost (pub-open)."""
     pub, cgi, other = temp / "pub", temp / "cgi-bin", temp / "pub-open"
@@ -2345,7 +2345,7 @@ def files_config(temp):
 
 
 def run_file_checks(check, files, temp, cgi):
-    """File system and CGI hardening (doc/FILES, doc/CGI): paths that try to
+    """File system and CGI hardening (doc/FILES.md, doc/CGI.md): paths that try to
     leave the document root, encoded and Windows-style; the symlink policies
     (inside by default, no, yes); a raw file system path is never looked
     up (it was: If-Modified-Since told whether a file existed); the path

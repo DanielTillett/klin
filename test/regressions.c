@@ -114,7 +114,7 @@ static off_t file_size;
 static int conn_closed;
 enum { IO_FD_CLOSE = 1 };
 static void *request_get_http(request_t *rq) { (void)rq; return NULL; }
-/* fs_open() (the symlink policy, doc/FILES) has the server tests: here the
+/* fs_open() (the symlink policy, doc/FILES.md) has the server tests: here the
    file is open, regular, and file_size long */
 static int fs_open(void *h, request_t *rq, const char *fqn, struct stat *st)
 {

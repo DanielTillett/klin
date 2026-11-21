@@ -1,10 +1,12 @@
-# OpenSSF Scorecard (doc/RELEASES, WORKFLOWS): weekly and on pushes to
+# OpenSSF Scorecard (doc/RELEASES.md, WORKFLOWS): weekly and on pushes to
 # master, a check of the repository's supply-chain practices (pinned
 # dependencies, token permissions, branch protection, signed releases, ...).
-# Results go to the repository's code scanning alerts and a workflow
-# artifact. publish_results is false: nothing is sent to the public
-# Scorecard API, so there is no Scorecard badge. Setting it to true (and
-# giving the job id-token: write) publishes the results.
+# Results go to the repository's code scanning alerts, a workflow artifact
+# and (publish_results) the public Scorecard API, which shows them at
+# scorecard.dev and serves the README's badge. Publishing makes the
+# scorecard-action check this workflow: only approved actions, no
+# top-level env, and the job's OIDC token (id-token: write) identifies the
+# repository to the API.
 name: Scorecard
 
 on:
@@ -28,6 +30,7 @@ jobs:
       contents: read
       actions: read            # the workflow runs (CI-Tests, SAST checks)
       security-events: write   # upload the results
+      id-token: write          # publish them (the repository's identity)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -36,7 +39,7 @@ jobs:
         with:
           results_file: scorecard.sarif
           results_format: sarif
-          publish_results: false
+          publish_results: true
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: scorecard

@@ -44,7 +44,7 @@ struct http_s
 int http_path_join(char *dst, size_t sz, const char *dir, const char *uri);
 int http_load_aliases(vhost_t *vhost);
 
-/* files.c: open a file resolved for a request (doc/FILES) */
+/* files.c: open a file resolved for a request (doc/FILES.md) */
 int http_open_file(http_t *h, request_t *rq, const char *fqn, int flags);
 
 #endif

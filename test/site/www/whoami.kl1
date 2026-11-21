@@ -1,5 +1,5 @@
 <%
-    /* the user an authentication realm let in (doc/AUTH) */
+    /* the user an authentication realm let in (doc/AUTH.md) */
     const char *user = request_get_auth_user(request);
 
     io_printf(out, "user=%s\n", user ? user : "-");

@@ -1,0 +1,72 @@
+# The documentation website (GitHub Pages, built by GitHub from master):
+# README.md is the home page, doc/*.md the topics, with the Just the Docs
+# theme. Nothing here affects building Klin.
+title: Klin
+description: A web framework for embedded devices, compiled into one small program.
+url: https://danieltillett.github.io
+baseurl: /klin
+
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+back_to_top: true
+back_to_top_text: "Back to top"
+aux_links:
+  "Klin on GitHub": https://github.com/DanielTillett/klin
+aux_links_new_tab: false
+footer_content: >-
+  Klin is BSD-licensed and derived from KLone by KoanLogic s.r.l.
+  Report security problems privately (see the security policy).
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub"
+gh_edit_repository: https://github.com/DanielTillett/klin
+gh_edit_branch: master
+gh_edit_view_mode: tree
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-titles-from-headings
+  - jekyll-default-layout
+  - jekyll-readme-index
+relative_links:
+  enabled: true
+  collections: false
+titles_from_headings:
+  enabled: true
+  strip_title: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+# only the documentation: no sources, tests, sites or build trees
+exclude:
+  - .build
+  - .claude
+  - .clusterfuzzlite
+  - .vera
+  - build
+  - cmake
+  - contrib
+  - doc/doxy
+  - doc/example-site
+  - doc/man
+  - doc/var
+  - etc
+  - fuzz
+  - klin
+  - libu
+  - site
+  - src
+  - test
+  - webapp
+  - CMakeLists.txt
+  - ChangeLog
+  - LICENSE.OpenSSL
+  - TODO
+  - VERSION

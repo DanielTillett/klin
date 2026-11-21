@@ -1,4 +1,4 @@
-# Release (doc/RELEASES): on a pushed tag v<VERSION>, or by hand from the
+# Release (doc/RELEASES.md): on a pushed tag v<VERSION>, or by hand from the
 # Actions tab with the tag chosen as the ref ("Use workflow from"), builds
 # the source tarball, SBOM and SHA256SUMS (build/release.py), checks that
 # the tarball builds on its own and its unit tests pass, signs both files

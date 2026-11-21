@@ -6,7 +6,7 @@
     #include <unistd.h>
     #include <sys/resource.h>
 %><%
-    /* worker resource limits (doc/LIMITS): the limits this worker has;
+    /* worker resource limits (doc/LIMITS.md): the limits this worker has;
        ?alloc=MB tries to allocate (and touch) that much; ?files=N tries to
        open N descriptors */
     const char *a = request_get_arg(request, "alloc"),

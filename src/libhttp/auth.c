@@ -8,7 +8,7 @@
 
 /* HTTP authentication of a vhost's realms: Basic (RFC 7617) and Digest
  * (RFC 7616, SHA-256 and, if a realm allows it, MD5). The configuration is
- * described in doc/AUTH.
+ * described in doc/AUTH.md.
  *
  * Digest nonces are stateless: "<time><HMAC-SHA256(secret, time:realm)>",
  * with a secret drawn when the server starts (before the prefork workers

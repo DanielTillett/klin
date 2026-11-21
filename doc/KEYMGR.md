@@ -1,5 +1,4 @@
-KLIN TLS KEY MANAGER
---------------------
+# TLS key manager
 
 The private key of an HTTPS server is kept out of the processes that
 serve requests. At startup, before any worker is forked, klind starts a
@@ -15,15 +14,17 @@ core file of a worker.
 It is on by default for every HTTPS server; to keep the key in klind's
 processes, as before 4.0.0:
 
-    secure
-    {
-        type        https
-        cert_file   /etc/klin/cert.pem
-        key_file    /etc/klin/key.pem
-        key_manager no
-    }
+```
+secure
+{
+    type        https
+    cert_file   /etc/klin/cert.pem
+    key_file    /etc/klin/key.pem
+    key_manager no
+}
+```
 
-HOW IT WORKS
+## How it works
 
 - One key manager per HTTPS server. It closes every descriptor but its
   control socket, ignores HUP and ALRM, and, when klind runs as root with
@@ -32,7 +33,7 @@ HOW IT WORKS
   not ready in 10 s is killed, and klind does not start.
 - Its memory is not readable by other processes of the same user, the
   workers included: it makes itself undumpable (Linux: PR_SET_DUMPABLE 0,
-  so /proc/<pid>/mem and ptrace are refused) before it reads the key, and
+  so `/proc/<pid>/mem` and ptrace are refused) before it reads the key, and
   again after dropping to uid and gid, and it has no core dumps
   (RLIMIT_CORE 0). This matters when klind runs as its user from the
   start (systemd User=): nothing else would make it undumpable. Other
@@ -53,7 +54,7 @@ HOW IT WORKS
   one end of the pair over the control socket every klind process
   inherited, and waits up to 5 s for the answer on the other end.
 - TLS 1.2 RSA key exchange is turned off (":!kRSA" is added to the TLS 1.2
-  cipher list, tls_ciphers or the default of doc/TLS): it decrypts with
+  cipher list, tls_ciphers or the default of [TLS](TLS.md)): it decrypts with
   the private key, which the key manager does not do, and it has no
   forward secrecy. Every current client uses ECDHE.
 - If a key manager exits, klind stops: nothing else holds the key, so no
@@ -67,7 +68,7 @@ HOW IT WORKS
 - One key manager per HTTPS server: servers sharing a key file have one
   each.
 
-LIMITS
+## Limits
 
 - A key embedded in klind (a key_file in the site, see the import) is in
   every process's memory as part of the program: klind warns at startup.

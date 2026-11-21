@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 /* HTTP authentication (Basic and Digest, RFC 7617 and RFC 7616), set up in
- * a vhost's "auth" block (doc/AUTH). The hashing helpers need OpenSSL. */
+ * a vhost's "auth" block (doc/AUTH.md). The hashing helpers need OpenSSL. */
 
 enum {
     AUTH_ALG_MD5 = 1,           /* Digest algorithm=MD5 (old clients)        */

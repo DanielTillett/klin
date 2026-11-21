@@ -1,28 +1,29 @@
-KLIN IP ACCESS CONTROL
-----------------------
+# IP access control
 
 An "access" block in a server or vhost lets clients in, or refuses them,
 by their IP address:
 
-    access
+```
+access
+{
+    rule
     {
-        rule
-        {
-            path   /admin/*             # fnmatch(3) patterns, may repeat
-            allow  10.0.0.0/8, 2001:db8::/32
-            deny   all
-        }
-        rule
-        {
-            path   /status.kl1
-            allow  127.0.0.1 ::1
-            deny   all
-        }
-        rule                            # no path: every path
-        {
-            deny   192.0.2.0/24
-        }
+        path   /admin/*             # fnmatch(3) patterns, may repeat
+        allow  10.0.0.0/8, 2001:db8::/32
+        deny   all
     }
+    rule
+    {
+        path   /status.kl1
+        allow  127.0.0.1 ::1
+        deny   all
+    }
+    rule                            # no path: every path
+    {
+        deny   192.0.2.0/24
+    }
+}
+```
 
 Entries are IPv4 or IPv6 addresses, networks (address/prefix bits) or
 "all", separated by blanks or commas; IPv4 clients of a dual-stack socket

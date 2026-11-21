@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* Shared by the fuzz targets (doc/FUZZING). Each target is a libFuzzer
+/* Shared by the fuzz targets (doc/FUZZING.md). Each target is a libFuzzer
  * entry point over the real code; some include the .c file of the parser
  * they test, to reach its static functions. */
 

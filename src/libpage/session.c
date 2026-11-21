@@ -36,7 +36,7 @@ enum {
     CSRF_TOKEN_BYTES = 32
 };
 
-/* variables the session keeps for itself (doc/SESSIONS) */
+/* variables the session keeps for itself (doc/SESSIONS.md) */
 static const char CREATED_VAR[] = "KLIN_SESSION_CREATED";
 static const char CSRF_VAR[] = "KLIN_CSRF_TOKEN";
 static const char SID_NAME[] = "klin_sid";

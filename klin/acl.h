@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-/* IP access control of a server or vhost (doc/ACCESS), used by the HTTP
+/* IP access control of a server or vhost (doc/ACCESS.md), used by the HTTP
  * server */
 int acl_load(vhost_t *vhost);
 int acl_check(http_t *h, request_t *rq);

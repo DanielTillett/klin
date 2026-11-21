@@ -25,7 +25,7 @@ struct klog_s;
 /* the security headers of http.c's http_sec_headers table */
 enum { VHOST_SEC_HEADERS = 5 };
 
-/* follow_symlinks (doc/FILES): symbolic links in the files served by the fs
+/* follow_symlinks (doc/FILES.md): symbolic links in the files served by the fs
  * and cgi suppliers */
 enum {
     VHOST_SYMLINKS_INSIDE,  /* followed if the target is under the root      */

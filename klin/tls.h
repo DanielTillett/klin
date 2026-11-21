@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-/* a TLS server context (an SSL_CTX of the backend, see doc/CRYPTO) */
+/* a TLS server context (an SSL_CTX of the backend, see doc/CRYPTO.md) */
 struct tls_ctx_s;
 typedef struct tls_ctx_s tls_ctx_t;
 

@@ -1,7 +1,7 @@
 <%!
     #include <string.h>
 %><%
-    /* session hardening (doc/SESSIONS): ?op=set&v=X, ?op=login (a new id),
+    /* session hardening (doc/SESSIONS.md): ?op=set&v=X, ?op=login (a new id),
        ?op=csrf (the token), ?op=change (needs the token unless GET);
        anything else prints the session */
     const char *op = request_get_arg(request, "op"), *v, *u;

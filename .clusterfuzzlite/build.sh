@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 # Copyright (c) 2026 Daniel Tillett. Part of Klin; see the LICENSE file.
 #
-# Build every fuzz target in fuzz/ for ClusterFuzzLite (doc/FUZZING), with
+# Build every fuzz target in fuzz/ for ClusterFuzzLite (doc/FUZZING.md), with
 # the compiler, sanitizer flags ($CFLAGS) and engine ($LIB_FUZZING_ENGINE)
 # it provides, into $OUT with their seed corpora and dictionaries. Written
 # to serve unchanged as an OSS-Fuzz project's build.sh.

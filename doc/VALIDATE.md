@@ -1,62 +1,63 @@
-KLIN REQUEST VALIDATION
------------------------
+# Request validation
 
 Request parameters can be checked before a page sees them, set out in
 the configuration rather than in each page. A vhost's "validators" block
 defines named checks; its "params" blocks say, per path (and method),
 which parameters the page takes:
 
-    validators
+```
+validators
+{
+    validator
     {
-        validator
-        {
-            name    id
-            regex   [0-9]{1,10}         # matched against the whole value
-        }
-        validator
-        {
-            name    page
-            int     1 1000              # a decimal integer in this range
-        }
-        validator
-        {
-            name    title
-            length  1 200               # a length in bytes
-        }
-        validator
-        {
-            name    order
-            enum    asc desc            # one of these values
-        }
+        name    id
+        regex   [0-9]{1,10}         # matched against the whole value
     }
-
-    params
+    validator
     {
-        path        /api/items*         # fnmatch(3), may repeat
-        method      GET POST            # none: any method
-        unknown     drop                # drop (default), reject or allow
-        on_invalid  reject              # reject (default) or drop
-
-        param
-        {
-            name        id
-            source      route           # query, form, route, header, any
-            validator   id
-            required    yes
-        }
-        param
-        {
-            name        page
-            validator   page            # source any: query, form or route
-        }
+        name    page
+        int     1 1000              # a decimal integer in this range
     }
+    validator
+    {
+        name    title
+        length  1 200               # a length in bytes
+    }
+    validator
+    {
+        name    order
+        enum    asc desc            # one of these values
+    }
+}
+
+params
+{
+    path        /api/items*         # fnmatch(3), may repeat
+    method      GET POST            # none: any method
+    unknown     drop                # drop (default), reject or allow
+    on_invalid  reject              # reject (default) or drop
+
+    param
+    {
+        name        id
+        source      route           # query, form, route, header, any
+        validator   id
+        required    yes
+    }
+    param
+    {
+        name        page
+        validator   page            # source any: query, form or route
+    }
+}
+```
 
 - Paths are the decoded request path the client asked for, before routes
   and aliases. The first params block whose path and method match
   applies; a request no block matches is not validated.
 - source: query (the query string), form (a form body,
   application/x-www-form-urlencoded or multipart), route (a {name} of
-  doc/ROUTES), header (a request header) or any (query, form and route).
+  [ROUTES](ROUTES.md)), header (a request header) or any (query, form and route).
 - Every value of a repeated parameter is checked. A value with a NUL
   inside (%00) never passes a validator: what follows the NUL would not
   be checked.

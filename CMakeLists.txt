@@ -46,13 +46,13 @@ option(KLIN_ENABLE_SUP_CGI "Run external CGIs [--enable_sup_cgi]" OFF)
 option(KLIN_ENABLE_HOOKS "Call user-provided hooks_setup() [--enable_hooks]" OFF)
 option(KLIN_ENABLE_WARNINGS "Extra compiler warnings [--enable_warns]" OFF)
 option(KLIN_STACK_PROTECTOR "Use -fstack-protector-all when available" ON)
-option(KLIN_HARDENING "Compiler and linker hardening (doc/HARDENING)" ON)
+option(KLIN_HARDENING "Compiler and linker hardening (doc/HARDENING.md)" ON)
 option(KLIN_INSTALL_DAEMON_ONLY "Install only the daemon [--install_daemon_only]" OFF)
 option(KLIN_WITH_OPENSSL "HTTPS, encrypted pages and client sessions (OpenSSL 3)" ON)
 option(KLIN_WITH_ZLIB "Compressed pages and responses (zlib)" ON)
 option(LIBU_ENABLE_SCTP "Build LibU with SCTP support" OFF)
 option(KLIN_BUILD_TESTS "Build the unit tests (run them with ctest)" OFF)
-option(KLIN_FUZZ "Build the fuzz targets in fuzz/ (doc/FUZZING)" OFF)
+option(KLIN_FUZZ "Build the fuzz targets in fuzz/ (doc/FUZZING.md)" OFF)
 set(KLIN_FUZZ_ENGINE "-fsanitize=fuzzer" CACHE STRING
     "Link flags of the fuzzing engine (ClusterFuzzLite: $LIB_FUZZING_ENGINE)")
 set(KLIN_DAEMON_NAME "klind" CACHE STRING "Name of the daemon [--daemon_name]")
@@ -171,7 +171,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     endif()
 endif()
 
-# Compiler and linker hardening (doc/HARDENING): each flag is used only if
+# Compiler and linker hardening (doc/HARDENING.md): each flag is used only if
 # the compiler or linker takes it. KLIN_LINK_OPTIONS go to the programs.
 set(KLIN_LINK_OPTIONS "")
 function(klin_harden_c flag var)
@@ -602,7 +602,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Fuzz targets (KLIN_FUZZ=ON, with clang and the sanitizers in CFLAGS, e.g.
 # -fsanitize=address,undefined,fuzzer-no-link): fuzz/build.sh for
-# ClusterFuzzLite, test/run_fuzz.py for a short local run (doc/FUZZING)
+# ClusterFuzzLite, test/run_fuzz.py for a short local run (doc/FUZZING.md)
 # ---------------------------------------------------------------------------
 if(KLIN_FUZZ AND UNIX)
     # libFuzzer is C++: the targets link with the C++ driver

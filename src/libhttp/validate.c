@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* Declarative request validation (doc/VALIDATE): a vhost's "validators"
+/* Declarative request validation (doc/VALIDATE.md): a vhost's "validators"
  * define named checks (a regular expression, an integer range, a length
  * range, a list of values) and its "params" blocks, per path and method,
  * say which parameters a page takes, from where, checked by which

@@ -89,13 +89,13 @@ at present this directive is inhibited, and a default of 300 is assumed.
 Set the maximum number of seconds the server waits for an HTTP request on an already connected socket: the request line and the whole header must arrive within it, however slowly they trickle in (a "slowloris" client is closed when it runs out). The default value is 10 seconds.
 .TP
 \fBmax_header_fields\fR, \fBmax_header_line\fR, \fBmax_header_size\fR
-Request header limits: the number of fields (default 100), the bytes of one field line (default 8192) and of the whole header (default 32768). A request over any of them is answered 431 and the connection closed. A request line over 8192 bytes is answered 414. See doc/LIMITS.
+Request header limits: the number of fields (default 100), the bytes of one field line (default 8192) and of the whole header (default 32768). A request over any of them is answered 431 and the connection closed. A request line over 8192 bytes is answered 414. See doc/LIMITS.md.
 .TP
 \fBmax_conn_per_ip\fR
 Connections served at once from one client address (default 32; 0: no limit). Beyond it a new connection is closed as soon as it is accepted, before any TLS handshake.
 .TP
 \fBworker_max_memory\fR, \fBworker_max_files\fR, \fBworker_max_procs\fR
-Resource limits of each worker process: MB of address space (default 1024), open files (default 1024) and processes of its user (default the server's max_child plus 64). 0 leaves a limit unchanged. See doc/LIMITS.
+Resource limits of each worker process: MB of address space (default 1024), open files (default 1024) and processes of its user (default the server's max_child plus 64). 0 leaves a limit unchanged. See doc/LIMITS.md.
 .TP
 \fBmax_streams\fR
 Server-sent event and WebSocket connections open at once on this server (default 100; 0: no limit), so that they cannot take every worker. Beyond it \fBsse_start\fR() and \fBws_accept\fR() answer 503 with Retry-After.
@@ -121,19 +121,19 @@ is answered 413 and the connection closed. The default value is 5 MB.
 \fIyes\fR (default) runs the workers and the TLS key manager in a
 seccomp sandbox (Linux) or under pledge (OpenBSD); \fIno\fR turns it off.
 \fBsandbox_allow\fR names further system calls the workers may make. See
-doc/SANDBOX.
+doc/SANDBOX.md.
 .TP
 \fBkey_manager\fR
 HTTPS only: \fIyes\fR (default) keeps the private key in a separate
 key manager process that signs the TLS handshakes, out of the worker
 processes; it also turns off TLS 1.2 RSA key exchange. \fIno\fR loads
-the key into klind's processes. See doc/KEYMGR.
+the key into klind's processes. See doc/KEYMGR.md.
 .TP
 \fBaccess\fR
 IP access control: \fBrule\fR blocks with \fBpath\fR patterns (none:
 every path) and \fBallow\fR and \fBdeny\fR lines of addresses,
 networks (\fIaddress/bits\fR) or \fIall\fR. The first rule for the path
-decides (403). See doc/ACCESS.
+decides (403). See doc/ACCESS.md.
 .TP
 \fBauth\fR
 HTTP authentication (Basic and Digest) of the paths in one or more realms:
@@ -141,19 +141,19 @@ HTTP authentication (Basic and Digest) of the paths in one or more realms:
 \fIdigest\fR, \fIbasic\fR or \fIany\fR, \fBroles\fR, \fBmd5\fR) and
 \fBuser\fR blocks made by \fBklin \-c passwd\fR, here or in
 \fBusers_file\fR; also \fBnonce_lifetime\fR and \fBbasic_over_http\fR.
-Plaintext passwords are refused. See doc/AUTH.
+Plaintext passwords are refused. See doc/AUTH.md.
 .TP
 \fBvalidators\fR, \fBparams\fR
 Request validation: named \fBvalidator\fRs (\fBregex\fR, \fBint\fR,
 \fBlength\fR, \fBenum\fR) and \fBparams\fR blocks per \fBpath\fR and
 \fBmethod\fR with a \fBparam\fR block per parameter (\fBname\fR,
 \fBsource\fR, \fBvalidator\fR, \fBrequired\fR), \fBunknown\fR and
-\fBon_invalid\fR. See doc/VALIDATE.
+\fBon_invalid\fR. See doc/VALIDATE.md.
 .TP
 \fBroutes\fR
 REST-style routes: \fBroute\fR blocks with a \fBpath\fR pattern
 (\fI{name}\fR segments, a last \fI{name*}\fR), the \fBmethod\fRs it
-takes and the \fBpage\fR that serves it. See doc/ROUTES.
+takes and the \fBpage\fR that serves it. See doc/ROUTES.md.
 .TP
 \fBsecurity_headers\fR
 Security headers sent with every response: \fBx_content_type_options\fR
@@ -162,7 +162,7 @@ Security headers sent with every response: \fBx_content_type_options\fR
 \fIstrict\-origin\-when\-cross\-origin\fR), \fBcontent_security_policy\fR
 (not sent by default) and \fBstrict_transport_security\fR (default
 \fImax\-age=31536000\fR, HTTPS only). The value \fIno\fR leaves a header
-out. See doc/HEADERS.
+out. See doc/HEADERS.md.
 .TP
 \fBtemp_dir\fR
 Set the base directory where temporary resources (e.g. uploaded files) are created.  When provided, the system default is overridden.  Currently, this value has per-backend scope.
@@ -211,7 +211,7 @@ are set to non\-root IDs (a
 alone is not enough) or
 \fBallow_root\fR
 is
-\fByes\fR. See doc/SYSTEMD for a hardened systemd unit.
+\fByes\fR. See doc/SYSTEMD.md for a hardened systemd unit.
 .TP
 \fBmax_child\fR
 Set the maximum number of child processes per server (i.e. total number of running backend child processes) available at run\-time. The default value is 300; it must be from 1 to FD_SETSIZE less 128 (896 on Linux), since klind watches one channel per worker with select(2).
@@ -244,13 +244,13 @@ will be mapped to
 Symbolic links in files served from the file system and in CGI scripts:
 \fIinside\fR (the default) follows a link whose target is inside the dir_root or alias target the path was resolved under,
 \fIno\fR follows none,
-\fIyes\fR follows all. See doc/FILES.
+\fIyes\fR follows all. See doc/FILES.md.
 .TP
 \fBserve_files\fR, \fBrun_cgi\fR
-\fIno\fR turns off the file system or the CGI supplier for this server or virtual host (default \fIyes\fR, when built in). See doc/FILES.
+\fIno\fR turns off the file system or the CGI supplier for this server or virtual host (default \fIyes\fR, when built in). See doc/FILES.md.
 .TP
 \fBcgi.timeout\fR, \fBcgi.max_cpu\fR, \fBcgi.max_memory\fR
-Limits of a CGI script: seconds before it is killed (default 60; 504 if it sent nothing), seconds of CPU time (default 30) and MB of address space (default 512). 0 sets none. See doc/CGI.
+Limits of a CGI script: seconds before it is killed (default 60; 504 if it sent nothing), seconds of CPU time (default 30) and MB of address space (default 512). 0 sets none. See doc/CGI.md.
 .TP
 \fBcgi.pass_env\fR
 Variables of klind's environment passed to CGI scripts (default none).
@@ -258,7 +258,7 @@ Variables of klind's environment passed to CGI scripts (default none).
 \fBcgi.pass_headers\fR
 Request header fields passed to CGI scripts as HTTP_* variables:
 \fIdefault\fR (all but Authorization and Proxy-Authorization),
-\fIall\fR, or a list of field names. Proxy, and names with other than letters, digits and '\-', are never passed. See doc/CGI.
+\fIall\fR, or a list of field names. Proxy, and names with other than letters, digits and '\-', are never passed. See doc/CGI.md.
 .TP
 \fBserver_sig\fR
 Set the server signature string which will be returned in the HTTP head (Server: %s). When setting a custom Product token, the guidelines stated in paragraph 3.7 of RFC 1945 should be followed. The default value is
@@ -314,7 +314,7 @@ The session ends this long after it was created (or given a new id at login), ho
 \fIs\fR
 suffix;
 \fI0\fR
-for no limit. The default is 480 minutes (8 hours). See doc/SESSIONS.
+for no limit. The default is 480 minutes (8 hours). See doc/SESSIONS.md.
 .TP
 \fBsid_name\fR
 Set a custom cookie name. Session cookies are always sent with the
@@ -374,7 +374,7 @@ are kept for compatibility only.
 .PP
 All the cryptographic material examined in this section MUST not be password protected. This is because on unattended devices such as appliances or similar, password protection is useless if not harmful.
 .PP
-OpenSSL 3 is required. HTTPS servers accept TLS 1.2 or newer only (TLS 1.3 when the client has it); TLS 1.0 and 1.1 are rejected, and TLS compression and renegotiation are disabled. See doc/TLS. OpenSSL 3 also enforces minimum key sizes and signature algorithms according to the system's security level; on common distributions such as Ubuntu, 1024\-bit RSA keys and MD5\-signed certificates are refused. Use certificates with at least 2048\-bit RSA (or equivalent) keys.
+OpenSSL 3 is required. HTTPS servers accept TLS 1.2 or newer only (TLS 1.3 when the client has it); TLS 1.0 and 1.1 are rejected, and TLS compression and renegotiation are disabled. See doc/TLS.md. OpenSSL 3 also enforces minimum key sizes and signature algorithms according to the system's security level; on common distributions such as Ubuntu, 1024\-bit RSA keys and MD5\-signed certificates are refused. Use certificates with at least 2048\-bit RSA (or equivalent) keys.
 .TP
 \fBcert_file\fR
 PEM\-encoded certificate file for the server and optionally also its corresponding RSA or DSA Private Key file (contained in the same file). The certificate should be configured with the Common Name matching the fully qualified domain name of the server. This parameter is
@@ -433,7 +433,7 @@ no client certificate is required at all
 the client may present a valid certificate
 .TP
 \fBREQUIRE\fR
-the client has to present a valid certificate (mutual TLS; doc/TLS)
+the client has to present a valid certificate (mutual TLS; doc/TLS.md)
 .RE
 .IP
 .sp

@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* IP access control (doc/ACCESS): a server's or vhost's "access" block
+/* IP access control (doc/ACCESS.md): a server's or vhost's "access" block
  * holds rules, each for some paths (or all), with "allow" and "deny"
  * lines of addresses and networks. The first rule whose path matches
  * decides, with its first line that names the client's address; a client

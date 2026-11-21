@@ -1,4 +1,4 @@
-# Dependabot (doc/RELEASES, WORKFLOWS): weekly pull requests that move the
+# Dependabot (doc/RELEASES.md, WORKFLOWS): weekly pull requests that move the
 # GitHub Actions the workflows use to new releases, keeping the commit SHA
 # pins and their version comments, and the digest of the ClusterFuzzLite
 # base image when OSS-Fuzz moves its base-builder:v1 tag. Minor and patch

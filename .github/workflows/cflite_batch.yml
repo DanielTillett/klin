@@ -1,4 +1,4 @@
-# ClusterFuzzLite batch fuzzing (doc/FUZZING): daily, every fuzz target under
+# ClusterFuzzLite batch fuzzing (doc/FUZZING.md): daily, every fuzz target under
 # ASan and UBSan for half an hour, then corpus pruning and a coverage report.
 # Corpora go to the cflite-corpus branch of this repository and coverage
 # reports to cflite-coverage (not gh-pages: nothing is published), both

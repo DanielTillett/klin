@@ -138,7 +138,7 @@ static void usage(void)
 "         -m          also write MD5 Digest hashes (for old clients)\n"
 "         -n count    PBKDF2 iterations (default 100000)\n"
 "         user        user name; the password is the first line of stdin\n"
-"                     (see doc/AUTH)\n"
+"                     (see doc/AUTH.md)\n"
 #endif
 "\n";
 
@@ -660,7 +660,7 @@ err:
 }
 
 #ifdef SSL_ON
-/* print a "user" block for an auth configuration (doc/AUTH): the PBKDF2
+/* print a "user" block for an auth configuration (doc/AUTH.md): the PBKDF2
  * hash Basic checks, and the Digest HA1 of each realm asked for */
 static int command_passwd(void)
 {

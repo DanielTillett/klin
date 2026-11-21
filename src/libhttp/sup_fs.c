@@ -23,7 +23,7 @@
 #define O_NONBLOCK 0
 #endif
 
-/* open a file to serve, with the vhost's symlink policy (doc/FILES); not
+/* open a file to serve, with the vhost's symlink policy (doc/FILES.md); not
  * blocking on a FIFO, which is then refused as not a regular file */
 static int fs_open(http_t *h, request_t *rq, const char *fqn, struct stat *st)
 {

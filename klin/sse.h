@@ -23,7 +23,7 @@ extern "C" {
  *         if(sse_send(response, "tick", NULL, "data"))
  *             break;
  *
- * Each event is sent at once (chunked on HTTP/1.1). See doc/SSE. */
+ * Each event is sent at once (chunked on HTTP/1.1). See doc/SSE.md. */
 
 /* what sse_wait() returns */
 enum {

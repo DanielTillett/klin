@@ -37,7 +37,7 @@ int session_save(session_t *ss);
 int session_save_to_io(session_t*, const char*);
 
 /* a new session id, keeping the data (call it at login and at any change
-   of privilege, before the page prints anything): doc/SESSIONS */
+   of privilege, before the page prints anything): doc/SESSIONS.md */
 int session_regenerate_id(session_t *ss);
 
 /* CSRF: the session's token for forms and requests, and the check of a

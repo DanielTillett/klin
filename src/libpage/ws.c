@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* WebSockets (RFC 6455, doc/WEBSOCKET). After the handshake the page owns
+/* WebSockets (RFC 6455, doc/WEBSOCKET.md). After the handshake the page owns
  * the connection: frames are read and written on it directly, outside the
  * response filter, and it is closed when the page ends. Waiting is done
  * in ws_wait() with poll(2) (the client socket, a descriptor of the page's

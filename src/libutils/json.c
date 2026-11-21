@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* JSON (RFC 8259) reader and writer (doc/JSON). The reader is strict: no
+/* JSON (RFC 8259) reader and writer (doc/JSON.md). The reader is strict: no
  * comments, trailing commas, single quotes or NaN; strings must be UTF-8,
  * and a key may appear once per object (two parsers reading the same
  * duplicate differently is a known way past validation). Nesting is

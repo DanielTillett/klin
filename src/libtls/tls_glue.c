@@ -306,7 +306,7 @@ err:
 }
 
 /* wrapper for SSL_CTX_use_PrivateKey(); with 'keymgr' the key goes to a
-   key manager process and the context gets a proxy (doc/KEYMGR) */
+   key manager process and the context gets a proxy (doc/KEYMGR.md) */
 int tls_use_PrivateKey_file (SSL_CTX *ctx, const char *res_name, int type,
         int keymgr, int sandbox)
 {

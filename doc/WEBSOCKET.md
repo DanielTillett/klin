@@ -1,31 +1,32 @@
-KLIN WEBSOCKETS
----------------
+# WebSockets
 
 A page can take over its connection as a WebSocket (RFC 6455). Include
-<klin/ws.h>; an echo:
+`<klin/ws.h>`; an echo:
 
-    <%! #include <klin/ws.h> %><%
-        const char *data;
-        size_t len;
-        int type, w, rc;
-        ws_t *ws;
+```
+<%! #include <klin/ws.h> %><%
+    const char *data;
+    size_t len;
+    int type, w, rc;
+    ws_t *ws;
 
-        if(ws_accept(request, response, NULL, 0, &ws))
-            return;             /* refused: the status is set (see below) */
+    if(ws_accept(request, response, NULL, 0, &ws))
+        return;             /* refused: the status is set (see below) */
 
-        while((w = ws_wait(ws, -1, 30000)) != WS_CLOSED)
-        {
-            if(w == WS_TIMEOUT && ws_ping(ws))
-                break;
-            if(w != WS_MESSAGE)
-                continue;
-            if((rc = ws_recv(ws, &type, &data, &len)) == WS_CLOSED)
-                break;
-            if(rc == 0 && ws_send(ws, type, data, len))
-                break;
-        }
-        ws_free(ws);
-    %>
+    while((w = ws_wait(ws, -1, 30000)) != WS_CLOSED)
+    {
+        if(w == WS_TIMEOUT && ws_ping(ws))
+            break;
+        if(w != WS_MESSAGE)
+            continue;
+        if((rc = ws_recv(ws, &type, &data, &len)) == WS_CLOSED)
+            break;
+        if(rc == 0 && ws_send(ws, type, data, len))
+            break;
+    }
+    ws_free(ws);
+%>
+```
 
 Put nothing before the code block: ws_accept() answers the handshake
 itself (101 Switching Protocols), and from then on the connection is the
@@ -56,7 +57,7 @@ unmasked frame, a reserved bit (no extension, e.g. compression, is
 offered), an unknown opcode, a long or fragmented control frame or a
 broken fragment sequence; 1007 for text that is not UTF-8.
 
-ORIGIN
+## Origin
 
 A browser opens a WebSocket from any page it shows, with the cookies of
 the site it connects to. Unless the page passes WS_ANY_ORIGIN, ws_accept()
@@ -66,7 +67,7 @@ is not a browser sends no Origin and is accepted. If the page uses
 WS_ANY_ORIGIN, it must check request_get_field_value(rq, "Origin")
 itself.
 
-TIMEOUTS AND WORKERS
+## Timeouts and workers
 
 A frame must arrive whole, and a frame sent must be taken by the client,
 within 30 s; otherwise the connection is closed. A WebSocket holds its

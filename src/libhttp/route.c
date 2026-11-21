@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* REST-style routes (doc/ROUTES): a vhost's "routes" block maps methods
+/* REST-style routes (doc/ROUTES.md): a vhost's "routes" block maps methods
  * and path patterns such as /api/users/{id} or /files/{path*} to the page
  * that serves them. The page reads the parameters with
  * request_get_route_param(). A path that matches a route for other methods

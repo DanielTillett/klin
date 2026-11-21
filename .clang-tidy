@@ -1,5 +1,5 @@
 # clang-tidy for Klin's own code (src/, klin/; LibU is not checked). Run by
-# .github/workflows/analysis.yml; doc/FUZZING, STATIC ANALYSIS.
+# .github/workflows/analysis.yml; doc/FUZZING.md, STATIC ANALYSIS.
 Checks: >
   -*,
   clang-analyzer-*,

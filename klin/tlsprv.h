@@ -40,8 +40,8 @@ struct tls_ctx_args_s
     int depth;              /* max depth for the cert chain verification */
     int vmode;              /* SSL verification mode */
     int keymgr;             /* the private key is held by a key manager */
-    int sandbox;            /* ... in a sandbox (doc/SANDBOX)           */
-    /* protocol settings (doc/TLS) */
+    int sandbox;            /* ... in a sandbox (doc/SANDBOX.md)           */
+    /* protocol settings (doc/TLS.md) */
     const char *ciphers;    /* TLS 1.2 cipher list                      */
     const char *suites;     /* TLS 1.3 cipher suites (NULL: OpenSSL's)  */
     int minver;             /* TLS1_2_VERSION or TLS1_3_VERSION         */

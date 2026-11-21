@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Daniel Tillett. Part of Klin; see the LICENSE file.
-"""Klin source release files (doc/RELEASES).
+"""Klin source release files (doc/RELEASES.md).
 
 Writes into --out (default .build/dist):
 

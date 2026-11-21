@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Daniel Tillett. Part of Klin; see the LICENSE file.
-"""Release and workflow checks (doc/RELEASES).
+"""Release and workflow checks (doc/RELEASES.md).
 
   - every workflow in .github/workflows: pinned actions (a full commit SHA
     and a version comment), "permissions: {}" at the top and explicit

@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* Process sandboxes (doc/SANDBOX). On Linux a seccomp-bpf filter: the
+/* Process sandboxes (doc/SANDBOX.md). On Linux a seccomp-bpf filter: the
  * system calls a worker (or the TLS key manager) needs are allowed, those
  * only an attacker needs (ptrace, mount, setuid, module loading, bpf,
  * namespaces...) kill the process, and any other call fails with EPERM.
@@ -277,7 +277,7 @@ static int sb_named(const char *extra, const char *name)
 static pid_t sb_protected[16];
 static size_t sb_nprotected;
 
-/* the argument checks of a worker (doc/SANDBOX), unless sandbox_allow
+/* the argument checks of a worker (doc/SANDBOX.md), unless sandbox_allow
    names the call:
    - socket: UNIX, IPv4 and IPv6 only; socketpair: UNIX only;
    - kill and tgkill: itself only; a worker that runs CGI scripts (whose
@@ -405,7 +405,7 @@ static int sb_seccomp(const sb_call_t *allow, int worker, int exec,
         if((nr = sb_lookup(sb_extra, p, (size_t) (e - p))) < 0 &&
                 (nr = sb_lookup(sb_exec, p, (size_t) (e - p))) < 0)
             warn_err("sandbox_allow: %.*s is not a system call that can be "
-                    "allowed (see doc/SANDBOX)", (int) (e - p), p);
+                    "allowed (see doc/SANDBOX.md)", (int) (e - p), p);
         dbg_err_if(sb_add(prog, &n, MAX - 1, nr, SECCOMP_RET_ALLOW));
     }
 
@@ -437,7 +437,7 @@ int sandbox_check_allow(const char *extra)
         if(e > p && sb_lookup(sb_extra, p, (size_t) (e - p)) < 0 &&
                 sb_lookup(sb_exec, p, (size_t) (e - p)) < 0)
             warn_err("sandbox_allow: %.*s is not a system call that can be "
-                    "allowed (see doc/SANDBOX)", (int) (e - p), p);
+                    "allowed (see doc/SANDBOX.md)", (int) (e - p), p);
     }
     return 0;
 err:
@@ -458,7 +458,7 @@ int sandbox_keymgr(void)
 
 #include <unistd.h>
 
-/* untested: no OpenBSD machine in the test setup (doc/SANDBOX) */
+/* untested: no OpenBSD machine in the test setup (doc/SANDBOX.md) */
 int sandbox_check_allow(const char *extra)
 {
     u_unused_args(extra);

@@ -125,7 +125,7 @@ err:
     return ~0;
 }
 
-/* Client-side sessions are kept in cookies (doc/SESSIONS). The current
+/* Client-side sessions are kept in cookies (doc/SESSIONS.md). The current
  * format is AES-256-GCM: KL1_CLISES_DATA is the hex of nonce, ciphertext
  * and tag, with the session id and KL1_CLISES_MTIME authenticated with it.
  * The format before 4.0 (AES-256-CBC, then an HMAC in KL1_CLISES_HMAC, the

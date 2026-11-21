@@ -1,23 +1,24 @@
-KLIN CRYPTOGRAPHY AND TLS
--------------------------
+# Cryptography and TLS
 
 All of Klin's cryptography goes through one small interface, klin/crypto.h
 (the kc_ functions), and all of its TLS through klin/tls.h and the TLS io
 driver. Only these files call the crypto library:
 
-    src/libutils/crypto.c       digests, HMAC, PBKDF2, random bytes,
-                                constant-time compare, wiping, ciphers
-    src/libtls/tls.c            TLS server contexts
-    src/libtls/tls_glue.c       certificates, keys, CA and CRL files
-    src/libtls/keyproxy.c       the TLS key manager's provider (doc/KEYMGR)
-    src/libio/iossl.c           the TLS io driver
-    klin/tlsprv.h               their private declarations
+```
+src/libutils/crypto.c       digests, HMAC, PBKDF2, random bytes,
+                            constant-time compare, wiping, ciphers
+src/libtls/tls.c            TLS server contexts
+src/libtls/tls_glue.c       certificates, keys, CA and CRL files
+src/libtls/keyproxy.c       the TLS key manager's provider (doc/KEYMGR)
+src/libio/iossl.c           the TLS io driver
+klin/tlsprv.h               their private declarations
+```
 
 The build checks fail if any other file includes an OpenSSL header, and
 Klin's own code is compiled with OPENSSL_NO_DEPRECATED (OPENSSL_API_COMPAT
 30000): no API deprecated in OpenSSL 3.0 is used.
 
-THE INTERFACE (klin/crypto.h)
+## The interface (`klin/crypto.h`)
 
 - digests: kc_digest(KC_MD5 | KC_SHA1 | KC_SHA256 | KC_RIPEMD160, ...);
   kc_md_from_name("sha256") for configuration values.
@@ -28,13 +29,13 @@ THE INTERFACE (klin/crypto.h)
   kc_cleanse() (wiping that the compiler keeps).
 - ciphers: kc_cipher_new(KC_AES_256_CBC, encrypt, key, iv), update,
   final, free; the cipher codec (codec_cipher_create) and
-  u_cipher_encrypt/decrypt take a KC_* cipher.
+  u_cipher_encrypt/decrypt take a `KC_*` cipher.
 - authenticated encryption: kc_aead_seal() and kc_aead_open(), AES-256-GCM
   with additional data (KC_AEAD_KEY, KC_AEAD_NONCE, KC_AEAD_TAG); open
   fails on any change to key, nonce, data or ciphertext. Client-side
-  sessions use it (doc/SESSIONS).
+  sessions use it ([SESSIONS](SESSIONS.md)).
 - sizes: KC_MD_MAX, KC_KEY_MAX, KC_IV_MAX, KC_BLOCK_MAX equal OpenSSL's
-  EVP_MAX_* values, so key buffers, session cookies and encrypted pages
+  `EVP_MAX_*` values, so key buffers, session cookies and encrypted pages
   keep their formats.
 
 TLS: tls_load_init_ctx() returns an opaque tls_ctx_t (an SSL_CTX in the
@@ -43,8 +44,8 @@ io_ssl_get_SSL() is declared in klin/tlsprv.h only.
 
 API changes in 4.0.0 for code that used these directly:
 codec_cipher_create() and u_cipher_encrypt/decrypt() take KC_AES_256_CBC
-instead of EVP_aes_256_cbc(); tls_load_init_ctx() returns tls_ctx_t *;
-io_ssl_create() takes a tls_ctx_t *; Klin's headers no longer include
+instead of EVP_aes_256_cbc(); tls_load_init_ctx() returns tls_ctx_t `*`;
+io_ssl_create() takes a tls_ctx_t `*`; Klin's headers no longer include
 OpenSSL's (include them yourself where a page uses OpenSSL).
 
 THE BACKEND: OPENSSL ONLY (decision, 20 Nov 2026)

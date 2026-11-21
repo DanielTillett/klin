@@ -6,7 +6,7 @@
  * in the LICENSE file which you have received as part of this distribution.
  */
 
-/* Server-Sent Events (doc/SSE). The page holds the connection, and its
+/* Server-Sent Events (doc/SSE.md). The page holds the connection, and its
  * worker, for as long as it streams: sse_wait() is where it waits, with
  * poll(2) on the client socket (to see it go away), an optional descriptor
  * of the page's own (to wake up when there is something to send) and the

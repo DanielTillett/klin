@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-/* process sandboxes (doc/SANDBOX): seccomp on Linux, pledge on OpenBSD */
+/* process sandboxes (doc/SANDBOX.md): seccomp on Linux, pledge on OpenBSD */
 int sandbox_worker(int exec, const char *extra);
 int sandbox_keymgr(void);
 int sandbox_check_allow(const char *extra);

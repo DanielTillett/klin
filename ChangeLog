@@ -15,7 +15,7 @@ Klin 4.0.0:
 	  entries, so they survive a reconfigure. The Windows service keeps
 	  the name kloned. All of it is in cmake/klone_compat.cmake and the
 	  lines marked "before KLone was renamed Klin"
-	- releases and supply chain (doc/RELEASES): SECURITY.md (private
+	- releases and supply chain (doc/RELEASES.md): SECURITY.md (private
 	  reporting through GitHub); build/release.py makes a reproducible
 	  source tarball with the pinned LibU (it builds with CMake alone,
 	  offline), an SPDX 2.3 SBOM and SHA256SUMS; a release workflow signs
@@ -25,8 +25,10 @@ Klin 4.0.0:
 	  to commit SHAs with their versions, and no untrusted values expanded
 	  into scripts, as test/run_release_checks.py checks; Dependabot
 	  updates the pins and the fuzzing image's digest; OpenSSF Scorecard
-	  runs weekly (results not published)
-	- files from the file system (doc/FILES): symbolic links are followed
+	  runs weekly (results published to scorecard.dev). The repository is
+	  https://github.com/DanielTillett/klin; README and doc/ are Markdown,
+	  with CONTRIBUTING.md and issue and pull request templates
+	- files from the file system (doc/FILES.md): symbolic links are followed
 	  only to targets inside the dir_root or alias target the path was
 	  resolved under (follow_symlinks inside; no follows none, yes all,
 	  as before: a new default), and the file is opened one segment at a
@@ -38,7 +40,7 @@ Klin 4.0.0:
 	  is now split against the files of the vhost the Host field names.
 	  serve_files no and run_cgi no turn the suppliers off per server or
 	  vhost (the build options KLIN_ENABLE_SUP_FS/CGI leave them out)
-	- CGI (doc/CGI): scripts are killed after cgi.timeout (60 s; 504 if
+	- CGI (doc/CGI.md): scripts are killed after cgi.timeout (60 s; 504 if
 	  they had sent nothing), with what they started; RLIMIT_CPU
 	  (cgi.max_cpu, 30 s) and RLIMIT_AS (cgi.max_memory, 512 MB), no core
 	  dumps; klind's environment variables only as cgi.pass_env lists;
@@ -48,11 +50,11 @@ Klin 4.0.0:
 	  limit off). CGI scripts could not run in a sandboxed worker (chdir
 	  and arch_prctl were refused): fixed, and a server with only an
 	  extension handler now allows exec too
-	- worker resource limits (doc/LIMITS): each worker gets RLIMIT_AS
+	- worker resource limits (doc/LIMITS.md): each worker gets RLIMIT_AS
 	  (worker_max_memory, 1024 MB), RLIMIT_NOFILE (worker_max_files,
 	  1024) and RLIMIT_NPROC (worker_max_procs, max_child + 64), soft and
 	  hard, before its sandbox; 0 turns one off (new defaults)
-	- sandbox (doc/SANDBOX): workers' socket() is limited to UNIX, IPv4
+	- sandbox (doc/SANDBOX.md): workers' socket() is limited to UNIX, IPv4
 	  and IPv6, mmap/mprotect refuse writable and executable memory, and
 	  kill/tgkill reach only the worker itself (with CGI: anything but
 	  klind, the key managers, klind's process group and -1); a
@@ -66,7 +68,7 @@ Klin 4.0.0:
 	  certificate callback no longer assumes OpenSSL gives it a
 	  certificate; README no longer says client-side sessions use AES-CBC
 	  (they are AES-256-GCM)
-	- session tickets (doc/TLS): each server's ticket secret is replaced
+	- session tickets (doc/TLS.md): each server's ticket secret is replaced
 	  every period by an HMAC of itself and the old one erased, in every
 	  process; a process whose memory is read no longer gives away the
 	  ticket keys of every period since klind started (they all came from
@@ -86,7 +88,7 @@ Klin 4.0.0:
 	  stops the signalling of the other workers; blind_chroot checks the
 	  directory and enters it through one descriptor and removes it once
 	  inside (a fixed one-second wait) (found by reviews)
-	- key manager (doc/KEYMGR): it is undumpable (PR_SET_DUMPABLE 0, no
+	- key manager (doc/KEYMGR.md): it is undumpable (PR_SET_DUMPABLE 0, no
 	  core dumps), so a worker of the same user cannot read the key from
 	  its memory when klind runs as that user from the start (systemd
 	  User=); it signs only TLS handshake digests (SHA-1/224/256/384/512 of
@@ -100,7 +102,7 @@ Klin 4.0.0:
 	  it over, and OpenSSL's decoder left copies in freed memory that the
 	  workers inherited (two servers sharing a key file, the second with a
 	  ca_file); the server tests now cover that configuration
-	- TLS settings (doc/TLS): the TLS 1.2 ciphers are Mozilla's
+	- TLS settings (doc/TLS.md): the TLS 1.2 ciphers are Mozilla's
 	  "intermediate" list (forward secret key exchange, AEAD only; a new
 	  default: old clients with CBC-only or RSA key exchange are refused),
 	  in the server's order; renegotiation is refused; session ticket keys
@@ -109,7 +111,7 @@ Klin 4.0.0:
 	  takes every other's tickets; tls_min_version (1.2 or 1.3),
 	  tls_ciphers and tls_ciphersuites; mutual TLS (verify_mode, ca_file)
 	  documented and tested; no OCSP stapling
-	- session hardening (doc/SESSIONS): a session id a client sends that
+	- session hardening (doc/SESSIONS.md): a session id a client sends that
 	  names no stored session is no longer taken on (session fixation;
 	  file sessions no longer create a file for it);
 	  session_regenerate_id() gives a new id at login or a change of
@@ -121,7 +123,7 @@ Klin 4.0.0:
 	  (the CBC+HMAC format is still read in 4.x, removed in 5.0);
 	  session_csrf_token() and session_csrf_check() for CSRF tokens. An
 	  expired session no longer stops the request from starting a new one
-	- fuzzing and static analysis (doc/FUZZING): a libFuzzer target per
+	- fuzzing and static analysis (doc/FUZZING.md): a libFuzzer target per
 	  parser in fuzz/ (request, multipart, header, url, json, ws, digest,
 	  session, translate), with seeds and dictionaries, built with
 	  -DKLIN_FUZZ=ON and run under ASan and UBSan by test/run_fuzz.py in
@@ -137,7 +139,7 @@ Klin 4.0.0:
 	  refused); a session variable whose key did not decrypt leaked; the
 	  io drivers were called through pointers of another function type; a
 	  JSON -0 did not round-trip
-	- request limits and request smuggling (doc/LIMITS). New defaults, each
+	- request limits and request smuggling (doc/LIMITS.md). New defaults, each
 	  configurable: at most 100 header fields (was 256), 8192 bytes a
 	  field and 32 KB a header (was 64 KB), answered 431 (was 400); a
 	  request line over 8 KB is 414; post_maxsize (5 MB) now limits the
@@ -149,21 +151,21 @@ Klin 4.0.0:
 	  free of control characters (400). Transfer-Encoding is 501 (it was
 	  400), and 400 with a Content-Length. A refused request is answered
 	  before the connection is closed (lingering close, plain HTTP)
-	- a hardened systemd unit, contrib/systemd/klind.service (doc/SYSTEMD):
+	- a hardened systemd unit, contrib/systemd/klind.service (doc/SYSTEMD.md):
 	  klind starts as root only to bind, chroot and drop, under a reduced
 	  capability set, ProtectSystem=strict, a system call filter and the
 	  other systemd protections (systemd-analyze security: 2.4, "OK");
 	  test/run_systemd_test.py runs klind under it (CI, with sudo). The
 	  refusal to keep root credentials without 'allow_root yes' (uid and
 	  gid are both needed; a chroot alone is not enough) is now tested
-	- compiler and linker hardening (doc/HARDENING), on by default
+	- compiler and linker hardening (doc/HARDENING.md), on by default
 	  (KLIN_HARDENING=OFF turns it off): _FORTIFY_SOURCE=3 in release
 	  builds, -fstack-clash-protection, -fcf-protection (x86) or
 	  -mbranch-protection=standard (ARM64), -ftrivial-auto-var-init=zero,
 	  -Werror=format-security, PIE with -z relro -z now -z noexecstack;
 	  --dynamicbase/--nxcompat/--high-entropy-va on MinGW; MSVC
 	  equivalents. A build check reads klind's ELF headers to prove them
-	- cryptography behind one interface (doc/CRYPTO): klin/crypto.h (kc_*:
+	- cryptography behind one interface (doc/CRYPTO.md): klin/crypto.h (kc_*:
 	  digests, HMAC, PBKDF2, random bytes, constant-time compare, wiping,
 	  AES-256-CBC) implemented in src/libutils/crypto.c; TLS through an
 	  opaque tls_ctx_t. Only that file and the TLS layer call OpenSSL (a
@@ -183,7 +185,7 @@ Klin 4.0.0:
 	  TLS sockets are closed with closesocket(); key_manager defaults to
 	  no. CI builds it on every push, serves pages over HTTP and HTTPS
 	  (test/run_windows_smoke.py) and runs the regression suite
-	- sandbox (doc/SANDBOX), on by default (sandbox no turns it off):
+	- sandbox (doc/SANDBOX.md), on by default (sandbox no turns it off):
 	  workers, after the child_init hook, and the TLS key manager run
 	  under a seccomp-bpf filter with no_new_privs on Linux (x86-64,
 	  aarch64): the calls serving needs pass, ptrace, mount, setuid,
@@ -192,7 +194,7 @@ Klin 4.0.0:
 	  sandbox_allow adds calls from a known list. OpenBSD: pledge
 	  (untested). A page that made unusual system calls may need
 	  sandbox_allow or sandbox no
-	- TLS key manager (doc/KEYMGR), on by default (key_manager no turns it
+	- TLS key manager (doc/KEYMGR.md), on by default (key_manager no turns it
 	  off): the private key goes to a separate process before any worker
 	  is forked and klind wipes its copy; workers hold a proxy key (an
 	  OpenSSL 3 provider, klin-keyproxy) whose signatures the key manager
@@ -200,7 +202,7 @@ Klin 4.0.0:
 	  turned off with it. klind stops if a key manager exits. Key and
 	  certificate files are read into secure memory. The server tests
 	  scan every klind process's memory for the key
-	- request validation (doc/VALIDATE): named validators (anchored POSIX
+	- request validation (doc/VALIDATE.md): named validators (anchored POSIX
 	  regex, int range, length range, enum) and "params" blocks per path
 	  and method naming each parameter's source (query, form, route,
 	  header), validator and whether it is required. Invalid or missing
@@ -209,20 +211,20 @@ Klin 4.0.0:
 	  before the page, after routing; bad configurations stop klind.
 	  request_parse_data() now runs once per request; request_del_arg(),
 	  request_get_route_params()
-	- IP access control (doc/ACCESS): an "access" block of rules, each
+	- IP access control (doc/ACCESS.md): an "access" block of rules, each
 	  for some paths or all, with allow and deny lines of IPv4/IPv6
 	  addresses, networks and "all"; the first rule for the path decides
 	  (403). A client the first all-paths rule denies is dropped when the
 	  connection is accepted, before TLS. Bad entries stop klind at
 	  startup
-	- HTTP authentication (doc/AUTH): Basic and Digest (SHA-256, MD5 only
+	- HTTP authentication (doc/AUTH.md): Basic and Digest (SHA-256, MD5 only
 	  where a realm allows it) in per-path realms with roles, set in a
 	  vhost's "auth" block. Passwords are stored as PBKDF2-SHA256 and Digest
 	  hashes made by the new klin -c passwd; plaintext passwords, and Basic
 	  over plain HTTP, stop klind at startup. Digest nonces are signed and
 	  expire (stale=true). Pages read the user with request_get_auth_user(),
 	  CGIs with REMOTE_USER; request_get_method_name() is new
-	- security headers (doc/HEADERS), on by default for every response:
+	- security headers (doc/HEADERS.md), on by default for every response:
 	  X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN,
 	  Referrer-Policy: strict-origin-when-cross-origin and, over HTTPS,
 	  Strict-Transport-Security: max-age=31536000; Content-Security-Policy
@@ -243,7 +245,7 @@ Klin 4.0.0:
 	  clients reject. Files translated by an older klin (raw data) are
 	  still served, uncompressed. Client sessions and compressed page
 	  blocks keep their raw format (codec ZLIB_* modes are new)
-	- Server-Sent Events (doc/SSE, <klin/sse.h>): sse_start(), sse_send()
+	- Server-Sent Events (doc/SSE.md, <klin/sse.h>): sse_start(), sse_send()
 	  (multi-line data), sse_comment(), sse_retry(), sse_last_event_id()
 	  and sse_wait(), which polls the client socket (to see it close), a
 	  descriptor of the page's and the timer. Built on a new streaming
@@ -251,7 +253,7 @@ Klin 4.0.0:
 	  the first write and each io_flush() reaches the client (chunked on
 	  HTTP/1.1). Writes the client does not take in 30 s close the
 	  connection. Also io_get_fd()
-	- WebSockets (RFC 6455, doc/WEBSOCKET, <klin/ws.h>): ws_accept()
+	- WebSockets (RFC 6455, doc/WEBSOCKET.md, <klin/ws.h>): ws_accept()
 	  (handshake, subprotocol choice; another site's Origin is refused
 	  unless WS_ANY_ORIGIN), ws_wait() (poll(2) on the client, a
 	  descriptor of the page's and the timer), ws_recv() (fragmented
@@ -260,12 +262,12 @@ Klin 4.0.0:
 	  close with 1002, 1007 or 1009; a frame must be read or written within
 	  30 s. Also io_pending(), response_set_header_sent(), status codes
 	  101 and 426
-	- REST routes (doc/ROUTES): a "routes" block maps methods and patterns
+	- REST routes (doc/ROUTES.md): a "routes" block maps methods and patterns
 	  ({name} segments, a {name*} rest) to pages; parameters through
 	  request_get_route_param(); 405 with Allow when only other methods
 	  match; bad routes stop klind at startup. PATCH requests. Status
 	  codes 405 and 415
-	- JSON (doc/JSON, <klin/json.h>): a strict RFC 8259 reader (UTF-8
+	- JSON (doc/JSON.md, <klin/json.h>): a strict RFC 8259 reader (UTF-8
 	  checked, duplicate keys refused, nesting limited to 64) and a
 	  streaming writer that checks the structure and escapes for HTML
 	  <script> safety. request_get_json() parses a request body (415,
@@ -300,7 +302,7 @@ Klin 4.0.0:
 	  the build); dead parser states removed
 	- packaging: install writes lib/cmake/Klin/KlinConfig.cmake
 	  (find_package(Klin), target Klin::klin) and lib/pkgconfig/klin.pc
-	- code: doc/CONVENTIONS (return values, error macros, ownership,
+	- code: doc/CONVENTIONS.md (return values, error macros, ownership,
 	  process-wide state, signals); header_next_field() and
 	  header_count_field(); vhost aliases and index pages are read once;
 	  the longest functions (request serving, CGI, server setup and loop,

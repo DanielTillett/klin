@@ -7,7 +7,7 @@
  */
 
 /* The OpenSSL 3 backend of Klin's cryptography interface (klin/crypto.h,
- * doc/CRYPTO). Outside this file only the TLS layer uses OpenSSL. */
+ * doc/CRYPTO.md). Outside this file only the TLS layer uses OpenSSL. */
 
 #include "klin_conf.h"
 #include <limits.h>

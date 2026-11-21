@@ -1,22 +1,23 @@
-KLIN JSON
----------
+# JSON
 
-<klin/json.h> reads and writes JSON (RFC 8259). It is in libutils, so
+`<klin/json.h>` reads and writes JSON (RFC 8259). It is in libutils, so
 pages, webapp code and tools can use it.
 
-READING
+## Reading
 
-    json_t *doc;
-    char err[128];
+```
+json_t *doc;
+char err[128];
 
-    if(json_parse(text, len, &doc, err, sizeof err))
-        ...                     /* err: what is wrong, and at what offset */
-    name = json_string(json_get(doc, "name"));      /* NULL if missing */
-    if(json_int64(json_get(doc, "id"), &id))
-        ...                     /* missing, not an integer, out of range */
-    for(i = 0; i < json_count(list); ++i)
-        item = json_at(list, i);
-    json_free(doc);
+if(json_parse(text, len, &doc, err, sizeof err))
+    ...                     /* err: what is wrong, and at what offset */
+name = json_string(json_get(doc, "name"));      /* NULL if missing */
+if(json_int64(json_get(doc, "id"), &id))
+    ...                     /* missing, not an integer, out of range */
+for(i = 0; i < json_count(list); ++i)
+    item = json_at(list, i);
+json_free(doc);
+```
 
 Accessors accept NULL and return NULL, 0 or false, so lookups can be
 chained without checks at each step; json_type() tells a JSON null from
@@ -39,25 +40,27 @@ Content-Type is not application/json or a +json type, 413 if the body is
 larger than max or post_maxsize, 400 if it is not valid JSON).
 request_read_body() reads any body raw.
 
-WRITING
+## Writing
 
-    json_writer_t *w;
+```
+json_writer_t *w;
 
-    response_set_content_type(response, "application/json");
-    json_writer_create(out, &w);
-    json_begin_object(w);
-    json_key(w, "id");      json_int(w, 42);
-    json_key(w, "name");    json_str(w, name);
-    json_key(w, "tags");    json_begin_array(w);
-    json_str(w, "a");       json_str(w, "b");
-    json_end_array(w);
-    json_end_object(w);
-    if(json_writer_free(w))
-        ...                     /* the document was incomplete or misused */
+response_set_content_type(response, "application/json");
+json_writer_create(out, &w);
+json_begin_object(w);
+json_key(w, "id");      json_int(w, 42);
+json_key(w, "name");    json_str(w, name);
+json_key(w, "tags");    json_begin_array(w);
+json_str(w, "a");       json_str(w, "b");
+json_end_array(w);
+json_end_object(w);
+if(json_writer_free(w))
+    ...                     /* the document was incomplete or misused */
+```
 
 The writer checks the structure (a key before each object member, one
 value at the top, everything closed) and json_writer_free() reports any
 mistake. Strings are escaped so the output is also safe inside an HTML
-<script> element: <, >, & and U+2028/U+2029 are written as \u escapes.
+`<script>` element: <, >, & and U+2028/U+2029 are written as \u escapes.
 Invalid UTF-8 is written as U+FFFD. NaN and infinities have no JSON form
 and are an error. json_value() writes a parsed document back.

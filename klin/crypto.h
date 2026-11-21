@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-/* Klin's cryptography interface (doc/CRYPTO). Every hash, MAC, cipher and
+/* Klin's cryptography interface (doc/CRYPTO.md). Every hash, MAC, cipher and
  * random byte Klin uses goes through these functions; only their backend
  * (src/libutils/crypto.c) and the TLS layer (src/libtls, src/libio/iossl.c)
  * call the crypto library, OpenSSL 3. Without OpenSSL they fail. */

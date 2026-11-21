@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Daniel Tillett. Part of Klin; see the LICENSE file.
 """Build every fuzz target in fuzz/ (clang, libFuzzer, ASan and UBSan) and
-run each one briefly from its seeds (doc/FUZZING):
+run each one briefly from its seeds (doc/FUZZING.md):
 
     python3 test/run_fuzz.py [--runs N] [--target NAME ...]
 

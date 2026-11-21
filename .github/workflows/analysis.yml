@@ -1,6 +1,6 @@
 # Static analysis with clang-tidy (.clang-tidy: the clang static analyzer,
 # bugprone and a few CERT checks) over Klin's own sources; LibU is not
-# checked. doc/FUZZING, STATIC ANALYSIS.
+# checked. doc/FUZZING.md, STATIC ANALYSIS.
 name: Static analysis
 
 on:

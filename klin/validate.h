@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-/* declarative request validation of a vhost (doc/VALIDATE), used by the
+/* declarative request validation of a vhost (doc/VALIDATE.md), used by the
  * HTTP server */
 struct validator_s;
 typedef struct validator_s validator_t;

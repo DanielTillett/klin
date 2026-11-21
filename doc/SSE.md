@@ -1,26 +1,27 @@
-KLIN SERVER-SENT EVENTS
------------------------
+# Server-sent events
 
 A page can stream events to the browser (the HTML EventSource API,
-"text/event-stream"). Include <klin/sse.h>:
+"text/event-stream"). Include `<klin/sse.h>`:
 
-    <%! #include <klin/sse.h> %><%
-        if(sse_start(request, response))
-            return;
+```
+<%! #include <klin/sse.h> %><%
+    if(sse_start(request, response))
+        return;
 
-        /* wait for my_fd (a pipe, a socket...) with a 15 s keep-alive */
-        for(;;)
-        {
-            int w = sse_wait(request, my_fd, 15000);
+    /* wait for my_fd (a pipe, a socket...) with a 15 s keep-alive */
+    for(;;)
+    {
+        int w = sse_wait(request, my_fd, 15000);
 
-            if(w == SSE_CLOSED)
-                break;                      /* the client went away */
-            if(w == SSE_TIMEOUT && sse_comment(response, "ping"))
-                break;
-            if(w == SSE_READY && sse_send(response, "update", id, data))
-                break;
-        }
-    %>
+        if(w == SSE_CLOSED)
+            break;                      /* the client went away */
+        if(w == SSE_TIMEOUT && sse_comment(response, "ping"))
+            break;
+        if(w == SSE_READY && sse_send(response, "update", id, data))
+            break;
+    }
+%>
+```
 
 Put nothing before the code block, not even a line break: sse_start()
 sends the header, and the page's output goes to the client as written.
