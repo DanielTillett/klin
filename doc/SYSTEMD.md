@@ -84,7 +84,8 @@ left is the price of starting as root (`User=`, `CAP_SET*`,
 
 CGI scripts run inside the same unit, so they get the same restrictions. A
 script that needs to write somewhere, or to compile code just in time
-(which `MemoryDenyWriteExecute` blocks), needs a drop-in. Run `systemctl edit klind` and add, for example:
+(which `MemoryDenyWriteExecute` blocks), needs a drop-in. Run `systemctl
+edit klind` and add, for example:
 
 ```conf
 [Service]

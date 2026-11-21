@@ -15,7 +15,7 @@ routes
     }
     route
     {
-        method  PUT, PATCH DELETE
+        method  PUT, PATCH, DELETE
         path    /api/users/{id}
         page    /api/user_edit.kl1
     }

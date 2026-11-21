@@ -42,9 +42,9 @@ MinGW (Windows) links with `--dynamicbase`, `--nxcompat` and
 `--high-entropy-va` instead, for ASLR and DEP. macOS links PIE by
 default, and the `-z` options do not apply there.
 
-MSVC is not a supported build today (see
-[Known limitations](../README.md#known-limitations) in the README), but if used it
-would get `/GS` and `/guard:cf`, and link with `/guard:cf /DYNAMICBASE
+MSVC is not a supported build today (see [Known
+limitations](../README.md#known-limitations) in the README), but if used
+it would get `/GS` and `/guard:cf`, and link with `/guard:cf /DYNAMICBASE
 /HIGHENTROPYVA /NXCOMPAT`.
 
 ## Size options are separate

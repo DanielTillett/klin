@@ -36,18 +36,21 @@ CMake build without GNU make, OpenSSL 3 with TLS 1.2 or newer, hardened
 HTTP parsing and sessions, a sandbox, and regression, full-server and fuzz
 tests. Coming from KLone? Read [Upgrading](doc/UPGRADING.md) first.
 
-**Contents:** [Why Klin](#why-klin) · [Quick start](#quick-start-linux-wsl-macos) ·
-[How it works](#how-it-works) · [Documentation](#documentation) ·
-[Building with CMake](#building-with-cmake) · [Build-and-test runner](#build-and-test-runner) ·
-[Running a site](#running-a-site) · [Testing](#testing) · [Upgrading from KLone](#upgrading-from-klone) ·
-[Known limitations](#known-limitations) · [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md)
+**Contents:** [Why Klin](#why-klin) · [Quick
+start](#quick-start-linux-wsl-macos) · [How it works](#how-it-works) ·
+[Documentation](#documentation) · [Building with
+CMake](#building-with-cmake) · [Build-and-test
+runner](#build-and-test-runner) · [Running a site](#running-a-site) ·
+[Testing](#testing) · [Upgrading from KLone](#upgrading-from-klone) ·
+[Known limitations](#known-limitations) · [Contributing](CONTRIBUTING.md)
+· [Security policy](SECURITY.md)
 
 
 ## Why Klin
 
 Plenty of devices need a web interface but cannot carry a general-purpose
-web stack: a router, an industrial controller, a laboratory or test instrument, a
-camera, a sensor gateway.
+web stack: a router, an industrial controller, a laboratory or test
+instrument, a camera, a sensor gateway.
 
 **One program, nothing to unpack.** The server, its configuration and the
 whole site (pages, images, scripts, style sheets) are compiled into
@@ -66,16 +69,14 @@ garbage collection.
 Code inside `<% ... %>` calls the device's own libraries, drivers and
 ioctls directly, with no bindings or IPC layer in between.
 
-The defaults are the ones I would want on any device exposed to a
-network. By default, TLS is 1.2 or 1.3 with forward-secret ciphers only.
-The TLS private key stays in a separate process, out of the workers, when
-it has a `key_file` of its own (not shared with the certificate), the key
-manager is on (the default except on Windows) and the workers' user cannot
-read the file. Workers run with resource limits and, on Linux, a seccomp
-sandbox. The HTTP parser is strict and fuzzed, sessions are hardened and
-carry tokens against cross-site request forgery (CSRF), and there are
-access rules and HTTP authentication. Releases are reproducible and
-signed, with an SBOM. The security pages give each protection with the
+The defaults are the ones I would want on any device exposed to a network.
+By default, TLS is 1.2 or 1.3 with forward-secret ciphers only. The TLS
+private key can live in a separate process, out of the workers
+([when](doc/KEYMGR.md)). Workers run with resource limits and, on Linux, a
+seccomp sandbox. The HTTP parser is strict and fuzzed, sessions are
+hardened and carry tokens against cross-site request forgery (CSRF), and
+there are access rules and HTTP authentication. Releases are reproducible
+and signed, with an SBOM. The security pages give each protection with the
 setting that changes it.
 
 It also has [REST routes](doc/ROUTES.md), [JSON](doc/JSON.md), request
@@ -200,8 +201,10 @@ parent for another, so the pool can double every second up to
 worker is replaced after `prefork.max_requests_per_child` connections
 (default 10000). A worker sends the handshake digest to the key manager
 and gets back a signature. With a key file separate from the certificate
-that the workers' user cannot read, that is all a worker gets: the TLS
-private key stays out of it. A key embedded in `klind` is in every
+that the workers' user cannot read, and no other server loading it with
+`key_manager no` ([the conditions](doc/KEYMGR.md#why-it-exists)), that is
+all a worker gets: the TLS private key stays out of it. A key embedded
+in `klind` is in every
 process's memory anyway; with the key manager on, `klind` warns about it
 ([Key manager](doc/KEYMGR.md), [Sandbox](doc/SANDBOX.md),
 [Limits](doc/LIMITS.md)). The `fork` model forks one child per connection

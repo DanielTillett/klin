@@ -8,9 +8,11 @@ validator, in the `params` block that matches a request. Anything else
 reaches the page without a value check: a named parameter with no
 validator (only its presence can be required), route parameters and
 headers you do not name, and, under `unknown allow`, query and form
-arguments you do not name (by default those are dropped). A request that
-no `params` block matches is not checked at all. List every page that
-takes input, and give every parameter it reads a validator.
+arguments you do not name (by default those are dropped). Files sent in
+a `multipart/form-data` body are never checked: they go into a separate
+uploads list that no rule looks at. A request that no `params` block
+matches is not checked at all. List every page that takes input, and
+give every parameter it reads a validator.
 
 ## The configuration
 
@@ -135,9 +137,9 @@ be separated by blanks or commas.
 `query` is the query string. `form` is a POST body sent as
 `application/x-www-form-urlencoded` or `multipart/form-data`, or with no
 `Content-Type` at all, which is read as URL-encoded. Other methods'
-bodies, and POST bodies of other types, are not parsed as forms. `route` is a `{name}` found by
-a route. `header` is a request header. `any`, the default, means query,
-form and route, but not header.
+bodies, and POST bodies of other types, are not parsed as forms. `route`
+is a `{name}` found by a route. `header` is a request header. `any`, the
+default, means query, form and route, but not header.
 
 ### Repeated values
 
@@ -161,7 +163,9 @@ dropped.
 Query and form arguments that no `param` of the block names are dropped
 before the page runs. Set `unknown allow` to keep them, or
 `unknown reject` to answer 400. This applies to query and form arguments
-only; route parameters and headers are left alone.
+only; route parameters and headers are left alone, and so are uploaded
+files, which stay available to the page even under `unknown reject`.
+Check an upload's size, type and name in the page itself.
 
 ## Mistakes klind refuses
 

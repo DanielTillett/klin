@@ -24,9 +24,10 @@ flowchart TD
     A["Connection accepted"] -->|"over max_conn_per_ip:<br/>closed, no response"| X1["closed"]
     A --> B["TLS handshake (if TLS)"]
     B --> C["First request line and header<br/>deadline: idle_timeout (10 s)"]
-    C -->|"line over 8192 bytes"| R414["414"]
+    C -->|"no LF in the first 8193 bytes"| R414["414"]
+    C -->|"target of 4096 bytes or more"| R400t["400"]
     C -->|"max_header_fields, _line, _size"| R431["431"]
-    C -->|"bad framing or field,<br/>target of 4096 bytes or more"| R400["400 or 501"]
+    C -->|"bad framing or field"| R400["400 or 501"]
     C -->|"Content-Length over post_maxsize"| R413["413"]
     C --> S{"Matching params block<br/>or active page?"}
     S -- "no (static file or CGI)" --> E
@@ -41,14 +42,16 @@ flowchart TD
 ```
 
 A refusal at the header stage (the 414, 431, 400 or 501 and 413 boxes)
-ends the connection. One of those 400s catches clients out: a request
-target (path and query) of 4,096 bytes or more is refused with 400 even
-when the whole line is under the 8,192-byte limit, so a long URL gets
-400, and 414 only once the line itself is over 8,192 bytes. A later
-error, such as the 400 for too many arguments or a form body the parser
-cannot read, gets an error page and the connection can stay open for the
-next request. A deadline that runs
-out closes the connection without a response.
+ends the connection. One of those 400s catches clients out. klind reads
+up to 8,193 bytes looking for the end of the request line: if the LF is
+among them, even as byte 8,193, the line goes on to normal parsing, and
+414 comes only when 8,193 bytes arrive with no LF. In that parsing a
+request target (path and query) of 4,096 bytes or more is refused with
+400, so a long URL usually gets 400, not 414. A later error, such as
+the 400 for too many arguments or a form body the parser cannot read,
+gets an error page and the connection can stay open for the next
+request. A deadline that runs out closes the connection without a
+response.
 
 ## The request
 
@@ -78,9 +81,9 @@ kept-alive connection the next request's line and header get
 parses a POSTed form (URL-encoded or multipart) for a matching `params`
 block or an active page, and when a page calls `request_read_body()`. A
 POST with no Content-Type is parsed as URL-encoded; one with any other
-media type is left for the page to read. A page that reads the raw request stream (`in`)
-itself has no blanket deadline, so set your own if the client is not
-trusted.
+media type is left for the page to read. A page that reads the raw request
+stream (`in`) itself has no blanket deadline, so set your own if the
+client is not trusted.
 
 These are the server block's settings, not a vhost's. klind reads them when
 the request object is created, before the Host field has arrived, so a
@@ -192,13 +195,13 @@ per-session size limit set by the size of one message to the parent;
 ## How the limits are tested
 
 `test/run_server_tests.py` checks each of these. It sends every request
-refused at the header stage with a valid request pipelined behind it, and checks both the
-status and that the second request is never answered. It sends valid
-requests sitting exactly at each limit. It trickles a header in 6-byte
-lines every 250 ms and checks that klind closes it within the deadline. In
-the prefork model it opens a fourth connection against `max_conn_per_ip 3`
-and a third stream against `max_streams 2`; with either cap set to 0 those
-checks fail, as they should.
+refused at the header stage with a valid request pipelined behind it, and
+checks both the status and that the second request is never answered. It
+sends valid requests sitting exactly at each limit. It trickles a header
+in 6-byte lines every 250 ms and checks that klind closes it within the
+deadline. In the prefork model it opens a fourth connection against
+`max_conn_per_ip 3` and a third stream against `max_streams 2`; with
+either cap set to 0 those checks fail, as they should.
 
 For the worker limits, a page reports the limits it runs under (the
 defaults, and 256 MB / 64 files on a second server). It finds that 20 files

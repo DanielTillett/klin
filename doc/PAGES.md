@@ -87,7 +87,8 @@ and a `log` block) sit at the top level, and a server block can have a
 `log` block of its own. Inside a server block, any block that has its
 own `dir_root` is a virtual host (vhost), chosen by the `Host` header the
 client sends. A vhost inherits the server's settings except `addr`,
-`model`, `type`, `dir_root`, `dir_alias` and `script_alias`. `access_log`
+`model`, `type`, `dir_root`, `dir_alias`, `script_alias` and the
+limits, which it cannot change at all. `access_log`
 works differently: a vhost without one uses the server's access log, and
 `access_log no` turns it off for that vhost. As a tree:
 
@@ -102,11 +103,11 @@ flowchart TD
     V --> VB["dir_root, access, auth, routes,<br/>validators, params, security_headers"]
 ```
 
-The limits ([LIMITS.md](LIMITS.md)) are a server block's settings only; a
-vhost cannot change them. [klind.conf(5)](man/klind.conf.5) lists the
-main settings (it leaves out `script_alias` and `access_log`), and `etc/`
-in the source tree has sample configurations for vhosts, HTTPS and the
-other cases.
+The limits ([LIMITS.md](LIMITS.md)) are read before the `Host` header is,
+which is why they belong to the server block.
+[klind.conf(5)](man/klind.conf.5) lists the main settings (it leaves out
+`script_alias` and `access_log`), and `etc/` in the source tree has sample
+configurations for vhosts, HTTPS and the other cases.
 
 ## Your first page, then a login in front of it
 
@@ -206,7 +207,7 @@ my_http
 
     auth
     {
-        users_file  /home/you/mysite-users.conf
+        users_file  /home/you/mysite-users.conf    # your $HOME, written out
 
         realm
         {

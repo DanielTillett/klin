@@ -16,17 +16,22 @@ and a stolen key outlives any fix: the attacker can impersonate the
 device until the certificate expires or is revoked.
 
 I wrote the key manager so that a compromised worker has no private key to
-steal. **The key stays out of the workers only with all three of these: a
-separate `key_file` outside the site, the key manager on, and file
-permissions that keep the key file from the workers' user.** Separate
-means not a PEM file that also holds the certificate: klind reads the
-certificate in the parent process, and with a combined file the key's
-bytes pass through memory that the workers inherit. The permissions
-matter because a worker that can read the file can simply open it.
-klind and the key manager read their files before dropping to `uid` and
-`gid`, so a key file only root can read works when klind starts as root.
+steal. **The key stays out of the workers only with all four of these: a
+separate `key_file` outside the site, the key manager on, file
+permissions that keep the key file from the workers' user, and no other
+server in the same klind loading that key with `key_manager no`.**
+Separate means not a PEM file that also holds the certificate: klind
+reads the certificate in the parent process, and with a combined file
+the key's bytes pass through memory that the workers inherit. The
+permissions matter because a worker that can read the file can simply
+open it. klind and the key manager read their files before dropping to
+`uid` and `gid`, so a key file only root can read works when klind
+starts as root. The last condition is there because a server with
+`key_manager no` has klind decode its key in the parent, and every
+worker of every server is forked from the parent, so they all inherit
+that copy.
 
-With all three, a worker can ask for signatures while it runs, but it
+With all four, a worker can ask for signatures while it runs, but it
 cannot read the key, and the key does not leave with a memory dump or a
 core file of a worker. A key embedded in klind, or a server with
 `key_manager no`, is in every process (see [Limits](#limits)).
@@ -38,8 +43,9 @@ only the public key, so klind never decodes the private key, and workers
 and klind itself hold only a proxy key. A key embedded in the site is
 different: klind decodes it first and then forks the key manager with
 that copy, so the key stays in klind's memory and every worker inherits
-it. With an external `key_file` (prefork, key manager on), the key
-stays on one side of a socket:
+it. With an external `key_file` (prefork, key manager on, the file
+unreadable by the workers' user and loaded by no `key_manager no`
+server), the key stays on one side of a socket:
 
 ```mermaid
 flowchart LR
@@ -55,8 +61,8 @@ When a TLS handshake needs a signature, the worker sends the digest to
 the key manager, which signs it and sends the signature back. In TLS 1.3
 that signature goes into the server's CertificateVerify message; in TLS
 1.2 it signs the ECDHE or DHE parameters. Here is one TLS 1.3
-handshake, simplified (in TLS 1.2 the signature travels in
-ServerKeyExchange instead):
+handshake, simplified, with the same four conditions met (in TLS 1.2
+the signature travels in ServerKeyExchange instead):
 
 ```mermaid
 sequenceDiagram
@@ -102,13 +108,13 @@ Servers sharing a key file still get one key manager each.
 ### Its memory is private
 
 On Linux, other processes of the same user, the workers included, cannot
-read a key manager's memory (root still can). Before it reads the key, and again after dropping
-to `uid` and `gid` (which resets it), it makes itself undumpable. On Linux
-that is `PR_SET_DUMPABLE 0`, so `/proc/<pid>/mem` and ptrace are refused.
-It also sets `RLIMIT_CORE` to 0, so it does not write a core file. This
-matters most when klind runs as its own user from the start (systemd
-`User=`), because nothing else would make it undumpable. Other systems
-get the core limit only.
+read a key manager's memory (root still can). Before it reads the key, and
+again after dropping to `uid` and `gid` (which resets it), it makes itself
+undumpable. On Linux that is `PR_SET_DUMPABLE 0`, so `/proc/<pid>/mem` and
+ptrace are refused. It also sets `RLIMIT_CORE` to 0, so it does not write
+a core file. This matters most when klind runs as its own user from the
+start (systemd `User=`), because nothing else would make it undumpable.
+Other systems get the core limit only.
 
 Key and certificate files are read into OpenSSL secure memory, which is
 wiped when freed, not through stdio.
@@ -197,13 +203,13 @@ contain that key.
 
 `test/run_server_tests.py` scans, after TLS requests, the memory of klind
 and every process it started (Linux, /proc) for the private key, and
-expect to find it in the key managers only. The setup is two servers sharing the
-key, one of them with client certificates, which is the case that
-leaked. Run as an ordinary user, the tests also check that they cannot
-open the key managers' memory at all. Run as root, they can read every
-process, so they check where the key is and then, separately, start
-klind as `nobody` and confirm that `nobody` can open a worker's memory
-but not the key manager's.
+expects to find it in the key managers only. The setup is two servers
+sharing the key, one of them with client certificates, which is the case
+that leaked. Run as an ordinary user, the tests also check that they
+cannot open the key managers' memory at all. Run as root, they can read
+every process, so they check where the key is and then, separately, start
+klind as `nobody` and confirm that `nobody` can open a worker's memory but
+not the key manager's.
 
 A test page also asks the key manager, as a compromised worker could,
 for MD5, no digest, raw RSA, a digest of the wrong length and X9.31

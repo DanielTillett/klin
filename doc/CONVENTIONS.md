@@ -80,7 +80,7 @@ err:
 }
 ```
 
-The catch is the `err:` block itself. Inside it, use `dbg_if()`, never
+Take care in the `err:` block itself. Inside it, use `dbg_if()`, never
 `dbg_err_if()`, because the latter jumps back to `err` and you loop.
 
 ## Ownership

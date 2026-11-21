@@ -1,14 +1,15 @@
 # Sandbox
 
-klind's worker processes and the TLS key manager ([KEYMGR](KEYMGR.md))
-run in a sandbox that limits what the kernel lets them do. It is on by
-default on Linux (x86-64 and ARM64) and OpenBSD, the systems that have
-one ([Other systems](#other-systems)). When a page needs a system call
-the sandbox refuses, you name that call in `sandbox_allow`. The idea is simple: a worker parses
-untrusted input all day, so if one is compromised, the attacker should
-find themselves in a process that can serve files and talk on sockets
-and very little else. I would leave it on for any device that faces a
-network. To turn it off for a server's workers, and its key manager:
+klind's worker processes and the TLS key manager ([KEYMGR](KEYMGR.md)) run
+in a sandbox that limits what the kernel lets them do. It is on by default
+on Linux (x86-64 and ARM64) and OpenBSD, the systems that have one ([Other
+systems](#other-systems)). When a page needs a system call the sandbox
+refuses, you name that call in `sandbox_allow`. The idea is simple: a
+worker parses untrusted input all day, so if one is compromised, the
+attacker should find themselves in a process that can serve files and talk
+on sockets and very little else. I would leave it on for any device that
+faces a network. To turn it off for a server's workers, and its key
+manager:
 
 ```conf
 www
@@ -33,13 +34,13 @@ writes logs. Each process gets this much (Linux defaults):
 | resource limits | its own | `worker_max_memory`, `worker_max_files`, `worker_max_procs` | the same | `RLIMIT_CORE` 0 |
 | undumpable | no | no | no | yes (Linux) |
 
-The worker limits default to 1024 MB of address space (`RLIMIT_AS`),
-1024 open files (`RLIMIT_NOFILE`) and the model's maximum workers
+The worker limits default to 1024 MB of address space (`RLIMIT_AS`), 1024
+open files (`RLIMIT_NOFILE`) and the model's maximum workers
 (`prefork.max_child` or `fork.max_child`) + 64 processes of its user
-(`RLIMIT_NPROC`); 0 leaves the inherited system limit unchanged. They
-are set in the worker only, just before the sandbox, and are covered in [LIMITS](LIMITS.md). Builds
-with AddressSanitizer get no memory limit, because ASan reserves
-terabytes of address space.
+(`RLIMIT_NPROC`); 0 leaves the inherited system limit unchanged. They are
+set in the worker only, just before the sandbox, and are covered in
+[LIMITS](LIMITS.md). Builds with AddressSanitizer get no memory limit,
+because ASan reserves terabytes of address space.
 
 ## Linux (seccomp)
 
