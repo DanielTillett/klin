@@ -9,6 +9,7 @@
 
 #include "klin_conf.h"
 #include <fcntl.h>
+#include <time.h>
 #include <unistd.h>
 #include <u/libu.h>
 #include <klin/io.h>
@@ -64,33 +65,59 @@ err:
 static ssize_t io_fd_write(io_t *io_, const char *buf, size_t size)
 {
     io_fd_t *ifd = (io_fd_t *) io_;
+    time_t start = time(NULL);
     ssize_t c;
+    int left;
 
     dbg_return_if (ifd == NULL, ~0);
     dbg_return_if (buf == NULL, ~0);
- 
+
 again:
-    if(io_->wr_timeout > 0 || timerm_armed())
+    /* the deadline runs from the start of this write, not from each retry
+       (a wait can report room that a write then finds gone) */
+    left = io_->wr_timeout;
+    if(left > 0 && (left -= (int) (time(NULL) - start)) <= 0)
+        errno = ETIMEDOUT;
+    if(left < 0 || (left == 0 && io_->wr_timeout > 0) ||
+            ((io_->wr_timeout > 0 || timerm_armed()) &&
+             timerm_wait_max(&ifd->fd, TIMERM_WAIT_WRITE, left)))
     {
-        if(timerm_wait_max(&ifd->fd, TIMERM_WAIT_WRITE, io_->wr_timeout))
+        /* a stalled peer: later writes fail at once */
+        if(errno == ETIMEDOUT && ifd->fd >= 0)
         {
-            /* a stalled peer: later writes fail at once */
-            if(errno == ETIMEDOUT && ifd->fd >= 0)
-            {
-                u_info("write timed out after %d s, closed", io_->wr_timeout);
-                (void) io_fd_close(io_);
-            }
-            goto err;
+            u_info("write timed out after %d s, closed", io_->wr_timeout);
+            (void) io_fd_close(io_);
         }
+        goto err;
     }
 
+#ifndef OS_WIN
+    /* with a deadline the write itself must not block: the wait above
+       says only that some room is free (on macOS as little as 2048 bytes,
+       SO_SNDLOWAT), and a blocking write waits for room for all of 'buf'.
+       O_NONBLOCK for this write only (macOS ignores MSG_DONTWAIT on send,
+       and the reads on this descriptor expect it blocking) */
+    if(io_->wr_timeout > 0)
+    {
+        int fl = fcntl(ifd->fd, F_GETFL), saved;
+
+        if(fl >= 0 && !(fl & O_NONBLOCK))
+            (void) fcntl(ifd->fd, F_SETFL, fl | O_NONBLOCK);
+        c = write(ifd->fd, buf, size);
+        saved = errno;
+        if(fl >= 0 && !(fl & O_NONBLOCK))
+            (void) fcntl(ifd->fd, F_SETFL, fl);
+        errno = saved;
+        if(c < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            goto again;
+    } else
+#endif
     if(!ifd->issock)
         c = write(ifd->fd, buf, size);
     else
         c = send(ifd->fd, buf, size, 0);
-    /* if(c < 0 && (errno == EINTR || errno == EAGAIN)) */
     if(c < 0 && errno == EINTR)
-        goto again; 
+        goto again;
 
     dbg_err_sif(c == -1); 
 
