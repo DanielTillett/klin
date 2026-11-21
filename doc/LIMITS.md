@@ -144,7 +144,11 @@ away. This lingering happens on plain HTTP only.
 | `max_streams` | 100 | `sse_start()` and `ws_accept()` answer 503 with `Retry-After: 5` |
 
 Both count the connections being served by all of a server's workers,
-using memory the workers share. Set either to 0 to turn it off.
+using memory the workers share. Set either to 0 to turn it off. A
+connection stops counting just before klind closes it, so a client that
+has seen the close can connect again at once. One the client closes
+counts until its worker notices, which on a busy machine can take a
+moment.
 
 `max_streams` keeps long-lived server-sent event (SSE) and WebSocket
 connections from taking every worker. With `prefork.max_child` at its

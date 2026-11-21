@@ -1131,19 +1131,22 @@ static int http_serve(http_t *h, int fd, int keep_alive)
         http_linger(fd, cout);
     http_refused = 0;
 
+    /* leave the table before closing: a client that has seen the close
+       may connect again at once, and must not find itself still counted
+       against max_conn_per_ip */
+    conntab_leave();
     io_free(cout);
     io_free(conn);
-    conntab_leave();
 
     return 0;
 err:
+    conntab_leave();
     if(cout)
         io_free(cout);
     if(conn)
         io_free(conn);
     if(owned && fd >= 0)
         close(fd);
-    conntab_leave();
     http_refused = 0;
     return ~0;
 }

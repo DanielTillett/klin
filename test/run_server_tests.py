@@ -2042,6 +2042,27 @@ def run_limit_checks(args, check, plain, limits, temp):
     if not args.prefork:
         return  # one connection at a time: no caps to reach
 
+    def wait_closed(sock):
+        """Read until the server closes the connection. klind takes a
+        connection off the max_conn_per_ip count before it closes it, so
+        the next one from this address is let in. One the client closes
+        stays counted until its worker notices, which under load can be
+        after the next one arrives: CI saw that refuse a connection."""
+        try:
+            while sock.recv(65536):
+                pass
+        except ConnectionResetError:
+            pass
+        except socket.timeout:
+            return False
+        return True
+
+    def server_close(conn):
+        conn.send(get + b"Connection: close\r\n\r\n")
+        conn.response()
+        check(wait_closed(conn.sock), "Connection: close did not close the connection")
+        conn.sock.close()
+
     # three connections at once per address on 'limits': a fourth is closed
     held = []
     try:
@@ -2052,13 +2073,13 @@ def run_limit_checks(args, check, plain, limits, temp):
             held.append(conn)
         reply = exchange(limits, after)
         check(reply == b"", f"A connection over max_conn_per_ip was answered: {reply[:80]!r}")
-        held.pop().sock.close()
-        time.sleep(0.3)
+        server_close(held.pop())
         check(b"200 OK" in exchange(limits, after), "max_conn_per_ip did not free a closed connection")
+        while held:
+            server_close(held.pop())
     finally:
         for conn in held:
             conn.sock.close()
-    time.sleep(0.3)
 
     # two SSE/WebSocket connections at once on 'limits': a third gets 503
     streams = []
@@ -2067,9 +2088,12 @@ def run_limit_checks(args, check, plain, limits, temp):
             stream = EventStream(limits, f"/sse.kl1?n=1&mark={temp}/cap{i}".encode())
             check(stream.status.startswith("HTTP/1.1 200"), f"A stream under max_streams was refused: {stream.status}")
             streams.append(stream)
-        third = EventStream(limits, b"/sse.kl1?n=1")
+        third = EventStream(limits, b"/sse.kl1?n=1", extra=b"Connection: close\r\n")
         check(third.status.startswith("HTTP/1.1 503") and third.fields.get("retry-after") == "5",
               f"A third SSE stream was not refused with 503: {third.status}")
+        # its place is free once the server has closed it (CI saw the
+        # WebSocket refused at accept when the client closed it instead)
+        check(wait_closed(third.sock), "A refused SSE stream was not closed")
         third.close()
         ws = WebSocket(limits)
         check(ws.status == 503, f"A WebSocket over max_streams was not refused: {ws.status}")
