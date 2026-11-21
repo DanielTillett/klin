@@ -172,13 +172,11 @@ libraries all offer ECDHE, so in practice this costs nothing.
 
 If a key manager exits, klind stops. With an external `key_file`
 nothing else holds the key, so no handshake could succeed, and klind
-treats an embedded key the same way. klind exits with status 0 in this
-case, so the shipped systemd unit (`Restart=on-failure`) does not
-restart it: the service stays down until someone starts it. If you want
-it back automatically, set `Restart=always` in a drop-in
-([SYSTEMD](SYSTEMD.md)); systemd still does not restart a service you
-stopped yourself. A key manager also exits within a second of klind
-exiting: it checks for its parent once a second.
+treats an embedded key the same way. klind exits with a failure status
+in this case (status 0 is kept for a stop by SIGTERM or SIGINT), so the
+shipped systemd unit (`Restart=on-failure`) starts it again, with a new
+key manager ([SYSTEMD](SYSTEMD.md)). A key manager also exits within a
+second of klind exiting: it checks for its parent once a second.
 
 ### The leak that settled it
 

@@ -17,6 +17,8 @@
 #include <sys/syscall.h>
 #endif
 #include <signal.h>
+#include <errno.h>
+#include <poll.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <klin/http.h>
@@ -501,13 +503,42 @@ static void cgi_close_from(int first)
         (void) close(fd);
 }
 
-/* set a resource limit of the cgi (soft and hard: it cannot raise it) */
+/* set a resource limit of the cgi (soft and hard: it cannot raise it). A
+ * failure is not logged here, in the child: its log channel to klind is
+ * closed by now. cgi_check_limit() warns, in the worker, instead */
 static void cgi_rlimit(int resource, rlim_t value)
 {
     struct rlimit rl;
 
     rl.rlim_cur = rl.rlim_max = value;
     (void) setrlimit(resource, &rl);
+}
+
+/* warn (once per worker and setting) when the cgi's limit 'name' cannot
+ * be set to 'value': above the worker's hard limit (the cgi inherits it,
+ * and only root may raise it), or RLIMIT_AS on macOS, which refuses it.
+ * The cgi then keeps the limit it inherits */
+static void cgi_check_limit(const char *name, int resource, rlim_t value,
+        int *warned)
+{
+    struct rlimit rl;
+
+    if(*warned)
+        return;
+#ifdef __APPLE__
+    if(resource == RLIMIT_AS)
+    {
+        *warned = 1;
+        warn("cgi %s cannot be applied on macOS", name);
+        return;
+    }
+#endif
+    if(getrlimit(resource, &rl) || rl.rlim_max == RLIM_INFINITY ||
+            value <= rl.rlim_max || geteuid() == 0)
+        return;
+    *warned = 1;
+    warn("cgi %s is above the worker's hard limit (%llu): not applied",
+            name, (unsigned long long) rl.rlim_max);
 }
 
 static void cgi_load_limits(http_t *h, request_t *rq, cgi_limits_t *lim)
@@ -527,6 +558,19 @@ static void cgi_load_limits(http_t *h, request_t *rq, cgi_limits_t *lim)
             &lim->max_cpu);
     (void) u_config_get_subkey_value_i(config, "max_memory", CGI_MAX_MEMORY,
             &lim->max_memory);
+}
+
+/* tell about the limits the cgi will not get (cgi_rlimit() cannot) */
+static void cgi_check_limits(const cgi_limits_t *lim)
+{
+    static int warned_cpu, warned_memory;
+
+    if(lim->max_cpu > 0)
+        cgi_check_limit("max_cpu", RLIMIT_CPU, (rlim_t) lim->max_cpu + 1,
+                &warned_cpu);
+    if(lim->max_memory > 0)
+        cgi_check_limit("max_memory", RLIMIT_AS,
+                (rlim_t) lim->max_memory * 1024 * 1024, &warned_memory);
 }
 
 static int cgi_exec(request_t *rq, response_t *rs, const cgi_limits_t *lim,
@@ -665,26 +709,46 @@ err:
     return ~0;
 }
 
-/* send the POSTed data (Content-Length bytes) to the cgi's stdin. The
- * script may not read it, so a broken pipe is not an error; one that reads
- * nothing while more than a pipe buffer is POSTed blocks this write (the
- * request's post_timeout then closes the connection) */
+/* the POSTed body did not arrive within post_timeout */
+static int cgi_cb_post_timeout(talarm_t *al, void *arg)
+{
+    u_unused_args(al);
+
+    warn("request body not received in time, connection closed");
+    io_close((io_t *) arg);
+
+    return 0;
+}
+
+/* send the POSTed data (Content-Length bytes) to the cgi's stdin, within
+ * the request's post_timeout (the connection is closed when it runs out).
+ * The script may not read it, so a broken pipe is not an error; one that
+ * reads nothing while more than a pipe buffer is POSTed blocks this write
+ * until the timeout kills it */
 static int cgi_send_post(request_t *rq, int cgi_stdin)
 {
     io_t *cgi_out = NULL;
+    talarm_t *al = NULL;
     ssize_t clen;
 
     if(request_get_method(rq) != HM_POST ||
             (clen = request_get_content_length(rq)) <= 0)
         return 0;
 
+    dbg_err_if(timerm_add(request_get_post_timeout(rq), cgi_cb_post_timeout,
+                request_io(rq), &al));
+
     /* the descriptor is the caller's to close */
     crit_err_sif(io_fd_create(cgi_stdin, IO_FD_NO_FLAGS, &cgi_out));
-    crit_if(io_copy(cgi_out, request_io(rq), clen) < 0);
+    if(io_copy(cgi_out, request_io(rq), clen) < 0)
+        u_info("cgi: POST body not copied whole");
     io_free(cgi_out);
+    timerm_del(al);
 
     return 0;
 err:
+    if(al)
+        timerm_del(al);
     return ~0;
 }
 
@@ -760,6 +824,30 @@ static int cgi_cb_timeout(talarm_t *al, void *arg)
     return 0;
 }
 
+/* reap the cgi once its output has ended. It may carry on running (with
+ * its standard output closed), so the timeout alarm still runs meanwhile,
+ * and kills it: wait in steps of up to 100 ms, starting with 1 ms, as a
+ * script usually exits just after its output ends */
+static void cgi_reap(cgi_run_t *run)
+{
+    int status, ms, step = 1;
+    pid_t rc;
+
+    while((rc = waitpid(run->child, &status, WNOHANG)) == 0 ||
+            (rc < 0 && errno == EINTR))
+    {
+        ms = timerm_run();      /* cgi_cb_timeout() when it is due */
+        if(ms < 0 || ms > step)
+            ms = step;
+        (void) poll(NULL, 0, ms);
+        step = U_MIN(step * 2, 100);
+    }
+
+    if(rc == run->child && !run->timed_out && WIFEXITED(status) &&
+            WEXITSTATUS(status))
+        warn("cgi exited with [%d]", WEXITSTATUS(status));
+}
+
 /* reap the cgi; after an error it is killed first, as nobody reads its
  * output any more */
 static void cgi_wait(pid_t child, int failed)
@@ -798,6 +886,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
 
     /* run the CGI and return its stdin and stdout descriptor */
     cgi_load_limits(request_get_http(rq), rq, &lim);
+    cgi_check_limits(&lim);
     crit_err_if(cgi_exec(rq, rs, &lim, &child, &cgi_stdin, &cgi_stdout));
 
     /* killed when it runs too long (the alarm fires while its output or
@@ -836,11 +925,16 @@ static int cgi_serve(request_t *rq, response_t *rs)
     if(run.timed_out)
         response_close_connection(rs);
 
-    if(al)
-        timerm_del(al);
     io_free(cgi_in);
     close(cgi_stdout);
-    cgi_wait(child, 0);
+
+    /* the timeout still holds while the script runs on */
+    if(al)
+    {
+        cgi_reap(&run);
+        timerm_del(al);
+    } else
+        cgi_wait(child, 0);
 
     return 0;
 err:

@@ -32,30 +32,30 @@ cgi
 | `max_memory` | 512 | MB of address space (RLIMIT_AS). |
 
 0 means klind sets no limit of its own, so the script keeps the limits
-it inherits from the worker ([LIMITS](LIMITS.md)); a value above the
-worker's hard limit cannot be granted, and klind keeps the inherited
-limit without a warning. The script runs in a process group of its own, and when
-the timeout fires klind kills the script and that group. A child that
-moves to a group or session of its own (with setsid(2), say) escapes it.
+it inherits from the worker ([LIMITS](LIMITS.md)). A value above the
+worker's hard limit cannot be granted: the script keeps the inherited
+limit, and the worker logs a warning the first time (`cgi max_memory is
+above the worker's hard limit`). On macOS `max_memory` cannot be applied
+at all, as with `worker_max_memory`, and the worker says so once. The
+script runs in a process group of its own, and when the timeout fires
+klind kills the script and that group. A child that moves to a group or
+session of its own (with setsid(2), say) escapes it.
 
-klind checks the timeout only while the worker is waiting on a
-descriptor: writing the POST body to the script, reading the script's
-output, or writing that output to the client. So it is wall-clock time,
-and time spent waiting on a slow client counts towards it. The timeout
-kills only the script, though. The client's connection stays open, and a
-write that is waiting on it carries on waiting, and so does a read of
-the rest of a POST body, which klind relays from the client's socket.
-Once the output has ended, klind cancels the timeout and waits for the
-script to exit with a plain blocking waitpid(2); only then does it send
-what is left in its buffer.
+klind checks the timeout only while the worker is waiting: writing the
+POST body to the script, reading the script's output, writing that
+output to the client, or waiting for the script to exit once its output
+has ended. So it is wall-clock time, and time spent waiting on a slow
+client counts towards it. A script that closes its standard output and
+carries on running is killed when the timeout fires, and klind then
+sends what is left in its buffer.
 
-The simple rule is that `timeout` bounds the script, not the client.
-Nothing on the CGI path limits how long a write to a slow client may take
-(`idle_timeout`, `keep_alive_timeout` and `post_timeout` cover only
-reading the request), so a client that reads slowly holds the worker for
-as long as it keeps reading. A script that closes its standard output and
-carries on running also holds the worker until it exits, and the timeout
-no longer covers it (`max_cpu` still does, if it is spinning).
+The timeout kills only the script, though. The client has deadlines of
+its own. The rest of a POST body, which klind relays from the client's
+socket, must arrive within the server's `post_timeout` (10 minutes by
+default), or klind closes the connection. A write to the client that
+makes no progress for `send_timeout` seconds (60 by default) closes it
+too ([LIMITS](LIMITS.md)). A client that keeps reading, however slowly,
+still holds the worker for as long as it reads.
 
 What a timeout looks like to the client depends on when it happens:
 
@@ -156,8 +156,10 @@ sandbox. It runs scripts that:
   of these may arrive);
 - print their limits;
 - sleep past the timeout (504), or past it after their header (cut short,
-  and the sleep they started is gone too);
+  and the sleep they started is gone too), or close their output and
+  sleep on (killed by the timeout);
 - spin on the CPU (killed after `max_cpu`, before the timeout);
+- get a POST body that stops arriving (closed by `post_timeout`);
 - are reached through a link out of the script directory (404).
 
 See also: [FILES](FILES.md) for where scripts may live,

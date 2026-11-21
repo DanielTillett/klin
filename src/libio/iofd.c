@@ -70,8 +70,19 @@ static ssize_t io_fd_write(io_t *io_, const char *buf, size_t size)
     dbg_return_if (buf == NULL, ~0);
  
 again:
-    if(timerm_armed())
-        nop_err_if(timerm_wait(&ifd->fd, TIMERM_WAIT_WRITE));
+    if(io_->wr_timeout > 0 || timerm_armed())
+    {
+        if(timerm_wait_max(&ifd->fd, TIMERM_WAIT_WRITE, io_->wr_timeout))
+        {
+            /* a stalled peer: later writes fail at once */
+            if(errno == ETIMEDOUT && ifd->fd >= 0)
+            {
+                u_info("write timed out after %d s, closed", io_->wr_timeout);
+                (void) io_fd_close(io_);
+            }
+            goto err;
+        }
+    }
 
     if(!ifd->issock)
         c = write(ifd->fd, buf, size);

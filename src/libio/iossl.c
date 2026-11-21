@@ -52,17 +52,34 @@ err:
     return ~0;
 }
 
+/* wait for the socket, for at most 'secs' seconds (0: no limit); a wait
+ * that runs out closes it, so that later writes fail at once */
+static int io_ssl_wait(io_ssl_t *io_ssl, int events, int secs)
+{
+    if(!timerm_wait_max(&io_ssl->fd, events, secs))
+        return 0;
+
+    if(errno == ETIMEDOUT && io_ssl->fd >= 0)
+    {
+        u_info("write timed out after %d s, closed", secs);
+        (void) io_ssl_close(&io_ssl->io);
+    }
+
+    return ~0;
+}
+
 /* the socket is non-blocking: wait as OpenSSL asks after a call that
- * returned 'rc' (the alarms run meanwhile, and one may close the socket);
- * return 0 to call again, ~0 on a real error, 1 on a clean EOF */
-static int io_ssl_retry(io_ssl_t *io_ssl, int rc)
+ * returned 'rc' (the alarms run meanwhile, and one may close the socket),
+ * for at most 'secs' seconds; return 0 to call again, ~0 on a real error,
+ * 1 on a clean EOF */
+static int io_ssl_retry(io_ssl_t *io_ssl, int rc, int secs)
 {
     switch(SSL_get_error(io_ssl->ssl, rc))
     {
     case SSL_ERROR_WANT_READ:
-        return timerm_wait(&io_ssl->fd, TIMERM_WAIT_READ) ? ~0 : 0;
+        return io_ssl_wait(io_ssl, TIMERM_WAIT_READ, secs);
     case SSL_ERROR_WANT_WRITE:
-        return timerm_wait(&io_ssl->fd, TIMERM_WAIT_WRITE) ? ~0 : 0;
+        return io_ssl_wait(io_ssl, TIMERM_WAIT_WRITE, secs);
     case SSL_ERROR_ZERO_RETURN:
         return 1;
     case SSL_ERROR_SYSCALL:
@@ -111,7 +128,7 @@ static ssize_t io_ssl_read(io_t *io_, char *buf, size_t size)
             return c;
 
         /* 0 is an EOF, with or without the peer's close_notify */
-        if((rc = io_ssl_retry(io_ssl, c)) != 0)
+        if((rc = io_ssl_retry(io_ssl, c, 0)) != 0)
         {
             nop_err_if(c < 0 && rc != 1);
             return 0;
@@ -137,7 +154,8 @@ static ssize_t io_ssl_write(io_t *io_, const char *buf, size_t size)
         if((c = SSL_write(io_ssl->ssl, buf, (int) U_MIN(size, INT_MAX))) > 0)
             return c;
 
-        nop_err_if(io_ssl_retry(io_ssl, c));
+        /* the write timeout limits this wait (a renegotiation's read too) */
+        nop_err_if(io_ssl_retry(io_ssl, c, io_->wr_timeout));
     }
 
 err:
@@ -197,7 +215,7 @@ static int io_ssl_connect(io_ssl_t *io_ssl)
 
     /* the TLS handshake */
     while((rc = SSL_connect(io_ssl->ssl)) <= 0)
-        warn_err_ifm(io_ssl_retry(io_ssl, rc), "TLS handshake error: %d",
+        warn_err_ifm(io_ssl_retry(io_ssl, rc, 0), "TLS handshake error: %d",
             SSL_get_error(io_ssl->ssl, rc));
 
     return 0;
@@ -228,7 +246,7 @@ static int io_ssl_accept(io_ssl_t *io_ssl)
 
     /* the TLS handshake */
     while((rc = SSL_accept(io_ssl->ssl)) <= 0)
-        warn_err_ifm(io_ssl_retry(io_ssl, rc), "TLS handshake error: %d",
+        warn_err_ifm(io_ssl_retry(io_ssl, rc, 0), "TLS handshake error: %d",
             SSL_get_error(io_ssl->ssl, rc));
 
     timerm_del(al);

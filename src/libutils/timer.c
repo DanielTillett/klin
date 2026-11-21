@@ -189,15 +189,49 @@ int timerm_armed(void)
  */
 int timerm_wait(int *pfd, int events)
 {
+    return timerm_wait_max(pfd, events, 0);
+}
+
+/**
+ * \brief   Wait for a descriptor for at most a number of seconds
+ *
+ * As timerm_wait(), but give up (with \c errno set to \c ETIMEDOUT) when
+ * \p *pfd is not ready within \p secs seconds.
+ *
+ * \param pfd     the descriptor, re-read after each alarm
+ * \param events  what to wait for
+ * \param secs    the longest wait, or \c 0 for no limit
+ *
+ * \return \c 0 when the descriptor is ready, non-zero if it was closed,
+ *         on error, or when the time ran out
+ */
+int timerm_wait_max(int *pfd, int events, int secs)
+{
+    int64_t deadline = 0, left;
     int ms, rc;
 
     dbg_return_if (pfd == NULL, ~0);
+
+    if(secs > 0)
+        deadline = timerm_now() + (int64_t) secs * 1000;
 
     for(;;)
     {
         ms = timerm_run();
 
         nop_err_if(*pfd < 0);   /* closed by an alarm */
+
+        if(deadline)
+        {
+            left = deadline - timerm_now();
+            if(left <= 0)
+            {
+                errno = ETIMEDOUT;
+                return ~0;
+            }
+            if(ms < 0 || ms > left)
+                ms = (int) left;
+        }
 
 #ifdef OS_WIN
         {

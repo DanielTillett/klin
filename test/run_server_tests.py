@@ -1636,6 +1636,18 @@ def run_keymgr_start_checks(check, daemon, env, temp, cert, key):
             except OSError:
                 time.sleep(0.2)
         check(b"200 OK" in reply, f"HTTPS failed with klind's output closed: {reply[:200]!r}")
+        # a key manager that dies stops klind with a failure status, so
+        # that systemd's Restart=on-failure starts it again
+        if Path("/proc/self/stat").exists():
+            managers = key_managers(process.pid, klind_processes(process.pid))
+            check(len(managers) == 1, f"Key managers: {sorted(managers)}")
+            os.kill(managers.pop(), signal.SIGKILL)
+            try:
+                status = process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                status = None
+            check(status not in (None, 0),
+                  f"klind exit status {status} after its key manager died")
     finally:
         process.kill()
         process.wait()
@@ -2311,6 +2323,9 @@ def run_worker_limit_checks(args, check, plain, limits, sanitized):
         check(page(limits, b"alloc=16") == "allocated", "The worker did not go on after ENOMEM")
 
 
+BIG_FILE = 32 << 20     # more than the socket buffers hold
+
+
 def make_file_tree(temp):
     """Files for run_file_checks (doc/FILES.md): /pub (pub) with links whose
     targets are inside and outside it, a FIFO, the CGI scripts (cgi-bin)
@@ -2319,6 +2334,7 @@ def make_file_tree(temp):
     for d in (pub / "sub", cgi, other):
         d.mkdir(parents=True)
     (pub / "hello.txt").write_text("public file\n")
+    (pub / "big.bin").write_bytes(b"x" * BIG_FILE)
     (pub / "sub/s.txt").write_text("in a subdirectory\n")
     (pub / "in").symlink_to("hello.txt")
     (pub / "out").symlink_to("../secret.txt")
@@ -2334,6 +2350,7 @@ def make_file_tree(temp):
         "sleep.sh": "sleep 31\n",
         "late.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\npartial\\n'\nsleep 32 &\nwait\n",
         "spin.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nspinning\\n'\nwhile :; do :; done\n",
+        "closed.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nclosed\\n'\nexec >&-\nsleep 33\n",
     }
     for name, body in scripts.items():
         (cgi / name).write_text("#!/bin/sh\n" + body)
@@ -2347,6 +2364,8 @@ def files_config(temp):
     """The fs and CGI settings of the 'files' server, and its vhosts: the
     symlink policies, and the suppliers turned off."""
     return f"""dir_alias /pub {temp / 'pub'}
+    post_timeout 5
+    send_timeout 2
     cgi
     {{
         script_alias /cgi-bin {temp / 'cgi-bin'}
@@ -2451,6 +2470,23 @@ def run_file_checks(check, files, temp, cgi):
     status, _, _ = get(b"/pid.kl1", b"off.test")
     check(status == b"200", f"Embedded page not served with serve_files no: {status}")
 
+    # send_timeout 2: a client that stops reading is dropped, and gets only
+    # what the socket buffers held, not the whole file
+    with socket.create_connection(("127.0.0.1", files), timeout=10) as sock:
+        sock.sendall(b"GET /pub/big.bin HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        time.sleep(5)
+        got, head = 0, b""
+        try:
+            while chunk := sock.recv(1 << 20):
+                head = head or chunk[:16]
+                got += len(chunk)
+        except OSError:
+            pass
+    check(head.startswith(b"HTTP/1.1 200") and got < BIG_FILE,
+          f"send_timeout: a client that stopped reading got {got} bytes ({head!r})")
+    status, _, _ = get(b"/pub/hello.txt")
+    check(status == b"200", "The server did not go on after a send_timeout")
+
     if not cgi:
         return
 
@@ -2485,6 +2521,31 @@ def run_file_checks(check, files, temp, cgi):
     time.sleep(0.3)
     left = subprocess.run(["pgrep", "-f", "sleep 3[12]"], capture_output=True, text=True).stdout
     check(not left.strip(), f"Processes of killed CGIs left: {left}")
+
+    # a script that closes its output and runs on is still killed by the
+    # timeout, and the response then goes out
+    status, body, took = get(b"/cgi-bin/closed.sh")
+    check(status == b"200" and body == b"closed\n" and took < 6,
+          f"CGI that closed its output: {status} {body[:80]!r} after {took:.1f}s")
+    time.sleep(0.3)
+    left = subprocess.run(["pgrep", "-f", "sleep 33"], capture_output=True, text=True).stdout
+    check(not left.strip(), f"A CGI that closed its output still runs: {left}")
+
+    # a POST body that stops arriving: post_timeout (5) closes the
+    # connection (the script's timeout kills only the script)
+    with socket.create_connection(("127.0.0.1", files), timeout=15) as sock:
+        start = time.monotonic()
+        sock.sendall(b"POST /cgi-bin/env.sh HTTP/1.1\r\nHost: localhost\r\n"
+                     b"Content-Type: text/plain\r\nContent-Length: 100\r\n\r\npartial")
+        try:
+            while sock.recv(65536):
+                pass
+            closed = True
+        except OSError:
+            closed = False
+        took = time.monotonic() - start
+    check(closed and 4 < took < 9, f"CGI POST body: connection not closed by post_timeout "
+          f"({'closed' if closed else 'open'} after {took:.1f}s)")
 
     # max_cpu 1: killed for its CPU time before the timeout
     status, body, took = get(b"/cgi-bin/spin.sh")

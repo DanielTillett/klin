@@ -235,6 +235,7 @@ static void server_waitpid(server_t *s)
         {
             u_crit("TLS key manager [%u] exited, stopping", pid);
             s->stop = 1;
+            s->failed = 1;  /* a failure exit, so that systemd restarts */
             continue;
         }
 #endif
@@ -936,7 +937,8 @@ static void server_limits(backend_t *be)
     (void) u_config_get_subkey_value_i(be->config, "worker_max_procs",
             procs, &procs);
 
-#ifndef SERVER_ASAN
+    /* (macOS refuses an RLIMIT_AS limit: server_check_limits() says so) */
+#if !defined(SERVER_ASAN) && !defined(__APPLE__)
     if(mem > 0)
         server_rlimit(RLIMIT_AS, (rlim_t) mem * 1024 * 1024,
                 "worker_max_memory");
@@ -949,6 +951,26 @@ static void server_limits(backend_t *be)
 #endif
 #else
     u_unused_args(be);
+#endif
+}
+
+/* the worker limits that cannot be applied, said once at startup rather
+ * than by every worker: macOS refuses RLIMIT_AS (EINVAL) */
+static void server_check_limits(backend_t *be, const char *name)
+{
+#if defined(__APPLE__) && !defined(SERVER_ASAN)
+    int mem = SERVER_WORKER_MEMORY;
+
+    if(be->model == SERVER_MODEL_ITERATIVE)
+        return;     /* no workers */
+
+    (void) u_config_get_subkey_value_i(be->config, "worker_max_memory",
+            mem, &mem);
+    if(mem > 0)
+        u_warn("%s: worker_max_memory cannot be applied on macOS (set it "
+                "to 0)", name);
+#else
+    u_unused_args(be, name);
 #endif
 }
 
@@ -1415,7 +1437,7 @@ int server_loop(server_t *s)
        never set, so it never happened before) */
     server_stop_children(s);
 
-    return 0;
+    return s->failed ? ~0 : 0;
 err:
     return ~0;
 }
@@ -1672,6 +1694,8 @@ static int server_add_backend(server_t *s, const char *name, int id,
 
     if(foreground)
         be->model = SERVER_MODEL_ITERATIVE;
+
+    server_check_limits(be, name);
 
     /* create the log device (may fail if logging is not configured) */
     if(!u_config_get_subkey(bekey, "log", &log_c))
