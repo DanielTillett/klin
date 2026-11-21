@@ -40,6 +40,7 @@ struct server_s
     size_t nbackend;        /* # of servers                                 */
     size_t max_child;       /* max # of children                            */
     volatile sig_atomic_t stop; /* >0 will stop the loop (set by signals)   */
+    int failed;             /* >0 if the loop stopped on an error           */
     int model;              /* server model                                 */
     int klog_flush;         /* >0 if this process flushes the klog          */
     int allow_root;         /* >0 allow root as the owner of klind process */

@@ -1113,6 +1113,26 @@ int io_codecs_discard(io_t *io)
 
 /**
  * \ingroup basic
+ * \brief  Limit how long a write may wait
+ *
+ * A write that cannot hand any data to the descriptor for \p secs seconds
+ * fails, and the descriptor is closed, so that later writes fail at once
+ * (a slow or stalled client). Socket drivers only (fd and TLS).
+ *
+ * \param io    the \c io_t object
+ * \param secs  the longest wait, or \c 0 for no limit
+ *
+ * \return nothing
+ */
+void io_set_write_timeout(io_t *io, int secs)
+{
+    dbg_ifb (io == NULL) return;
+
+    io->wr_timeout = secs > 0 ? secs : 0;
+}
+
+/**
+ * \ingroup basic
  * \brief  Apply the codecs to written data only
  *
  * By default codecs transform both the data read from and written to an

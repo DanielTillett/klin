@@ -72,6 +72,7 @@ int request_read_body(request_t *rq, size_t max, char **pbuf, size_t *plen);
 struct json_s;
 int request_get_json(request_t *rq, size_t max, struct json_s **pj);
 ssize_t request_get_content_length(request_t *rq);
+int request_get_post_timeout(request_t *rq);
 time_t request_get_if_modified_since(request_t *rq);
 int request_is_encoding_accepted(request_t *rq, const char *encoding);
 

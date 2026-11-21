@@ -1029,6 +1029,24 @@ ssize_t request_get_content_length(request_t *rq)
     return (ssize_t) rq->content_length;
 }
 
+/**
+ * \ingroup request
+ * \brief   Get the post_timeout of a request
+ *
+ * The seconds the server allows for reading a request body
+ * (\c post_timeout), for a supplier that reads the body itself.
+ *
+ * \param rq    request object
+ *
+ * \return the timeout in seconds, or \c -1 if \p rq is \c NULL
+ */
+int request_get_post_timeout(request_t *rq)
+{
+    dbg_return_if (rq == NULL, -1);
+
+    return (int) rq->post_timeout;
+}
+
 static int match_content_type(header_t *h, const char *mime_type)
 {
     const char *ct;
@@ -2404,7 +2422,8 @@ static int request_load_config(request_t *rq)
     /* read the vhost's settings once, not for every request */
     if(!vhost->rq_config_loaded)
     {
-        /* vhost can override those fields */
+        /* the server block's settings: they are read before the Host
+           field is known, so a vhost block cannot override them */
         dbg_err_if((c = vhost->config) == NULL);
 
         /* defaults */

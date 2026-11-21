@@ -35,6 +35,7 @@ int timerm_reschedule(talarm_t *a, int secs, talarm_cb_t cb, void *arg);
 int timerm_run(void);
 int timerm_armed(void);
 int timerm_wait(int *pfd, int events);
+int timerm_wait_max(int *pfd, int events, int secs);
 
 #ifdef __cplusplus
 }

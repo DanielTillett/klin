@@ -66,6 +66,7 @@ closes the connection without a response.
 | `post_maxsize` | 5 MB | 1024 | 413 (the body, whatever the method) |
 | `idle_timeout` | 10 s | 1 s | the connection is closed |
 | `post_timeout` | 10 min | 5 s | the connection is closed |
+| `send_timeout` | 60 s | 0 (off) | the connection is closed |
 
 The 5 MB of `post_maxsize` is 5,120,000 bytes (5 × 1,024,000), not 5 MiB.
 The check uses the Content-Length the client sends, so an oversized body is
@@ -80,11 +81,21 @@ kept-alive connection the next request's line and header get
 
 `post_timeout` bounds the body only where klind reads it for you: when it
 parses a POSTed form (URL-encoded or multipart) for a matching `params`
-block or an active page, and when a page calls `request_read_body()`. A
+block or an active page, when a page calls `request_read_body()`, and when
+it relays the body to a CGI script ([CGI](CGI.md)). A
 POST with no Content-Type is parsed as URL-encoded; one with any other
 media type is left for the page to read. A page that reads the raw request
 stream (`in`) itself has no blanket deadline, so set your own if the
 client is not trusted.
+
+**`send_timeout` is a deadline for each write to the client, not for the
+whole response.** A write that cannot hand the client any data for that
+many seconds fails, and klind closes the connection, so a client that
+stops reading cannot hold a worker. One that keeps reading, however
+slowly, is not cut off. It applies to plain and TLS connections alike,
+and to every response, CGI output included. SSE and WebSocket writes have
+their own 30-second deadline as well, and the shorter of the two wins.
+0 turns it off.
 
 These are the server block's settings, not a vhost's. klind reads them when
 the request object is created, before the Host field has arrived, so a
@@ -181,10 +192,10 @@ key manager keep their own limits. The iterative model (`-d`) has no
 workers at all.
 
 On macOS, `worker_max_memory` cannot be applied: the system refuses an
-`RLIMIT_AS` limit, so every worker logs `worker: cannot set
-worker_max_memory: Invalid argument` and carries on without a memory
-limit. I saw this on macOS 15.8.1 (Apple silicon) on 22 Nov 2026. Set
-`worker_max_memory 0` there to skip the attempt and the warning.
+`RLIMIT_AS` limit (I saw this on macOS 15.8.1, Apple silicon, on 22 Nov
+2026). klind does not try. It logs `worker_max_memory cannot be applied
+on macOS` once per server at startup, and the workers run without a
+memory limit. Set `worker_max_memory 0` there to silence the warning.
 
 ## In-memory sessions
 

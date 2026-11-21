@@ -85,6 +85,10 @@ struct io_s
     /* !0 if codecs only transform written data (e.g. a connection whose
        codecs belong to the response) */
     int wr_codecs;
+
+    /* seconds a write may wait for the peer to take data (0: no limit);
+       the descriptor is closed when it runs out */
+    int wr_timeout;
 };
 
 #ifdef __cplusplus

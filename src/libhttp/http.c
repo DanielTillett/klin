@@ -47,6 +47,7 @@
 enum {
     HTTP_KEEP_ALIVE_TIMEOUT = 5,        /* secs to wait for the next request  */
     HTTP_KEEP_ALIVE_MAX = 100,          /* max requests per connection        */
+    HTTP_SEND_TIMEOUT = 60,             /* secs a write may wait for a client */
     HTTP_MAX_CONN_PER_IP = 32,          /* connections at once per client     */
     HTTP_MAX_STREAMS = 100,             /* SSE/WebSocket connections at once  */
     HTTP_KEEP_ALIVE_DRAIN_MAX = 65536,  /* max unread body bytes to skip      */
@@ -1099,6 +1100,10 @@ static int http_serve(http_t *h, int fd, int keep_alive)
        slower (more system calls, partial TCP segments) */
     dbg_err_if(io_set_write_buffer_size(conn, HTTP_CONN_WBUFSZ));
 
+    /* a client that stops reading cannot hold the worker for ever */
+    if(!cgi)
+        io_set_write_timeout(conn, h->send_timeout);
+
     /* the response goes to the same connection, or to stdout for a CGI */
     if(cgi)
         dbg_err_if(io_fd_create(1, IO_FD_CLOSE, &cout));
@@ -1355,6 +1360,11 @@ static int http_create(u_config_t *config, int ssl, http_t **ph)
                 HTTP_KEEP_ALIVE_MAX, &h->ka_max));
     h->ka_timeout = U_MAX(1, h->ka_timeout);
     h->ka_max = U_MAX(1, h->ka_max);
+
+    /* a client that takes no data for this long is dropped (0: never) */
+    dbg_err_if(u_config_get_subkey_value_i(config, "send_timeout",
+                HTTP_SEND_TIMEOUT, &h->send_timeout));
+    h->send_timeout = U_MAX(0, h->send_timeout);
 
     /* connections at once from one address, and SSE/WebSocket ones, so
        that neither can take every worker (0: no cap; doc/LIMITS.md) */
