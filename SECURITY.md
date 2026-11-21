@@ -1,5 +1,8 @@
 # Security policy
 
+This page says which versions of Klin get security fixes, how to report a
+vulnerability, and what happens after you do.
+
 ## Supported versions
 
 | Version            | Supported                                   |
@@ -26,7 +29,11 @@ A useful report includes:
 - the relevant parts of `klind.conf`;
 - the requests or steps that show the problem, ideally as a script;
 - what an attacker gains, and what they need first (network access only, a
-  configuration option, a local account, ...).
+  configuration option, a local account, and so on).
+
+A script that reproduces the problem is the most useful thing you can
+send. It lets me confirm the bug, and it can become the regression test
+for the fix.
 
 ## What happens next
 
@@ -34,23 +41,25 @@ You will get an acknowledgement within 7 days, and an assessment (accepted
 or not, and why) within 30 days. Fixes are developed in a private GitHub
 security advisory, which you will be invited to. When the fix is released
 the advisory is published, with a CVE where one is warranted, and you are
-credited unless you ask not to be. Please give us 90 days, or until the fix
-is released if that is sooner, before disclosing the problem yourself.
+credited unless you ask not to be.
+
+Please give us 90 days, or until the fix is released if that is sooner,
+before disclosing the problem yourself.
 
 ## Scope
 
-In scope: `klind`, the `klin` page translator, Klin's libraries and
+In scope are `klind`, the `klin` page translator, Klin's libraries and
 headers, the build and test scripts in this repository, and the release
 files (source tarball and SBOM).
 
 Out of scope:
 
-- bugs in pages or applications built with Klin (unless Klin's API makes
-  the mistake hard to avoid; tell us about those);
+- bugs in pages or applications built with Klin, unless Klin's API makes
+  the mistake hard to avoid (please tell us about those);
 - settings documented as weakening security, such as `sandbox no`,
   `follow_symlinks yes`, `allow_root yes` or `cgi.pass_headers all`;
-- problems in OpenSSL or zlib themselves (report those upstream). Problems
-  in the bundled LibU are in scope.
+- problems in OpenSSL or zlib themselves, which should be reported
+  upstream. Problems in the bundled LibU are in scope.
 
 ## Hardening
 

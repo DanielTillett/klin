@@ -1,84 +1,114 @@
 # Files from the file system
 
+This page explains how klind serves files that are not built into it:
+which build options turn the feature on, how a request path becomes a
+file, and how symbolic links are handled.
+
 Pages built into klind (the embedded site) are always served. Files from
 the file system are served by two optional suppliers: the file system one
-(static files) and the CGI one ([CGI](CGI.md)). Both are left out of a build
-unless asked for:
+(static files) and the CGI one ([CGI](CGI.md)). Both are left out of a
+build unless you ask for them:
 
 ```sh
 cmake -S . -B out -DKLIN_ENABLE_SUP_FS=ON -DKLIN_ENABLE_SUP_CGI=ON
 ```
 
-A build without them cannot serve or run anything from the file system,
-whatever the configuration says. That is the way to turn them off
-entirely. A build with them can still turn them off for a server or a
-virtual host:
+**A build without them cannot serve or run anything from the file
+system**, whatever the configuration says. That is the way to turn them
+off entirely, and on a device that only serves its embedded pages it is
+what I would do. A build with them can still turn them off for a server or
+a virtual host:
 
-```
-serve_files     no      no static files from the file system
-run_cgi         no      no CGI scripts
+```conf
+serve_files     no      # no static files from the file system
+run_cgi         no      # no CGI scripts
 ```
 
-Both default to yes (when built in).
+Both default to yes when built in.
 
 ## Where files come from
 
-A request path is decoded (%xx), then normalized: backslashes become
-slashes, "." and ".." segments are resolved and repeated slashes are
-reduced, before the path is used. A NUL (%00) is refused with 400. The
-path is then appended to the dir_alias target whose prefix it matches,
-or to dir_root. A file is looked for only there: a request path is never
-looked up from the file system's root (before 4.0 it was, when the
-request arrived, so If-Modified-Since could tell whether any file on the
-host existed, and when it changed).
+A request path is decoded (`%xx`), then normalised: backslashes become
+slashes, `.` and `..` segments are resolved and repeated slashes are
+reduced, all before the path is used. A NUL (`%00`) is refused with 400.
+The path is then appended to the `dir_alias` target whose prefix it
+matches, or to `dir_root`, and a file is looked for only there.
 
-The path info (/page/extra) is split against the files of the virtual
+The figure below shows the path from request to open file.
+
+```mermaid
+flowchart TD
+    A["request path"] --> B["decode %xx"]
+    B --> C{"NUL in it?"}
+    C -- "yes" --> E400["400 Bad Request"]
+    C -- "no" --> D["normalise: backslash to slash,<br/>resolve . and .., merge repeated slashes"]
+    D --> F["append to the matching<br/>dir_alias target, or dir_root"]
+    F --> G{"open under that directory<br/>with the follow_symlinks policy"}
+    G -- "outside it, or not found" --> E404["404 Not Found"]
+    G -- "not a regular file" --> E404
+    G -- "regular file" --> S["served"]
+```
+
+A request path is never looked up from the file system's root. Before
+4.0 it was, when the request arrived, so `If-Modified-Since` could tell
+whether any file on the host existed, and when it changed.
+
+The path info (`/page/extra`) is split against the files of the virtual
 host the Host field names.
 
 ## Symbolic links
 
-```
-follow_symlinks     inside      (the default)
+```conf
+follow_symlinks     inside      # the default
                     no
                     yes
 ```
 
-inside: a link is followed if its target is inside the directory the path
-was resolved under (dir_root, or the dir_alias or script_alias target).
-A link that leads out of it (to /etc, or to ../secret.txt) is not found
-(404). The directory itself may be reached through links.
+With `inside`, a link is followed if its target is inside the directory
+the path was resolved under (`dir_root`, or the `dir_alias` or
+`script_alias` target). A link that leads out of it (to /etc, or to
+../secret.txt) is not found (404). The directory itself may be reached
+through links.
 
-no: no link is followed below that directory.
+With `no`, no link is followed below that directory.
 
-yes: links are followed wherever they lead (the behavior before 4.0).
+With `yes`, links are followed wherever they lead. That was the behaviour
+before 4.0.
 
 The file is opened one path segment at a time from the directory, with
-O_NOFOLLOW for each segment, after the links are resolved (inside). A link
-swapped in between the check and the open is not followed, so the file
-opened is always under the directory. Only regular files are served (a
-FIFO, a device or a directory is not found). CGI scripts are checked the
-same way when the request comes in; the script is then run by its path.
+`O_NOFOLLOW` for each segment, after the links are resolved (for
+`inside`). A link swapped in between the check and the open is not
+followed, so the file opened is always under the directory. Only regular
+files are served; a FIFO, a device or a directory is not found. CGI
+scripts are checked the same way when the request comes in, and the
+script is then run by its path.
 
 The setting goes in a server block or a virtual host's block, and a
 virtual host inherits it from its server.
 
 ## Windows
 
-On Windows, unless follow_symlinks is yes, no segment below the directory
-may be a symbolic link, junction or other reparse point (inside acts as
-no), and these names are refused whatever the setting: a segment ending
-in a dot or a blank (Windows drops them, so "page.kl1." would name
-page.kl1), one with a colon (an NTFS stream, "file::$DATA"), a short
-8.3 name ("SECRET~1.TXT", another name for a file a rule may cover by its
-long name), and device names (CON, NUL, COM1, ...). This code is not
-tested: the Windows CI job builds klind and serves embedded pages, but
-does not build the file-system supplier or run these path checks.
+On Windows, unless `follow_symlinks` is `yes`, no segment below the
+directory may be a symbolic link, junction or other reparse point
+(`inside` acts as `no`). These names are refused whatever the setting:
+
+- a segment ending in a dot or a blank (Windows drops them, so
+  `page.kl1.` would name page.kl1);
+- one with a colon (an NTFS stream, `file::$DATA`);
+- a short 8.3 name (`SECRET~1.TXT`, another name for a file a rule may
+  cover by its long name);
+- device names (CON, NUL, COM1, ...).
+
+**This code is not tested.** The Windows CI job builds klind and serves
+embedded pages, but does not build the file-system supplier or run these
+path checks.
 
 ## Tested
 
-test/run_server_tests.py (both server models) requests a file next to a
-dir_alias target through ../, %2e%2e, %2f, %5c, backslashes, double
-encoding, overlong UTF-8, absolute paths and Windows names (none is
-served), checks a raw /etc/passwd with If-Modified-Since (404, not 304),
-the three policies on links inside and outside the directory, a FIFO,
-the path info of a virtual host's own file, and serve_files/run_cgi no.
+test/run_server_tests.py, on both server models, requests a file next to
+a `dir_alias` target through `../`, `%2e%2e`, `%2f`, `%5c`, backslashes,
+double encoding, overlong UTF-8, absolute paths and Windows names, and
+none is served. It also checks a raw /etc/passwd with `If-Modified-Since`
+(404, not 304), the three policies on links inside and outside the
+directory, a FIFO, the path info of a virtual host's own file, and
+`serve_files no` and `run_cgi no`.

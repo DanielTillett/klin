@@ -1,9 +1,10 @@
 # IP access control
 
-An "access" block in a server or vhost lets clients in, or refuses them,
-by their IP address:
+An `access` block in a server or vhost lets clients in, or refuses them,
+by their IP address. Use it to keep an admin page or a status page to
+your own network.
 
-```
+```conf
 access
 {
     rule
@@ -26,28 +27,71 @@ access
 ```
 
 Entries are IPv4 or IPv6 addresses, networks (address/prefix bits) or
-"all", separated by blanks or commas; IPv4 clients of a dual-stack socket
-(::ffff:a.b.c.d) are matched as IPv4.
+`all`, separated by blanks or commas. IPv4 clients of a dual-stack socket
+(`::ffff:a.b.c.d`) are matched as IPv4.
 
-For a request, the first rule whose path matches decides (a rule without
-a path matches every path): its first allow or deny line naming the
-client's address wins, and a client that no line names is allowed. A refused
-request gets 403 Forbidden. Paths are the decoded request path the client
-asked for, before routes and aliases, as for authentication realms; IP
-rules are checked before authentication.
+## The rule
 
-When a connection is accepted, if the first rule of the server's access
-block is one for every path and it denies the client, the connection is
-closed at once, before the TLS handshake or any HTTP.
+For a request, the first rule whose path matches decides. A rule without
+a path matches every path. Within that rule, the first `allow` or `deny`
+line naming the client's address wins, and a client that no line names is
+allowed. That is the whole rule. A refused request gets 403 Forbidden.
 
-The address is the socket's peer: behind a proxy or load balancer it is
-the proxy's, and X-Forwarded-For is not used. A bad entry, an unknown key
-or a rule with no allow or deny line stops klind at startup.
+The figure below shows the decision for one request.
+
+```mermaid
+flowchart TD
+    A["request for a path"] --> B{"next rule:<br/>path matches,<br/>or no path?"}
+    B -- "no" --> B
+    B -- "no rules left" --> OK["served"]
+    B -- "yes" --> C{"first allow or deny<br/>line naming the client"}
+    C -- "allow" --> OK
+    C -- "deny" --> NO["403 Forbidden"]
+    C -- "no line names it" --> OK
+```
+
+Only the first matching rule is consulted. In the example above, a client
+in 192.0.2.0/24 asking for `/admin/` is decided by the first rule, not the
+third: it is refused there only because `deny all` names it. If you want
+a network kept out everywhere, put its rule first.
+
+Paths are the decoded request path the client asked for, before routes
+and aliases, as for authentication realms. A path ending in `/` that has
+an index page is checked with the index page's name appended, so
+`/admin/` is checked as `/admin/index.kl1`. IP rules are checked before
+authentication.
+
+## At connection time
+
+When a connection is accepted, klind looks at the first rule of the
+server's access block. If that rule is for every path and it denies the
+client, the connection is closed at once, before the TLS handshake or any
+HTTP. If the first rule has a path, nothing is dropped at this stage,
+because that rule may let the client in somewhere.
+
+```mermaid
+flowchart LR
+    A["connection accepted"] --> B{"first rule<br/>has a path?"}
+    B -- "yes" --> H["TLS and HTTP,<br/>then per-request check"]
+    B -- "no" --> C{"it denies<br/>the client?"}
+    C -- "yes" --> X["closed at once"]
+    C -- "no" --> H
+```
+
+## The catch: proxies
+
+The address is the socket's peer. Behind a proxy or load balancer it is
+the proxy's, and `X-Forwarded-For` is not used. A client that is not on
+an IP socket (a UNIX socket, or klin run as a CGI) is not checked.
+
+A bad entry, an unknown key or a rule with no `allow` or `deny` line stops
+klind at startup.
 
 ## Tested
 
-The server tests check rules per path, networks, the first match and
-connections dropped at accept over IPv4, and on a tcp6://[::1] listener
-(where the host has IPv6) that ::1 is matched as an IPv6 address: allowed
-by "allow ::1", refused by a rule for other networks; HTTP and HTTPS are
-served over IPv6, and an IPv4 client does not reach that listener.
+The server tests check rules per path, networks, the first match, and
+connections dropped at accept over IPv4. On a `tcp6://[::1]` listener
+(where the host has IPv6) they check that `::1` is matched as an IPv6
+address: allowed by `allow ::1`, refused by a rule for other networks.
+HTTP and HTTPS are served over IPv6, and an IPv4 client does not reach
+that listener.

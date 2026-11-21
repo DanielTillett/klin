@@ -1,11 +1,14 @@
 # Security headers
 
-klind adds security headers to every response, pages and error pages
-alike. Each can be changed or left out per server or vhost in a
-"security_headers" block; the value given replaces the default, and "no"
-leaves the header out:
+klind adds a set of security headers to every response, pages and error
+pages alike. This page lists them, their defaults, and how to change them
+when a site needs something different.
 
-```
+Each header can be changed or left out per server or vhost in a
+`security_headers` block. The value you give replaces the default, and
+`no` leaves the header out:
+
+```conf
 security_headers
 {
     x_content_type_options     nosniff                # default
@@ -16,22 +19,29 @@ security_headers
 }
 ```
 
-- X-Content-Type-Options: nosniff stops browsers from guessing a content
-  type other than the one sent.
-- X-Frame-Options: SAMEORIGIN lets only the site's own pages frame it
-  (clickjacking). DENY forbids framing.
-- Referrer-Policy: strict-origin-when-cross-origin sends other sites only
-  the origin, never the path and query of the page.
-- Content-Security-Policy has no default: a useful policy depends on the
-  scripts, styles and frames each site uses, and a wrong one breaks pages.
-  Start with something like "default-src 'self'; frame-ancestors 'self'".
-- Strict-Transport-Security is sent over HTTPS only: browsers then use
-  HTTPS for the host for max-age seconds (a year by default). Add
-  "; includeSubDomains" only if every subdomain serves HTTPS. Set it to
-  "no" while testing a certificate, since browsers remember it.
+| Header | Default | What it does |
+|---|---|---|
+| X-Content-Type-Options | `nosniff` | Stops browsers from guessing a content type other than the one sent. |
+| X-Frame-Options | `SAMEORIGIN` | Lets only the site's own pages frame it, against clickjacking. `DENY` forbids framing. |
+| Referrer-Policy | `strict-origin-when-cross-origin` | Sends other sites only the origin, never the path and query of the page. |
+| Content-Security-Policy | not sent | See below. |
+| Strict-Transport-Security | `max-age=31536000` | Over HTTPS only. Browsers then use HTTPS for the host for max-age seconds (a year by default). |
 
-A page can still change a header with response_set_field() or remove it
-with response_del_field(): the headers are set before the page runs.
+Content-Security-Policy has no default. A useful policy depends on the
+scripts, styles and frames each site uses, and a wrong one breaks pages.
+Start with something like `default-src 'self'; frame-ancestors 'self'`.
 
-These headers are new in Klin 4.0.0; a site that relied on being framed by
-another origin needs x_frame_options no (and a frame-ancestors policy).
+Strict-Transport-Security is sent over HTTPS only. Add
+`; includeSubDomains` only if every subdomain serves HTTPS. Set it to `no`
+while you are testing a certificate, because browsers remember it for the
+whole max-age.
+
+A page can still change a header with `response_set_field()` or remove it
+with `response_del_field()`, because the headers are set before the page
+runs.
+
+## Upgrading
+
+These headers are new in Klin 4.0.0. A site that relied on being framed by
+another origin needs `x_frame_options no`, and a `frame-ancestors` policy
+in its Content-Security-Policy.
