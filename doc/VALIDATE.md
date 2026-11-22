@@ -197,6 +197,9 @@ a whole `type/subtype` followed only by blanks or `;` parameters
 (`text/plain junk` and `image//` both fail). Check the contents in the
 page if they matter.
 
+A file part whose Content-Type value exceeds 255 bytes makes the
+multipart request fail with 400, even without a `type` list.
+
 A file larger than `max_size` gets 413 Content Too Large, the status a
 body over `post_maxsize` gets; a file of a type not listed gets 400. With
 `on_invalid drop` the file is deleted instead and the page does not see
@@ -209,7 +212,8 @@ time; `post_maxsize` stops a large body early. A file a rule refuses or
 drops is deleted at once.
 
 A file input left empty arrives as a part of that name with `filename=""`
-and no data. The `upload` block's name covers that part. A bare
+and no data. Spaces or tabs outside the quotes do not change that.
+The `upload` block's name covers that part, which counts as no file. A bare
 `filename=` or a lone opening quote is malformed. A plain form or query
 argument of the same name is unknown unless a `param` names it.
 

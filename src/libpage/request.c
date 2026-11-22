@@ -1235,17 +1235,23 @@ static int parse_content_disposition(header_t *h, char *name, char *filename,
         } 
         else if(strncmp(tok, "filename=", fn_len) == 0) 
         {
+            char *end;
             int empty;
 
-            /* skip the filename part */
+            /* strip blanks outside the value before looking for quotes */
             tok += fn_len;
+            tok += strspn(tok, " \t");
+            end = tok + strlen(tok);
+            while(end > tok && (end[-1] == ' ' || end[-1] == '\t'))
+                --end;
+            *end = '\0';
             empty = strcmp(tok, "\"\"") == 0;
 
             /* remove single or double quotes */
             if((q = is_quote(tok[0])) != 0)
                 ++tok;
-            if(strlen(tok) && tok[strlen(tok) - 1] == q)
-                tok[strlen(tok) - 1] = '\0';
+            if(end > tok && end[-1] == q)
+                end[-1] = '\0';
 
             nop_err_if(*tok == '\0' && !empty);
             dbg_if (u_strlcpy(filename, tok, prmsz));
@@ -1560,12 +1566,15 @@ static int request_save_upload(request_t *rq, io_t *io, const char *boundary,
     const char *name, const char *filename, header_t *h)
 {
     io_t *tmpio = NULL;
+    const char *mime_type = header_get_field_value(h, "Content-Type");
     char buf[MULTIPART_BUFSZ];
     size_t bound_len = strlen(boundary);
     int found;
     ssize_t rc;
 
     dbg_err_if(sizeof(buf) <= bound_len);
+    /* Upload rules must see the whole type stored in the file metadata. */
+    nop_err_if(mime_type && strlen(mime_type) >= MIME_TYPE_BUFSZ);
 
     /* open a temporary file to dump uploaded data */
     dbg_err_if(u_tmpfile_open(rq->temp_dir, &tmpio));
@@ -1593,8 +1602,7 @@ static int request_save_upload(request_t *rq, io_t *io, const char *boundary,
     io_free(tmpio); tmpio = NULL;
 
     /* add this file to the uploaded file list */
-    dbg_err_if(request_add_uploaded_file(rq, name, filename, buf,
-        header_get_field_value(h, "Content-Type")));
+    dbg_err_if(request_add_uploaded_file(rq, name, filename, buf, mime_type));
 
     return 0;
 err:

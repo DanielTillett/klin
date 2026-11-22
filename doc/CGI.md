@@ -39,8 +39,8 @@ above the worker's hard limit`). On macOS `max_memory` cannot be applied
 at all, as with `worker_max_memory`, and the worker says so once. The
 script runs in a process group of its own, and when the timeout fires
 klind kills the script and that group. A child in its own group or
-session can survive. klind closes its end of the output pipe at the
-deadline, so a surviving child holding stdout open cannot delay the
+session can survive. klind closes its ends of both pipes at the deadline,
+so a surviving child holding stdin or stdout open cannot delay the
 response.
 
 klind checks the timeout only while the worker is waiting: writing the
@@ -51,9 +51,8 @@ client counts towards it. A script that closes its standard output and
 carries on running is killed when the timeout fires, and klind then
 sends what is left in its buffer and closes the connection.
 
-The timeout kills only the script, though. The client has deadlines of
-its own. The rest of a POST body, which klind relays from the client's
-socket, must arrive within the server's `post_timeout` (10 minutes by
+The client has deadlines of its own. The rest of a POST body, which klind
+relays from the client's socket, must arrive within `post_timeout` (10 minutes by
 default), or klind closes the connection. The same deadline covers
 handing the body to the script: one that leaves its standard input
 unread while more is POSTed than the pipe holds is killed when it runs
@@ -66,7 +65,7 @@ What a timeout looks like to the client depends on when it happens:
 
 | When the timeout fires | What the client gets |
 |---|---|
-| While klind is still reading the script's header | 504 Gateway Timeout, with no body |
+| Before klind has read the script's terminating blank header line | 504 Gateway Timeout, with no body or headers from the script |
 | After the header, or at any point for an `nph-` script (its output is not parsed) | The script's status and whatever output it had sent, then the connection is closed |
 | Never (the script ends its output in time) | The script's response, as normal |
 
@@ -163,9 +162,12 @@ sandbox. It runs scripts that:
 - sleep past the timeout (504), or past it after their header (cut short,
   and the sleep they started is gone too), or close their output and
   sleep on (killed by the timeout);
+- send only part of their header (504 without any of the script's fields);
 - spin on the CPU (killed after `max_cpu`, before the timeout);
 - get a POST body that stops arriving (closed by `post_timeout`), or
   leave a large one unread with `timeout 0` (killed at `post_timeout`);
+- leave a large POST unread with a helper in a separate session holding
+  stdin open (504 at the CGI deadline);
 - are reached through a link out of the script directory (404).
 
 See also: [FILES](FILES.md) for where scripts may live,

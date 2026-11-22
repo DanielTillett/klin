@@ -51,6 +51,7 @@ typedef struct cgi_run_s
 {
     pid_t child;
     io_t *out;          /* the worker's read end of the CGI stdout pipe */
+    int in_fd;          /* the worker's write end of the CGI stdin pipe */
     int timed_out;
 } cgi_run_t;
 
@@ -767,9 +768,9 @@ err:
 
 /* send the POSTed data (Content-Length bytes) to the cgi's stdin, within
  * the request's post_timeout. The script may not read it, so a broken pipe
- * is not an error. When the time runs out (a client that stops sending, or
- * a script that leaves its stdin full) the connection and '*pcgi_stdin'
- * are closed and this fails: the caller kills the cgi */
+ * or a pipe closed by the CGI deadline ends the copy. When post_timeout
+ * runs out, the connection and '*pcgi_stdin' are closed and this fails:
+ * the caller kills the cgi */
 static int cgi_send_post(request_t *rq, int *pcgi_stdin)
 {
     cgi_post_t post = { NULL, NULL, 0 };
@@ -819,17 +820,29 @@ err:
  * merged header before the body */
 static int cgi_merge_header(request_t *rq, response_t *rs, io_t *cgi_in)
 {
-    header_t *head;
-    field_t *field;
+    header_t staged = { 0 }, *head;
+    field_t *field, *old;
     codec_t *filter = NULL;
 
+    TAILQ_INIT(&staged.fields);
     dbg_err_if((head = response_get_header(rs)) == NULL);
 
     dbg_err_if(response_filter_create(rq, rs, NULL, &filter));
     dbg_err_if(io_codec_add_tail(response_io(rs), filter));
     filter = NULL; /* io_t owns it */
 
-    crit_err_if(header_load_ex(head, cgi_in, HLM_OVERRIDE));
+    /* Publish the script's fields only after the terminating blank line. */
+    crit_err_if(header_load(&staged, cgi_in));
+    while((field = TAILQ_FIRST(&staged.fields)) != NULL)
+    {
+        if((old = header_get_field(head, field_get_name(field))) != NULL)
+        {
+            header_del_field(head, old);
+            field_free(old);
+        }
+        header_del_field(&staged, field);
+        header_add_field(head, field);
+    }
 
     if((field = header_get_field(head, "Status")) != NULL &&
             field_get_value(field))
@@ -846,6 +859,7 @@ static int cgi_merge_header(request_t *rq, response_t *rs, io_t *cgi_in)
 
     return 0;
 err:
+    header_clear(&staged);
     if(filter)
         codec_free(filter);
     return ~0;
@@ -872,7 +886,7 @@ static void cgi_kill(pid_t child)
     (void) kill(child, SIGKILL);
 }
 
-/* stop waiting for output even if another process still holds the pipe */
+/* stop waiting on either pipe even if another process still holds it */
 static int cgi_cb_timeout(talarm_t *al, void *arg)
 {
     cgi_run_t *run = (cgi_run_t *) arg;
@@ -882,6 +896,11 @@ static int cgi_cb_timeout(talarm_t *al, void *arg)
     run->timed_out = 1;
     if(run->out)
         io_close(run->out);
+    if(run->in_fd != -1)
+    {
+        close(run->in_fd);
+        run->in_fd = -1;
+    }
     cgi_kill(run->child);
     warn("cgi killed after its timeout (pid %d)", (int) run->child);
 
@@ -934,10 +953,10 @@ static int cgi_serve(request_t *rq, response_t *rs)
 {
     const char *fqn, *filename;
     io_t *cgi_in = NULL;
-    int cgi_stdin = -1, cgi_stdout = -1;
+    int cgi_stdout = -1;
     pid_t child = -1;
     cgi_limits_t lim;
-    cgi_run_t run = { -1, NULL, 0 };
+    cgi_run_t run = { -1, NULL, -1, 0 };
     talarm_t *al = NULL;
 
     dbg_err_if (rq == NULL);
@@ -955,7 +974,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
     /* run the CGI and return its stdin and stdout descriptor */
     cgi_load_limits(request_get_http(rq), rq, &lim);
     cgi_check_limits(&lim);
-    crit_err_if(cgi_exec(rq, rs, &lim, &child, &cgi_stdin, &cgi_stdout));
+    crit_err_if(cgi_exec(rq, rs, &lim, &child, &run.in_fd, &cgi_stdout));
 
     /* closing the pipe ends its read wait and preserves buffered output */
     crit_err_sif(io_fd_create(cgi_stdout, IO_FD_CLOSE | IO_FD_EOF_ON_CLOSE,
@@ -974,24 +993,22 @@ static int cgi_serve(request_t *rq, response_t *rs)
 
     /* the POSTed data, then EOF on the cgi's stdin (a relay cut short by
        post_timeout has closed it, and the client, already) */
-    nop_err_if(cgi_send_post(rq, &cgi_stdin));
-    if(cgi_stdin != -1)
-        close(cgi_stdin);
-    cgi_stdin = -1;
+    nop_err_if(cgi_send_post(rq, &run.in_fd));
+    if(run.in_fd != -1)
+        close(run.in_fd);
+    run.in_fd = -1;
 
     /* header of cgis whose name start with nph- must not be parsed */
-    if(strncmp(filename, "nph-", 4))
+    if(!strncmp(filename, "nph-", 4))
     {
-        if(cgi_merge_header(rq, rs, cgi_in))
-        {
-            /* killed before it sent its header: 504, with no body */
-            dbg_err_if(!run.timed_out);
-            response_set_status(rs, HTTP_STATUS_GATEWAY_TIMEOUT);
-        }
-    } else
         response_set_status(rs, HTTP_STATUS_OK);
-
-    cgi_relay(cgi_in, response_io(rs));
+        cgi_relay(cgi_in, response_io(rs));
+    } else if(cgi_merge_header(rq, rs, cgi_in)) {
+        /* killed before it sent its header: 504, with no body */
+        dbg_err_if(!run.timed_out);
+        response_set_status(rs, HTTP_STATUS_GATEWAY_TIMEOUT);
+    } else
+        cgi_relay(cgi_in, response_io(rs));
 
     io_free(cgi_in);
     run.out = NULL;
@@ -1016,8 +1033,8 @@ err:
         timerm_del(al);
     if(cgi_in)
         io_free(cgi_in);
-    if(cgi_stdin != -1)
-        close(cgi_stdin);
+    if(run.in_fd != -1)
+        close(run.in_fd);
     if(cgi_stdout != -1)
         close(cgi_stdout);
     if(child > 0)
