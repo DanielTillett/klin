@@ -393,6 +393,37 @@ static void test_timed_fd_write(void)
     close(fd[1]);
 }
 
+/* an armed alarm (a CGI's timeout) still runs while a write with no
+   deadline of its own waits for a peer that stopped reading: here it
+   closes the peer, and the write fails instead of blocking for ever */
+static void test_alarm_during_write(void)
+{
+    enum { BIG = 8 * 1024 * 1024 };
+    talarm_t *a = NULL;
+    io_t *out = NULL;
+    char *big = NULL;
+    int fd[2];
+    time_t t0;
+    void (*old)(int);
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd) ||
+            io_fd_create(fd[0], IO_FD_CLOSE, &out) ||
+            (big = u_zalloc(BIG)) == NULL)
+    {
+        CHECK(!"set up the write");
+        return;
+    }
+    old = signal(SIGPIPE, SIG_IGN);
+    CHECK(timerm_add(1, on_close, &fd[1], &a) == 0);
+    t0 = time(NULL);
+    CHECK(io_write(out, big, BIG) < BIG || io_flush(out) != 0);
+    CHECK(fd[1] == -1 && time(NULL) - t0 <= 5);
+    CHECK(timerm_del(a) == 0);
+    (void) signal(SIGPIPE, old);
+    io_free(out);
+    u_free(big);
+}
+
 /* translate 'page' as 'uri'; return the generated C (to free) or NULL */
 static char *translate_page(const char *page, const char *uri)
 {
@@ -1746,6 +1777,7 @@ int main(void)
     test_field_reuse();
     test_timer();
     test_timed_fd_write();
+    test_alarm_during_write();
     test_embedded_resources();
     test_translate();
     test_json_parse();
