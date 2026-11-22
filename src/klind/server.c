@@ -233,6 +233,11 @@ static void server_waitpid(server_t *s)
            handshake can be signed, so stop rather than fail every one */
         if(tls_keyproxy_is_manager(pid))
         {
+            /* once klind is stopping (a signal, or server_stop_children()
+               reaping the managers it stopped) a manager exit is expected */
+            if(s->stop)
+                continue;
+
             u_crit("TLS key manager [%u] exited, stopping", pid);
             s->stop = 1;
             s->failed = 1;  /* a failure exit, so that systemd restarts */
@@ -1397,6 +1402,8 @@ int server_loop(server_t *s)
         if(server_children_changed)
             server_waitpid(s);
 #endif
+        if(s->stop)
+            break;
 
         /* parent only */
         if(ctx->pipc == 0)

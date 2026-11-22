@@ -155,7 +155,7 @@ Maximum number of requests served on one connection. The default value is 100.
 Set the maximum number of seconds the server waits for an HTTP POST request on an already connected socket. The default value is 10 minutes.
 .TP
 \fBsend_timeout\fR
-Seconds a write to the client may wait without the client taking any data (default 60; 0: no limit). When it runs out the connection is closed, so a client that stops reading cannot hold a worker. It applies to plain and TLS connections and to every response, CGI output included. See doc/LIMITS.md.
+Seconds allowed for each write to the client (default 60, 0 for no limit). Retries share the write's deadline. On TLS connections each write handles up to one record. When the deadline expires the connection is closed. It applies to every response, CGI output included. See doc/LIMITS.md.
 .TP
 \fBpost_maxsize\fR
 Set the maximum number of bytes the server is willing to accept in a request body, whatever the method (CGI uploads included). A request whose Content\-Length is greater than

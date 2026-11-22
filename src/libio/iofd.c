@@ -9,7 +9,6 @@
 
 #include "klin_conf.h"
 #include <fcntl.h>
-#include <time.h>
 #include <unistd.h>
 #include <u/libu.h>
 #include <klin/io.h>
@@ -65,22 +64,19 @@ err:
 static ssize_t io_fd_write(io_t *io_, const char *buf, size_t size)
 {
     io_fd_t *ifd = (io_fd_t *) io_;
-    time_t start = time(NULL);
+    int64_t deadline;
     ssize_t c;
-    int left;
 
     dbg_return_if (ifd == NULL, ~0);
     dbg_return_if (buf == NULL, ~0);
 
-again:
     /* the deadline runs from the start of this write, not from each retry
        (a wait can report room that a write then finds gone) */
-    left = io_->wr_timeout;
-    if(left > 0 && (left -= (int) (time(NULL) - start)) <= 0)
-        errno = ETIMEDOUT;
-    if(left < 0 || (left == 0 && io_->wr_timeout > 0) ||
-            ((io_->wr_timeout > 0 || timerm_armed()) &&
-             timerm_wait_max(&ifd->fd, TIMERM_WAIT_WRITE, left)))
+    deadline = timerm_deadline(io_->wr_timeout);
+
+again:
+    if((io_->wr_timeout > 0 || timerm_armed()) &&
+            timerm_wait_until(&ifd->fd, TIMERM_WAIT_WRITE, deadline))
     {
         /* a stalled peer: later writes fail at once */
         if(errno == ETIMEDOUT && ifd->fd >= 0)

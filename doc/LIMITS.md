@@ -88,14 +88,13 @@ media type is left for the page to read. A page that reads the raw request
 stream (`in`) itself has no blanket deadline, so set your own if the
 client is not trusted.
 
-**`send_timeout` is a deadline for each write to the client, not for the
-whole response.** A write that cannot hand the client any data for that
-many seconds fails, and klind closes the connection, so a client that
-stops reading cannot hold a worker. One that keeps reading, however
-slowly, is not cut off. It applies to plain and TLS connections alike,
-and to every response, CGI output included. SSE and WebSocket writes have
-their own 30-second deadline as well, and the shorter of the two wins.
-0 turns it off.
+**`send_timeout` gives each write to the client its own deadline.** The
+deadline starts with the write and covers every retry. On TLS connections
+each write handles up to one record. If the write runs out of time, klind
+closes the connection, so a client that stops reading cannot hold a
+worker. The timeout applies to every response, CGI output included.
+SSE and WebSocket writes have their own 30-second deadline as well,
+and the shorter of the two wins. 0 turns `send_timeout` off.
 
 These are the server block's settings, not a vhost's. klind reads them when
 the request object is created, before the Host field has arrived, so a

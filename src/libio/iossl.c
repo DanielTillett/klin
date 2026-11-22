@@ -52,16 +52,16 @@ err:
     return ~0;
 }
 
-/* wait for the socket, for at most 'secs' seconds (0: no limit); a wait
- * that runs out closes it, so that later writes fail at once */
-static int io_ssl_wait(io_ssl_t *io_ssl, int events, int secs)
+/* wait for the socket until 'deadline' (0: no limit); a wait that runs
+ * out closes it, so that later writes fail at once */
+static int io_ssl_wait(io_ssl_t *io_ssl, int events, int64_t deadline)
 {
-    if(!timerm_wait_max(&io_ssl->fd, events, secs))
+    if(!timerm_wait_until(&io_ssl->fd, events, deadline))
         return 0;
 
     if(errno == ETIMEDOUT && io_ssl->fd >= 0)
     {
-        u_info("write timed out after %d s, closed", secs);
+        u_info("write timed out after %d s, closed", io_ssl->io.wr_timeout);
         (void) io_ssl_close(&io_ssl->io);
     }
 
@@ -70,21 +70,26 @@ static int io_ssl_wait(io_ssl_t *io_ssl, int events, int secs)
 
 /* the socket is non-blocking: wait as OpenSSL asks after a call that
  * returned 'rc' (the alarms run meanwhile, and one may close the socket),
- * for at most 'secs' seconds; return 0 to call again, ~0 on a real error,
- * 1 on a clean EOF */
-static int io_ssl_retry(io_ssl_t *io_ssl, int rc, int secs)
+ * until 'deadline' (0: no limit); return 0 to call again, ~0 on a real
+ * error, 1 on a clean EOF */
+static int io_ssl_retry(io_ssl_t *io_ssl, int rc, int64_t deadline)
 {
     switch(SSL_get_error(io_ssl->ssl, rc))
     {
     case SSL_ERROR_WANT_READ:
-        return io_ssl_wait(io_ssl, TIMERM_WAIT_READ, secs);
+        return io_ssl_wait(io_ssl, TIMERM_WAIT_READ, deadline);
     case SSL_ERROR_WANT_WRITE:
-        return io_ssl_wait(io_ssl, TIMERM_WAIT_WRITE, secs);
+        return io_ssl_wait(io_ssl, TIMERM_WAIT_WRITE, deadline);
     case SSL_ERROR_ZERO_RETURN:
         return 1;
     case SSL_ERROR_SYSCALL:
         if(rc < 0 && errno == EINTR)
-            return 0;
+        {
+            /* no WANT direction was reported; check the write deadline
+               before trying again */
+            return deadline ? io_ssl_wait(io_ssl,
+                TIMERM_WAIT_READ | TIMERM_WAIT_WRITE, deadline) : 0;
+        }
         return ~0;
     default:
         return ~0;
@@ -142,20 +147,28 @@ err:
 static ssize_t io_ssl_write(io_t *io_, const char *buf, size_t size)
 {
     io_ssl_t *io_ssl = (io_ssl_t *) io_;
+    int64_t deadline;
     int c;
 
     dbg_err_if (io_ssl == NULL);
     dbg_err_if (buf == NULL);
 
+    /* OpenSSL uses a non-blocking socket. All retries of this record
+       share one deadline, whichever direction OpenSSL asks to wait for. */
+    deadline = timerm_deadline(io_->wr_timeout);
+
+    /* Hand OpenSSL one record at a time so a bulk write can make
+       progress between deadlines; the callers loop on short writes. */
+    size = U_MIN(size, SSL3_RT_MAX_PLAIN_LENGTH);
+
     for(;;)
     {
         nop_err_if(io_ssl->fd < 0);     /* closed by an alarm */
 
-        if((c = SSL_write(io_ssl->ssl, buf, (int) U_MIN(size, INT_MAX))) > 0)
+        if((c = SSL_write(io_ssl->ssl, buf, (int) size)) > 0)
             return c;
 
-        /* the write timeout limits this wait (a renegotiation's read too) */
-        nop_err_if(io_ssl_retry(io_ssl, c, io_->wr_timeout));
+        nop_err_if(io_ssl_retry(io_ssl, c, deadline));
     }
 
 err:

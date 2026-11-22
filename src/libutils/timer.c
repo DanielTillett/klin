@@ -207,13 +207,41 @@ int timerm_wait(int *pfd, int events)
  */
 int timerm_wait_max(int *pfd, int events, int secs)
 {
-    int64_t deadline = 0, left;
+    return timerm_wait_until(pfd, events, timerm_deadline(secs));
+}
+
+/**
+ * \brief   A deadline \p secs seconds from now, for timerm_wait_until()
+ *
+ * \param secs    seconds from now, or \c 0 for no limit
+ *
+ * \return the deadline, or \c 0 (no limit) when \p secs is not positive
+ */
+int64_t timerm_deadline(int secs)
+{
+    return secs > 0 ? timerm_now() + (int64_t) secs * 1000 : 0;
+}
+
+/**
+ * \brief   Wait for a descriptor until a deadline
+ *
+ * As timerm_wait_max(), with a deadline from timerm_deadline(): a write
+ * that waits more than once keeps one deadline for all of its waits. A
+ * deadline already past fails at once, with \c errno set to \c ETIMEDOUT.
+ *
+ * \param pfd       the descriptor, re-read after each alarm
+ * \param events    what to wait for
+ * \param deadline  from timerm_deadline(), or \c 0 for no limit
+ *
+ * \return \c 0 when the descriptor is ready, non-zero if it was closed,
+ *         on error, or when the time ran out
+ */
+int timerm_wait_until(int *pfd, int events, int64_t deadline)
+{
+    int64_t left;
     int ms, rc;
 
     dbg_return_if (pfd == NULL, ~0);
-
-    if(secs > 0)
-        deadline = timerm_now() + (int64_t) secs * 1000;
 
     for(;;)
     {
@@ -230,7 +258,7 @@ int timerm_wait_max(int *pfd, int events, int secs)
                 return ~0;
             }
             if(ms < 0 || ms > left)
-                ms = (int) left;
+                ms = (int) U_MIN(left, INT32_MAX);
         }
 
 #ifdef OS_WIN
