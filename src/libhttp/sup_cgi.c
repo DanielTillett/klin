@@ -52,6 +52,7 @@ typedef struct cgi_run_s
     pid_t child;
     io_t *out;          /* the worker's read end of the CGI stdout pipe */
     int in_fd;          /* the worker's write end of the CGI stdin pipe */
+    io_t *client;       /* the connection, while output is relayed to it */
     int timed_out;
 } cgi_run_t;
 
@@ -901,6 +902,11 @@ static int cgi_cb_timeout(talarm_t *al, void *arg)
         close(run->in_fd);
         run->in_fd = -1;
     }
+    /* a write to a client that stopped reading may be what is waited for
+       (with send_timeout 0 nothing else ends it): the connection goes too,
+       as it would after the cut anyway */
+    if(run->client)
+        (void) io_close(run->client);
     cgi_kill(run->child);
     warn("cgi killed after its timeout (pid %d)", (int) run->child);
 
@@ -956,7 +962,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
     int cgi_stdout = -1;
     pid_t child = -1;
     cgi_limits_t lim;
-    cgi_run_t run = { -1, NULL, -1, 0 };
+    cgi_run_t run = { -1, NULL, -1, NULL, 0 };
     talarm_t *al = NULL;
 
     dbg_err_if (rq == NULL);
@@ -1002,13 +1008,17 @@ static int cgi_serve(request_t *rq, response_t *rs)
     if(!strncmp(filename, "nph-", 4))
     {
         response_set_status(rs, HTTP_STATUS_OK);
-        cgi_relay(cgi_in, response_io(rs));
+        run.client = response_io(rs);
+        cgi_relay(cgi_in, run.client);
     } else if(cgi_merge_header(rq, rs, cgi_in)) {
         /* killed before it sent its header: 504, with no body */
         dbg_err_if(!run.timed_out);
         response_set_status(rs, HTTP_STATUS_GATEWAY_TIMEOUT);
-    } else
-        cgi_relay(cgi_in, response_io(rs));
+    } else {
+        run.client = response_io(rs);
+        cgi_relay(cgi_in, run.client);
+    }
+    run.client = NULL;
 
     io_free(cgi_in);
     run.out = NULL;
