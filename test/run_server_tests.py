@@ -3059,6 +3059,10 @@ def run_bad_auth_checks(check, daemon, env, temp):
                        ("type not a token", upload % "type text/pl@in"),
                        ("type with two slashes", upload % "type text/plain/x"),
                        ("empty type list", upload % "type ,"),
+                       ("max_size as a block", upload % "max_size\n{\nx 1\n}"),
+                       ("max_count as a block", upload % "max_count\n{\nx 1\n}"),
+                       ("required not yes or no", upload % "required yse"),
+                       ("required as a block", upload % "required\n{\nx 1\n}"),
                        ("unknown key", upload % "maxsize 5")]:
         check(not validated(good, body), f"klind started with a bad upload rule ({name})")
 
