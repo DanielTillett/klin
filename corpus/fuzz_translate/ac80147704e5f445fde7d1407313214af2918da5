@@ -1,2 +1,0 @@
-<% int i%>
-<%! #in~clude <x.h> %>
