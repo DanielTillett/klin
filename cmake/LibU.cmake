@@ -252,6 +252,45 @@ string(REPLACE "\n        /* find the end of the key string */"
 string(REPLACE "\n    u_string_free(lastkey);\n    u_string_free(value);\n    u_string_free(key);"
     "\n    ${_libu_dangling}\n    u_string_free(lastkey);\n    u_string_free(value);\n    u_string_free(key);"
     _libu_config "${_libu_config}")
+# cs_getline() lost a last line with no newline (a final setting vanished)
+# and a character every 1023 bytes of a long line: use cmake/libu_cs_getline.c
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_LIST_DIR}/libu_cs_getline.c")
+file(READ "${CMAKE_CURRENT_LIST_DIR}/libu_cs_getline.c" _libu_getline)
+string(FIND "${_libu_config}"
+    "static int cs_getline (u_config_gets_t cb, void *arg, u_string_t *ln)\n{" _b)
+set(_e -1)
+if(NOT _b EQUAL -1)
+    string(SUBSTRING "${_libu_config}" ${_b} -1 _tail)
+    string(FIND "${_tail}" "\nstatic int u_config_do_load_drv " _e)
+endif()
+if(_b EQUAL -1 OR _e EQUAL -1)
+    message(FATAL_ERROR "LibU's srcs/toolbox/config.c has changed: review "
+        "the cs_getline() replacement in cmake/LibU.cmake")
+endif()
+string(SUBSTRING "${_libu_config}" 0 ${_b} _head)
+math(EXPR _e "${_e} + 1")
+string(SUBSTRING "${_tail}" ${_e} -1 _tail)
+set(_libu_config "${_head}${_libu_getline}${_tail}")
+# an optional include (-include) that cannot be opened is skipped, but one
+# that can and does not parse stops the load, as a required one does
+foreach(_from
+        "    crit_err_ifm (drv->open(p, &arg),\n        \"unable to access input file: %s\", p);"
+        "                dbg_if(u_config_include(c, drv, subkey, overwrite));")
+    string(FIND "${_libu_config}" "${_from}" _at)
+    if(_at EQUAL -1)
+        message(FATAL_ERROR "LibU's srcs/toolbox/config.c has changed: review "
+            "the -include fix in cmake/LibU.cmake")
+    endif()
+endforeach()
+string(REPLACE
+    "    crit_err_ifm (drv->open(p, &arg),\n        \"unable to access input file: %s\", p);"
+    "    if(drv->open(p, &arg))\n    {   /* 1: missing, which an optional include skips */\n        u_warn(\"unable to access input file: %s\", p);\n        return 1;\n    }"
+    _libu_config "${_libu_config}")
+string(REPLACE
+    "                dbg_if(u_config_include(c, drv, subkey, overwrite));"
+    "                dbg_err_if(u_config_include(c, drv, subkey, overwrite) == ~0);"
+    _libu_config "${_libu_config}")
 file(WRITE "${CMAKE_BINARY_DIR}/libu/config.c.new" "${_libu_config}")
 configure_file("${CMAKE_BINARY_DIR}/libu/config.c.new" "${CMAKE_BINARY_DIR}/libu/config.c"
     COPYONLY)
