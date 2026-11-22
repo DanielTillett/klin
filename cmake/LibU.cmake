@@ -227,6 +227,38 @@ list(FIND _libu_srcs "${LIBU_SOURCE_DIR}/srcs/toolbox/misc.c" _at)
 list(REMOVE_AT _libu_srcs ${_at})
 list(INSERT _libu_srcs ${_at} "${CMAKE_BINARY_DIR}/libu/misc.c")
 
+# LibU's configuration parser keeps a key with no value for the '{' that
+# should follow, and drops it without a word when another key, a '}' or the
+# end of the file comes instead: a bare "max_size" or "required" vanished,
+# leaving its default. Build a copy of config.c that stops on such a key;
+# stop if the pinned LibU no longer has that code.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${LIBU_SOURCE_DIR}/srcs/toolbox/config.c")
+file(READ "${LIBU_SOURCE_DIR}/srcs/toolbox/config.c" _libu_config)
+set(_libu_dangling "if(u_string_len(lastkey))\n            crit_err(\"config error \
+[line %d]: '%s' has no value (nor a { on the next line)\", lineno, \
+u_string_c(lastkey));\n")
+foreach(_anchor "\n        /* find the end of the key string */"
+        "\n    u_string_free(lastkey);\n    u_string_free(value);\n    u_string_free(key);")
+    string(FIND "${_libu_config}" "${_anchor}" _at)
+    if(_at EQUAL -1)
+        message(FATAL_ERROR "LibU's srcs/toolbox/config.c has changed: review "
+            "the no-value key fix in cmake/LibU.cmake")
+    endif()
+endforeach()
+string(REPLACE "\n        /* find the end of the key string */"
+    "\n        ${_libu_dangling}\n        /* find the end of the key string */"
+    _libu_config "${_libu_config}")
+string(REPLACE "\n    u_string_free(lastkey);\n    u_string_free(value);\n    u_string_free(key);"
+    "\n    ${_libu_dangling}\n    u_string_free(lastkey);\n    u_string_free(value);\n    u_string_free(key);"
+    _libu_config "${_libu_config}")
+file(WRITE "${CMAKE_BINARY_DIR}/libu/config.c.new" "${_libu_config}")
+configure_file("${CMAKE_BINARY_DIR}/libu/config.c.new" "${CMAKE_BINARY_DIR}/libu/config.c"
+    COPYONLY)
+list(FIND _libu_srcs "${LIBU_SOURCE_DIR}/srcs/toolbox/config.c" _at)
+list(REMOVE_AT _libu_srcs ${_at})
+list(INSERT _libu_srcs ${_at} "${CMAKE_BINARY_DIR}/libu/config.c")
+
 add_library(libu STATIC ${_libu_srcs})
 set_target_properties(libu PROPERTIES OUTPUT_NAME u)
 target_include_directories(libu PUBLIC "${LIBU_GENERATED_INCLUDE_DIR}")
