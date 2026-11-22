@@ -1,0 +1,9 @@
+POST /f HTTP/1.1
+Host: x
+CC: ÈP1.1
+UUA: ix-
+ConCP:OC/f HTTP/0.1
+Host: x
+Content-Length: 23
+
+ýÿÿÿÿÿ

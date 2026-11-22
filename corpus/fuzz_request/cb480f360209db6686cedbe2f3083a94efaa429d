@@ -1,0 +1,5 @@
+GET /a/b?x=2ÿ HTTP/1.1
+Host:loalhost
+Cookie: a=b;%2e
+Content-Lh: 0
+

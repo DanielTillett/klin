@@ -1,0 +1,17 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataGETboundary=ÿ;ÿo%00ntentLengt: x
+Content-Typ:limeary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+tgt
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data; namrt/Cont 2424
+
+ 
+
+--ÿqÿÿÿïÿt
+Co
+
+ lgCo

@@ -1,0 +1,28 @@
+POST /f HTTP/1.1
+Host:taengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-dataition: form-fata; filename==ÿÿÿÿÿttentÿ1
+
+ 
+t: :ÿ12
+ 
+
+--ÿqÿContent-Disposition: form-data; name=-fata; filename=:heh: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data;noens-itDpositéon: form-fata; filename=:heÊ-itDpntent-1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=@ name=Ceon: form-fata; filename=:hea; namTdataGEtent-Length: 1212
+
+(
+
+--ÿqnteÅÅÅt
+ lgCo

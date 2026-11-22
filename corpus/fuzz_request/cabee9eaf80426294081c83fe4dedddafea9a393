@@ -1,0 +1,39 @@
+POST /f HTTP/1.1
+Host:taTP/1.0dary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ nam; name=CCÿÿÿÿÿttentÿ1
+
+ 
+t:
+ 
+
+--ÿqÿContent-Disposition: form-data; name=@ 100-conti: etens-itDposition: form-fata; filename=:headm-data; name=CCÿ-ositioPata; name=CCootentÿ1
+
+ 
+t: E1boundaontent-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=@ $:Contens-itDposition: form-fata; filename=:headm-data; name=CCÿÿÿÿÿtent-Disposition: form@ name=Ce$:Contens-itDposition: form-fata; filename=:headm-data; name=y=ÿ;ÿoĞĞĞĞ
+Contenngth: 12-2
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=@ 100-continuetens-itDposition: form-fata; filename=:headm-data; name=CCÿ-ositioPata; name=CCootentÿ1
+
+ 
+t: E1boundaontent-Length: 1212
+
+`
+
+--ÿqÿContent-Disposition: form-data; name=@ $:Contens-itDposition: form-fata; filename=:headm-data; name=CCÿÿÿÿÿtent-Disposition: form-data; name=Ce$:Contentidsp*-osition: form-data; name=Ca; name=Ce$:Contentidsp*-osition: form-data; name=CContentÿ1
+
+ 
+t: l#E5borm-dÅÅÅÅÅÅÅÅÅÅÅÅÅÅÅÅÅ½ÅÅÅÅÅt
+ lgCo

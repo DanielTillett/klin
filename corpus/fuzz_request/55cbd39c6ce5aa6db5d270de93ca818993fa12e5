@@ -1,0 +1,13 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataGETboundary=ÿ;-Type:multipart/form-dataGÿÿo
+Content-Length: 1212
+
+ 
+
+--ÿq
+Content-Disposition: form-data; HEADloca
+
+ lgth: 122ÿÿÿÿÿÿÿ 
+
+--ÿ
