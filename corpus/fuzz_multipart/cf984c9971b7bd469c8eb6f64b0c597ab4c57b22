@@ -1,0 +1,17 @@
+--XyZ
+Content-Disposition: form-data; name="a"
+
+value
+-f"; hilename="x:.txt"
+Content-m-data; name="f"; filename="x.txt"
+Content-Tytent-Disposition: form-data; name="a"
+
+value
+-f"; filename="x.txt"
+Content-m-data; name="f"; filenameTransfer-Encoding="x.txt"
+Content-Type: textp/lain
+
+fCoContent-Lengthion/plain
+
+file body
+--Xy

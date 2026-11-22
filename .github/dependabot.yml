@@ -1,0 +1,42 @@
+# Dependabot (doc/RELEASES.md, WORKFLOWS): weekly pull requests that move the
+# GitHub Actions the workflows use to new releases, keeping the commit SHA
+# pins and their version comments; the digest of the ClusterFuzzLite base
+# image when OSS-Fuzz moves its base-builder:v1 tag; and CMake and Ninja
+# for that image (.clusterfuzzlite/requirements.txt, with their hashes).
+# Minor and patch updates of actions come in one grouped pull request; a
+# new major version gets its own. Only the default branch's copy of this
+# file is read.
+#
+# Not covered, pinned by hand: LibU (build/dependencies.json) and the
+# OpenSSL tag in .clusterfuzzlite/Dockerfile.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /.clusterfuzzlite
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: fuzz
+
+  - package-ecosystem: pip
+    directory: /.clusterfuzzlite
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: fuzz

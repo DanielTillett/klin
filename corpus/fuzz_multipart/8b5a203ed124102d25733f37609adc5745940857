@@ -1,0 +1,18 @@
+--XyZ
+Content-Disposition: form-data; name="a"
+
+value
+-f"; fime="x.txt"
+Cntent-mta;"; filename="x.txt"
+nttn-CeoType: text/npl
+iailename="x.txt"
+Content-Type: text/npl
+ia
+file body
+-pe: text/plain
+
+file body
+-pe: text/plain
+
+file body
+--Xy

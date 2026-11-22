@@ -1,0 +1,165 @@
+<%!
+    #include <poll.h>
+    #include <stddef.h>
+    #include <stdint.h>
+    #include <string.h>
+    #include <unistd.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>
+
+    /* a worker that asks the TLS key manager for what a handshake never
+       does (doc/KEYMGR.md): the request and answer of src/libtls/keyproxy.c */
+    typedef struct
+    {
+        uint32_t magic, tbslen;
+        char md[32], pad[16], saltlen[16], mgf1[32];
+        unsigned char tbs[128];
+    } km_request_t;
+
+    typedef struct
+    {
+        int32_t ok;
+        uint32_t siglen;
+        unsigned char sig[1024];
+    } km_reply_t;
+
+    /* send 'rq' with one descriptor for the answer and 'extra' more;
+       returns "signed", "refused" or "none" (no answer); *closed: the key
+       manager closed the extra descriptors */
+    static const char *km_ask(int chan, const km_request_t *rq, int extra,
+            int *closed)
+    {
+        union { struct cmsghdr h; char buf[CMSG_SPACE(4 * sizeof(int))]; } cb;
+        int answer[2], more[3][2], fds[4], i, n = 1 + extra;
+        const char *result = "none";
+        struct msghdr mh;
+        struct iovec iov;
+        struct cmsghdr *cm;
+        struct pollfd p;
+        km_reply_t rp;
+        char c;
+
+        *closed = 1;
+        if(socketpair(AF_UNIX, SOCK_DGRAM, 0, answer))
+            return "error";
+        fds[0] = answer[1];
+        for(i = 0; i < extra; ++i)
+        {   /* stream pairs: the peer's close is seen as an end of file */
+            if(socketpair(AF_UNIX, SOCK_STREAM, 0, more[i]))
+                return "error";
+            fds[1 + i] = more[i][1];
+        }
+
+        memset(&mh, 0, sizeof mh);
+        memset(&cb, 0, sizeof cb);
+        iov.iov_base = (void *) rq;
+        iov.iov_len = sizeof *rq;
+        mh.msg_iov = &iov;
+        mh.msg_iovlen = 1;
+        mh.msg_control = cb.buf;
+        mh.msg_controllen = CMSG_SPACE(n * sizeof(int));
+        cm = CMSG_FIRSTHDR(&mh);
+        cm->cmsg_level = SOL_SOCKET;
+        cm->cmsg_type = SCM_RIGHTS;
+        cm->cmsg_len = CMSG_LEN(n * sizeof(int));
+        memcpy(CMSG_DATA(cm), fds, n * sizeof(int));
+        if(sendmsg(chan, &mh, 0) != (ssize_t) sizeof *rq)
+            return "error";
+        for(i = 0; i < n; ++i)
+            close(fds[i]);
+
+        p.fd = answer[0];
+        p.events = POLLIN;
+        if(poll(&p, 1, 1000) == 1 && recv(answer[0], &rp, sizeof rp, 0) ==
+                (ssize_t) sizeof rp)
+            result = rp.ok ? "signed" : "refused";
+        close(answer[0]);
+
+        for(i = 0; i < extra; ++i)
+        {
+            p.fd = more[i][0];
+            p.events = POLLIN;
+            p.revents = 0;
+            if(poll(&p, 1, 1000) != 1 || read(more[i][0], &c, 1) != 0)
+                *closed = 0;
+            close(more[i][0]);
+        }
+        return result;
+    }
+
+    static void km_request(km_request_t *rq, const char *md, size_t len,
+            const char *pad)
+    {
+        memset(rq, 0, sizeof *rq);
+        rq->magic = 0x6b6c6e6b;
+        rq->tbslen = (uint32_t) len;
+        strcpy(rq->md, md);
+        strcpy(rq->pad, pad);
+        memset(rq->tbs, 0x5a, sizeof rq->tbs);
+    }
+
+    /* the key manager's control socket: an unnamed datagram socket pair
+       end that answers a valid request */
+    static int km_find(void)
+    {
+        struct sockaddr_un sa;
+        socklen_t len;
+        km_request_t rq;
+        int fd, type, closed;
+
+        km_request(&rq, "SHA256", 32, "");
+        for(fd = 3; fd < 256; ++fd)
+        {
+            len = sizeof type;
+            if(getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &len) ||
+                    type != SOCK_DGRAM)
+                continue;
+            /* unnamed: Linux gives just the family, macOS and the BSDs
+               an empty path */
+            len = sizeof sa;
+            memset(&sa, 0, sizeof sa);
+            if(getpeername(fd, (struct sockaddr *) &sa, &len) ||
+                    sa.sun_family != AF_UNIX ||
+                    (len > (socklen_t) offsetof(struct sockaddr_un, sun_path) &&
+                     sa.sun_path[0] != '\0'))
+                continue;
+            if(!strcmp(km_ask(fd, &rq, 0, &closed), "signed"))
+                return fd;
+        }
+        return -1;
+    }
+%><%
+    km_request_t rq;
+    int chan, closed;
+
+    if((chan = km_find()) < 0)
+        io_printf(out, "no key manager\n");
+    else
+    {
+        /* MD5 (no TLS signature uses it), no digest, raw RSA, a digest of
+           the wrong length, and X9.31 padding */
+        km_request(&rq, "MD5", 16, "pkcs1");
+        io_printf(out, "md5=%s\n", km_ask(chan, &rq, 0, &closed));
+        km_request(&rq, "", 32, "pkcs1");
+        io_printf(out, "nodigest=%s\n", km_ask(chan, &rq, 0, &closed));
+        km_request(&rq, "", 128, "none");
+        io_printf(out, "raw=%s\n", km_ask(chan, &rq, 0, &closed));
+        km_request(&rq, "SHA256", 20, "pkcs1");
+        io_printf(out, "short=%s\n", km_ask(chan, &rq, 0, &closed));
+        km_request(&rq, "SHA256", 32, "x931");
+        io_printf(out, "x931=%s\n", km_ask(chan, &rq, 0, &closed));
+
+        /* extra descriptors are closed (and the request is not answered) */
+        km_request(&rq, "SHA256", 32, "pkcs1");
+        io_printf(out, "twofds=%s ", km_ask(chan, &rq, 2, &closed));
+        io_printf(out, "%s\n", closed ? "closed" : "kept");
+
+        /* and what TLS does is still signed */
+        km_request(&rq, "SHA384", 48, "pss");
+        strcpy(rq.saltlen, "digest");
+        strcpy(rq.mgf1, "SHA384");
+        io_printf(out, "pss=%s\n", km_ask(chan, &rq, 0, &closed));
+        km_request(&rq, "SHA256", 32, "pkcs1");
+        io_printf(out, "pkcs1=%s\n", km_ask(chan, &rq, 0, &closed));
+    }
+%>

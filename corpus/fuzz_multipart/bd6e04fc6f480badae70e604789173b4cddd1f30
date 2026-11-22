@@ -1,0 +1,68 @@
+--XyZ
+Content-Disposition: form-data; name="a"
+
+value
+-f"; fileame="x.txt"
+Content-m-d--XyZ
+Content-Disposition: form-data; name=za"
+
+value
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Content-Type: text/plain
+
+file€€ fileame="x.txt"
+Content-m-d--XyZ
+Content-Disposition: form-data; name=za"
+
+value
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Content-Type: text/plain
+
+file€€€€€€€€--XyZ
+Content-Di"
+Content-Type: text/plaif
+
+file bodyinform-data; name="a‡
+
+vazlue
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txtg: "
+Content-Type: text/plain
+
+file bod€€€€€€€Content-Disposition: form-data; name=€€€€€€€€€€€€€€€€€€€€€€€€€€b
+-€€€€€€€€€€€€€€€€€€€€€€€€€-Xy€€€
+€€€€in
+
+file bodyinform-data; name="a"
+
+value
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txtg: "
+Content-Type: text/plain
+
+file b--XyZ
+Content-Disposition: form-data; name=za"
+
+value
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Content-Type: text/plain
+
+file€€€€€€€€--XyZ
+ContenDt-ipsosition: form-data; name="a"
+
+value
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Content-Type: text/plain
+
+file bod€€€€€€€€€€€€€€€€€€€€€€€€me="a"
+
+value
+--XyZ
+Conod€€€€€€€€€€€€€€€€€€€€€€€€tent-Dispositio’€€€€€€€€€€€€€€€€€€€€€€€€€€€€€-Xy€€€€€€€€€€€€€€ body
+y€€€
+
+€

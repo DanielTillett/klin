@@ -1,0 +1,10 @@
+--XyZ
+Content-Disposition: form-data; name="a"
+
+value
+--Type: text/plain
+plain
+nameplain
+planame="a"
+file body
+--Xy

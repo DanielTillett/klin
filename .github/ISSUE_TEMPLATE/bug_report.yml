@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Klin does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. **If this is a security problem, do not file it here:**
+        report it privately (see SECURITY.md, or Security > Report a vulnerability).
+  - type: input
+    id: version
+    attributes:
+      label: Klin version or commit
+      placeholder: "4.0.0, or a commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and toolchain
+      placeholder: "Debian 12 arm64, GCC 12, OpenSSL 3.0.15; or macOS 15, Apple Clang"
+    validations:
+      required: true
+  - type: textarea
+    id: build
+    attributes:
+      label: How Klin was built
+      description: build/build.py arguments, or the CMake -D settings.
+      render: shell
+  - type: textarea
+    id: config
+    attributes:
+      label: klind.conf (the relevant parts)
+      description: Remove passwords, keys and host names you do not want to share.
+      render: text
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The request, page or steps that show the problem. A script or curl command is best.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened
+      description: Include klind's log output and any error message.
+    validations:
+      required: true

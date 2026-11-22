@@ -1,0 +1,36 @@
+<%!
+    #include <fcntl.h>
+    #include <stddef.h>
+    #include <string.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>
+%><%
+    /* the IPC channels this process holds (unnamed stream socket pairs): a
+       worker has only its own channel to klind, not its siblings' (whose
+       messages it could read or answer); "exec" counts those a CGI script
+       would inherit (no close-on-exec) */
+    struct sockaddr_un sa;
+    socklen_t len;
+    int fd, type, channels = 0, exec = 0;
+
+    for(fd = 0; fd < 1024; ++fd)
+    {
+        len = sizeof type;
+        if(getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &len) ||
+                type != SOCK_STREAM)
+            continue;
+        /* unnamed: Linux gives just the family, macOS and the BSDs an
+           empty path */
+        len = sizeof sa;
+        memset(&sa, 0, sizeof sa);
+        if(getsockname(fd, (struct sockaddr *) &sa, &len) ||
+                sa.sun_family != AF_UNIX ||
+                (len > (socklen_t) offsetof(struct sockaddr_un, sun_path) &&
+                 sa.sun_path[0] != '\0'))
+            continue;
+        ++channels;
+        if(!(fcntl(fd, F_GETFD) & FD_CLOEXEC))
+            ++exec;
+    }
+    io_printf(out, "channels=%d exec=%d\n", channels, exec);
+%>
