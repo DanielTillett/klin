@@ -424,6 +424,83 @@ static void test_alarm_during_write(void)
     u_free(big);
 }
 
+/* LibU's configuration parser, as patched by cmake/LibU.cmake: a last
+   line without a newline is kept, long lines keep every character, a key
+   with no value stops the load, and an optional include is skipped when
+   missing but stops the load when it does not parse */
+static int load_conf(const char *text, u_config_t **pc)
+{
+    char buf[8192];
+    size_t len = strlen(text);
+
+    *pc = NULL;
+    if(len >= sizeof buf)
+        return ~0;
+    memcpy(buf, text, len + 1);
+    return u_config_load_from_buf(buf, len, pc);
+}
+
+static int write_file(const char *path, const char *text)
+{
+    FILE *f = fopen(path, "w");
+
+    if(f == NULL)
+        return ~0;
+    fputs(text, f);
+    return fclose(f) ? ~0 : 0;
+}
+
+static void test_config_parser(void)
+{
+    char longv[3001], text[3200], dir[] = "/tmp/klin-unit-XXXXXX", path[256],
+         conf[256];
+    u_config_t *c = NULL;
+    const char *v;
+
+    CHECK(load_conf("a 1\nb 2", &c) == 0 &&
+            (v = u_config_get_subkey_value(c, "b")) && !strcmp(v, "2"));
+    u_config_free(c);
+
+    memset(longv, 'x', sizeof longv - 1);
+    longv[sizeof longv - 1] = '\0';
+    (void) snprintf(text, sizeof text, "k %s\nz 1\n", longv);
+    CHECK(load_conf(text, &c) == 0 &&
+            (v = u_config_get_subkey_value(c, "k")) && !strcmp(v, longv));
+    u_config_free(c);
+
+    CHECK(load_conf("a 1\nbare\nb 2\n", &c) != 0);
+    u_config_free(c);
+    CHECK(load_conf("g\n{\nbare\n}\n", &c) != 0);
+    u_config_free(c);
+    CHECK(load_conf("a 1\nbare", &c) != 0);
+    u_config_free(c);
+    CHECK(load_conf("g\n{\nk 1\n}\n", &c) == 0 &&
+            (v = u_config_get_subkey_value(c, "g.k")) && !strcmp(v, "1"));
+    u_config_free(c);
+
+    if(mkdtemp(dir) == NULL)
+    {
+        CHECK(!"make a directory for the include files");
+        return;
+    }
+    (void) snprintf(path, sizeof path, "%s/bad.conf", dir);
+    CHECK(write_file(path, "x 1\nbare\n") == 0);
+    /* includes need a file driver: load the conf file from the disk too */
+    (void) snprintf(conf, sizeof conf, "%s/conf.conf", dir);
+    (void) snprintf(text, sizeof text, "a 1\n-include %s/missing.conf\nb 2\n", dir);
+    c = NULL;
+    CHECK(write_file(conf, text) == 0 && u_config_load_from_file(conf, &c) == 0 &&
+            (v = u_config_get_subkey_value(c, "b")) && !strcmp(v, "2"));
+    u_config_free(c);
+    (void) snprintf(text, sizeof text, "a 1\n-include %s\nb 2\n", path);
+    c = NULL;
+    CHECK(write_file(conf, text) == 0 && u_config_load_from_file(conf, &c) != 0);
+    u_config_free(c);
+    (void) unlink(conf);
+    (void) unlink(path);
+    (void) rmdir(dir);
+}
+
 /* translate 'page' as 'uri'; return the generated C (to free) or NULL */
 static char *translate_page(const char *page, const char *uri)
 {
@@ -1759,6 +1836,7 @@ int main(void)
 {
     test_io_read_codecs();
     test_atoi_zero();
+    test_config_parser();
 #ifdef HAVE_LIBZ
     test_deflate_windows();
 #endif
