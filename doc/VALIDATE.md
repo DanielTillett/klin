@@ -140,6 +140,11 @@ validation, the status from that is returned instead, and no rule runs.
 
 ## The rules in detail
 
+Parameter and file field names are matched without regard to case,
+because that is how a page looks them up (`request_get_arg()`,
+`request_get_uploaded_file()`): a rule for `id` also checks `ID`, so a
+client cannot slip a value past it by changing the case.
+
 ### Paths
 
 A `params` block matches the path saved just before routing: the FILENAME

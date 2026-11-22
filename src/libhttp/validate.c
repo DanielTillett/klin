@@ -198,10 +198,10 @@ static int valid_named(request_t *rq, const valid_params_t *pb,
     size_t i;
 
     for(i = 0; i < pb->nrules; ++i)
-        if((pb->rules[i].src & a->src) && !strcmp(pb->rules[i].name, name))
+        if((pb->rules[i].src & a->src) && !strcasecmp(pb->rules[i].name, name))
             return 1;
     for(i = 0; (a->src & SRC_FORM) && i < pb->nuploads; ++i)
-        if(!strcmp(pb->uploads[i].name, name))
+        if(!strcasecmp(pb->uploads[i].name, name))
             return request_is_empty_file_input(rq, a->var);
     return 0;
 }
@@ -316,7 +316,7 @@ static int valid_rule(request_t *rq, const valid_rule_t *r, valid_arg_t *args,
     for(i = 0; (r->src & (SRC_QUERY | SRC_FORM)) && i < nargs; ++i)
     {
         if((var = args[i].var) == NULL || !(args[i].src & r->src) ||
-                strcmp(var_get_name(var), r->name))
+                strcasecmp(var_get_name(var), r->name))
             continue;
         if(r->v && !valid_arg_ok(r->v, var))
         {
@@ -331,7 +331,7 @@ static int valid_rule(request_t *rq, const valid_rule_t *r, valid_arg_t *args,
     for(i = 0; (r->src & SRC_ROUTE) && route && i < vars_count(route);)
     {
         var = vars_getn(route, i);
-        if(strcmp(var_get_name(var), r->name))
+        if(strcasecmp(var_get_name(var), r->name))
         {
             ++i;
             continue;
@@ -407,7 +407,7 @@ static int valid_upload_named(const valid_params_t *pb, const char *name)
     size_t i;
 
     for(i = 0; i < pb->nuploads; ++i)
-        if(!strcmp(pb->uploads[i].name, name))
+        if(!strcasecmp(pb->uploads[i].name, name))
             return 1;
     return 0;
 }
@@ -431,7 +431,7 @@ static int valid_uploads(request_t *rq, const valid_params_t *pb)
         u = &pb->uploads[j];
         for(count = 0, i = 0; rc == 0 && i < up.n; ++i)
         {
-            if(up.v[i] == NULL || strcmp(var_get_name(up.v[i]), u->name))
+            if(up.v[i] == NULL || strcasecmp(var_get_name(up.v[i]), u->name))
                 continue;
             dbg_err_if(request_get_upload_info(up.v[i], &size, &mime));
             if(u->max_size >= 0 && (unsigned long long) size >
