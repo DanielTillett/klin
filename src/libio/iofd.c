@@ -96,7 +96,7 @@ again:
     if(ifd->issock)
     {
         u_long mode = 1;
-        int timed = io_->wr_timeout > 0;
+        int timed = io_->wr_timeout > 0 || timerm_armed();
         int saved = 0;
 
         /* Plain connections use blocking reads; switch only for this send. */
@@ -120,8 +120,10 @@ again:
        says only that some room is free (on macOS as little as 2048 bytes,
        SO_SNDLOWAT), and a blocking write waits for room for all of 'buf'.
        O_NONBLOCK for this write only (macOS ignores MSG_DONTWAIT on send,
-       and the reads on this descriptor expect it blocking) */
-    if(io_->wr_timeout > 0)
+       and the reads on this descriptor expect it blocking). The same holds
+       while an alarm is armed (a CGI's timeout, say) with no deadline of
+       our own: a blocked write would keep the alarm from running */
+    if(io_->wr_timeout > 0 || timerm_armed())
     {
         int fl = fcntl(ifd->fd, F_GETFL), saved;
 
