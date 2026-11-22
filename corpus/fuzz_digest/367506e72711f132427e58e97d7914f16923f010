@@ -1,0 +1,27 @@
+user", nonce="1.abc", p=ubc"auth, nc=0000000usernamee="c"
+user
+{
+ na¥¥¥¥¥AAAAAAAAAAAAAA{
+ nam
+ password pbkdf2-sha256$1$AA.AA¿AAAAACAAAAAAAAAAA==$AAAAAAÿÿÿAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+-2 cnonce="c"
+user
+{
+ na¥AAA{
+ nam
+ password pbkdf2-sha256$1$AA.AA¿AAAAAAAAAAAAAAAAAAAAAA{
+ nam
+ password pbkdf2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa=
+}
+-255 0lgor{
+^^^^^^^^uri["/x"m=SHA-256,' qop:auth, nc=00000001, cnonce="c"
+user
+{
+ na¥¥¥¥¥¥¥¥¥¥¥¥¥£¥¥¥¥¥¥¥¥AAAAAAAAA{
+ nam
+ password pbkdf2-sha256$1$AA.AA¿AÿAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+-256 0lgor{
+^^^^^^^^^?^^^^1.}
+abAAA

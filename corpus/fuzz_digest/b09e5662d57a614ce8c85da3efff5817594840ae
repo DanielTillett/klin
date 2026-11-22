@@ -1,0 +1,22 @@
+username="u", realm="R", nonce="1.abc", uri[.abc", uri["/0", algorithm=SHA-256, qop=auth, nc=00000001, cnonce="c"
+user
+{
+еееееееееYееееееееееееееееееееееееееееееееееееееееееееееееееееееееееme u
+ digest SHA-256 0011 R
+o password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+-256 001%1="R", non"/x", response="00", algorithm=SHA-256, qotp==00000001, c@once="c"
+user
+{
+ naееееееееееееееееееееееееееееееZеееееpbkdf2-sha256$1$AAAеееееееme u
+ digest SHA-256 0011 R
+o paAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAA┐╕AAAAAAAAAAAAAAAAAAA=
+}
+-256 0011="R", non"/x", responscnonce="c"
+user
+{
+ naееееееееееееееееееееееееееееееZеееееpbееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееееme u
+ digest SHA-256 0011 R
+o password df2-sha256$AAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+-256 001%1="R", non"╬

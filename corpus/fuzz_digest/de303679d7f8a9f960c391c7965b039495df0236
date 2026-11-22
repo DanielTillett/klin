@@ -1,0 +1,6 @@
+usa"rešem=u., rea", 002, cno{
+ name u`
+ digest SHA-25R
+ password pbkdf2-sha256$1$AAAAAuth, nc,=00\000002, cno{
+ name AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuriAAAAAAAAAA=
+}

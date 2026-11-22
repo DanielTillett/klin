@@ -1,0 +1,2 @@
+username="u", realm="R", nonce=SHA-256, qop=au="u", realm="R", nonce=SHA-256, qop=auth, c=n00000002, lm="R", non=auth, nc=000000th, nc=000000 lm="R", non=auth, nc=00000003, cnonce=AAAAAAAAAAAAA5
+}
