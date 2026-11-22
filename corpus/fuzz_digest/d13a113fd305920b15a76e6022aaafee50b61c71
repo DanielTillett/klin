@@ -1,0 +1,21 @@
+000001, cnonce="c"
+user
+{
+ name u
+ digest SHA- 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA9=$AAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+r
+{
+ name u
+  S1.abc", AAAAAincAA=
+}
+0001,="c"
+user
+{
+ name u
+ digest A-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA9=$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0006=$AAAAA

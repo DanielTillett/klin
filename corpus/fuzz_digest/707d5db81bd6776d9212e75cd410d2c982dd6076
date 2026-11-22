@@ -1,0 +1,13 @@
+al-256SHA-256, q‰opth nc=00000001e
+user
+{
+ name u
+ digest SI~ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAA#AAo@r=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ nadeuiÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAA>or=AAAA=
+}

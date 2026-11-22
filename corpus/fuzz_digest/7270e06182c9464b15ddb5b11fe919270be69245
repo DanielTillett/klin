@@ -1,0 +1,13 @@
+usernam
+user
+{
+ nt SHA11 R
+ password pbkdf2-sha256$1$AAAAA1AAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvv:vvvvvvvvvvvvvvvvvvvvvvvvvvvvvﬂvvbc",AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvv, qop=auth, nc=00000001, cnonce="c"
+user
+{
+ na1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc",AAAAAAAAAA@AAAAAAAAAAAAA(AAAAAA=
+}
+;

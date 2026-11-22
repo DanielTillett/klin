@@ -1,0 +1,58 @@
+ulm="R", non"/x", response="00", algonse="00", algorithm=SHAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc", uri="/x", response="00", algorithm=SHA-256, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="1.avvvvvvvvvvvvvvvvvvvvv", response="01", algorithm=SHA-256, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R",  uri="/x", response="00", algorithm=SHA-256,vbc", uri="/x", response="00", algorithm=SHA-256, qop=au7th, nc=00001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="1.avvv$vvvvvvvvvvvvvvvvv", response="01", algorithm, response="20", algorithm=SHA-256, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="1.avvvvvvvvvvvvvvvvvvvvv", response="01", algorithm=SHA-256, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="0.avvvvvvvvvvvvvvvvvvvvvvvnse="00", algorithm=SHAvvvvvvvvvvvvvvvvvvvvbc", uri="/x", responh,=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ diest SHA-256 00:1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="1.avvvvvvvvvvvvvvvvvvvvvvvnse="00", algorithm=SHAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc", uri="/x", re pqssword pbkdf2-sha256$1$AAAAAAAAAAAAAAAA qop=au7th,=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ diest SHA-256 00:1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;="1.avvvvvvvvvvvvvvvvvvvvvvvnse="00", algorithm=SHAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc", uri="/x", re pAAAAAAAAAAAAAAAAAAAAA=
+;

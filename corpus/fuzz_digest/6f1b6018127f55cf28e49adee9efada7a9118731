@@ -1,0 +1,12 @@
+alg
+user
+{
+ n 0ÿÿÿÿÿR
+ password pbkdf2-sha256$1$AA==$AAAAAAAAAAAAAA¿»AAA==$AAAAA[AAAAAAAAAA=
+}
+00"c"
+user
+{
+ ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ18 R
+ password pbkdf2-sha256$1$AA==$AAAAAAAAAAAAA?AAAAA
+}

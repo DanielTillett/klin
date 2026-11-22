@@ -1,0 +1,20 @@
+userÃname="th, nc=00000001, cnonce="c"
+user
+{
+ name uSHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAA===$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0001,="c"
+user
+{
+ name u
+ digesÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAA===$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0001,="c"
+user
+{
+ name u
+ digesÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAA===$AAAAAAAAAAAAAAAA===$AAAAAAAce="==$ }
+

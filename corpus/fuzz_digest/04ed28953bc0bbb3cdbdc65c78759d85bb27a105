@@ -1,0 +1,132 @@
+userÃname="th, nc=00000001, cne="c"
+user
+{
+ naie u
+AAAincAA=
+}
+0001,="cuserÃname="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0002,="c"="th, nc=000000ÿÿÿÿÿÿÿÿce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+r
+{
+ name u
+ diAAAAAAAAAAAAAAAAAgest S1.abc", AAAAAincAA=
+}
+0001,="cuserÃname="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ dSHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0001,="c"="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-219 001ÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+user
+{
+ nadiÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿu
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0002,="c"="th, nc=000000ÿÿÿÿÿÿÿÿce="c"
+user
+{
+ -inclnÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAQAAAAAAAAAAAA==$AAAAAAAAAAAAAAAincAA=
+}
+0001,="cuserÃname="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0001,="cw="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+user
+{
+ namÿÿÿÿÿÿÿÿÿÿÿÿÿÿ1$AJAAA+AAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0002,="c"="th, nc=0000k00ÿÿÿÿÿÿÿÿce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+r
+{
+ name u
+ diAAAAAAAAAAAAAAAAAgest S1.abc", AAAAAincAA=
+}
+0001,="cuserÃname="h, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0001,="c"="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-219 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+user
+{
+ nadigesA=mÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿu
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+0002,="c"="th, nc=000000ÿÿÿÿÿÿÿÿce="c"
+user
+{
+ name u
+ digest SHA-256 001ÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAA;AAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+1.abc", AAAAAincAA=
+}
+0001,="cuserÃname="th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAncAA=
+}
+0001,="c"="th, nc=00000001,nc once="c"
+user
+{
+ namÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAincAA=
+}
+00061,="c"
+user
+{
+ namÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAA

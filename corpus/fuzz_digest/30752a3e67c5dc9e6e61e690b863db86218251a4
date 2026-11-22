@@ -1,0 +1,37 @@
+usernr, nc=00000001,=00001,="c"
+user
+{
+ name u
+ d{
+ name u
+ digest S1.abc", uri="/x"nce="c"
+user
+A
+ name u`
+ digest SÂ¾-256 0011 R
+ pas, nc=00000003, cnonce="c"
+user
+A
+ name u`
+ digest "/bþ03, cnonce="c"
+user
+A
+ name u`
+ digest SÂ¾-256 0011 R
+ pas, nc=00 u0`
+ digest SÂsword, cnonord pbkdfAAAAAAAA 0011 R
+ pas,, nc=00000003, cnonce="c"
+user
+A
+ name u`
+ digest SÂsword pbke="c"
+user
+A
+ name u`
+ digest SÂ¾-256 0011 R
+ pas, nc=00000003, cnonce="c"
+user
+A
+ name u`
+ digest SÂsword pbkdb3-sha25f2-th"
+0000001, cnonord pbkdf2-sha26$1$

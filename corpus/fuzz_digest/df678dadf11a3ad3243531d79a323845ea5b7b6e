@@ -1,0 +1,6 @@
+username="u", realm="R", nonce="1.abc", uri="/x",, ronse="00", algorithm=SHA-256, qop=a001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 RAAAAAAAAAAAAA=
+}

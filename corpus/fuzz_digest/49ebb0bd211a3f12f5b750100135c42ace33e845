@@ -1,0 +1,23 @@
+username="ue="00", userp,ahm=SHA-256, qop=auth, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0012 R
+ password pbkdf2-sha256$1$옛씨씨쓴AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA같같같같같같같같같같같같같같같같컑vvv,AAAAAAA괔AAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvvvvvvvvvvvvvvvvvvvvvvc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0012 R
+ password pbkdf2-sha256$1A$AAAAAAAAAAAAAAAAAAAAA$=$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA같같같같같같같같같같같같같같같같같같vvvvvvvvvvvvvvvvvvvvvvvvvvbc",AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv=uri\#$A젋풄
+Ae="c"
+user
+{
+ name u
+ digest SHA-257 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvv굒vvvvvvvvvvvvvvvvvvvvvvvvv6$1$AAAvv0001, cnAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;

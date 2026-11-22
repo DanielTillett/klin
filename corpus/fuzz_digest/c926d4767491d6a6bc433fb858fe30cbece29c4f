@@ -1,0 +1,47 @@
+usernam nc=00000001,=00001,="c"
+user
+{
+ name u
+ digest S1.abc", uri="/x", responnonce="1.abc", uri="/bl01,=00001,="c"
+user
+{
+ name u~
+ digest S1.abc", uri="/x", response="00", algorithmsha257$1$AAAAAAAAA"c"
+user
+{
+ nsword pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAA==est SHA-6256 0011 R
+"1.abc", uri="/bþocresponse="0algorithm=SH€Am256,="c"
+user
+{
+ name u
+ digest SHA-256 001ÿÿÿÿÿÿÿÿ1 R
+ padswo;rd pbkdf2-sha257$1$AAAAAAAAA"c"
+user
+{
+ i="/blocresponse="00", algorithm=SHAm256, qop.A}=auth, nc=00000001,=00001,="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ padsworAA"c"
+user
+{
+ name uSÿ
+ÿÿÿ1 R
+A"c"
+user
+{
+ n-256 00AAA11 Rÿÿÿÿÿÿÿrd pbkdf2-sha256$1SHAm256,c", uri="/blocresponse="00", algorithm=SHAm256, qop=auth, nc=00000001,=00001,="c"
+ur
+{
+ name u
+ digest SHA-256 0011 R
+ padsword pbkdf2-sha257$1$AAAAAAAAA"c"
+user
+{
+ name u
+ digAA=?AA=
+AAA=}
+
+}}
+

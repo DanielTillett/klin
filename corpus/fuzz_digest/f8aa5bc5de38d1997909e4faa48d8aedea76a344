@@ -1,0 +1,15 @@
+user#'''''''''''
+user
+{
+ name u
+ R
+ password pbkdf2-sha256$ realm="R"011="rÁA=
+}
+
+itÿ=SHAÑ@55l nce="c"
+user
+{
+ name u
+ digest SHA-512 0 R
+ password pbkdf2-sha256$1$AAAAAAvvbv=
+}

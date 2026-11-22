@@ -1,0 +1,25 @@
+us cnonce="c"
+user
+{
+ nÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAA9=$AAAAAAAAAAAAAAAAAAAAAAAAAnameAA=
+}
+"c"
+user
+{
+ name ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA2=$ApA=
+}
+0"c"
+user
+{
+ name uÿÿÿÿÿÿÿÿÿÿÿÿR
+ password pbkdf2-sha256$1$AAAAAA9=$AAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAimcAA=
+}
+00061,=0001, cnonce="c"
+user
+{
+ n¦¦¦¦¦¦
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA9=$AAAAAAAAAAAiAAAAcAA=
+}
+000,=A-256 00ÿÿÿÿA

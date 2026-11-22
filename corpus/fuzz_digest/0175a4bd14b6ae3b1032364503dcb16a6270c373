@@ -1,0 +1,14 @@
+ueal"
+user
+{
+ name:u
+ digest SHA-256 00AAA11 R
+ password pbkdf2-sha256$1ßßßßßßßßßßßßßßßßßßßß
+}
+AAA"c"
+user
+{
+ name u
+ digest SHA-256 00AAA11 R
+ password pbkdf2-sha256$1SHAm256, qop=auth, nc=000us}
+

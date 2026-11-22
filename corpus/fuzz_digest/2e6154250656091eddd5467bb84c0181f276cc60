@@ -1,0 +1,21 @@
+usnse="0033333330001 ,cnonce="c"
+user
+{
+ name u
+ digest SHA4-56 0011
+ password pbkdf2-sha256$1$AA256, qop=auth,AAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+6$1$AAAAAzespone03"s0=0
+user
+{
+ name u
+ digest SHA5-5- 0011 R
+ password pbkdf2-sha256$1$AA256, qop=auth,AAAAAA==$AAAAAAAAAA=
+}
+6$1$AAAAAA0 ,cnonce="c"
+user
+{
+ name u
+ digest SHA4-56 0011 R
+ password pbkdf2-sha256$1$AA256, qop=auth,AAAAAA==$AAAAA"bAAAAAA, 
+response="00000
