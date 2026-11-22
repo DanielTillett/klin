@@ -599,21 +599,31 @@ static int valid_load_upload(const valid_params_t *pb, u_config_t *uc,
                 u->name, key);
     }
 
+    /* a key given as a block has no value: refuse it rather than fall back
+       to the default (no size limit, an optional upload) */
     u->max_size = -1;
-    if((s = u_config_get_subkey_value(uc, "max_size")) != NULL)
-        warn_err_ifm(valid_int(s, &u->max_size) || u->max_size < 0,
-                "params: upload %s: max_size is a size in bytes", u->name);
+    if((s = u_config_get_subkey_value(uc, "max_size")) != NULL ||
+            u_config_get_child(uc, "max_size"))
+        warn_err_ifm(s == NULL || valid_int(s, &u->max_size) ||
+                u->max_size < 0, "params: upload %s: max_size is a size in "
+                "bytes", u->name);
     u->max_count = 1;
-    if((s = u_config_get_subkey_value(uc, "max_count")) != NULL)
-        warn_err_ifm(valid_int(s, &u->max_count) || u->max_count < 1,
-                "params: upload %s: max_count is 1 or more", u->name);
+    if((s = u_config_get_subkey_value(uc, "max_count")) != NULL ||
+            u_config_get_child(uc, "max_count"))
+        warn_err_ifm(s == NULL || valid_int(s, &u->max_count) ||
+                u->max_count < 1, "params: upload %s: max_count is 1 or "
+                "more", u->name);
     if((s = u_config_get_subkey_value(uc, "type")) != NULL ||
             u_config_get_child(uc, "type"))
         warn_err_ifm(s == NULL || !valid_types_ok(s) ||
                 s[strspn(s, " \t,")] == '\0', "params: upload %s: type is a "
                 "list of type/subtype or type/*", u->name);
     u->types = s;
-    u->required = valid_yes(uc, "required", 0);
+    u->required = 0;
+    if(u_config_get_child(uc, "required"))
+        warn_err_ifm(u_config_get_subkey_value(uc, "required") == NULL ||
+                u_config_get_subkey_value_b(uc, "required", 0, &u->required),
+                "params: upload %s: required is yes or no", u->name);
 
     return 0;
 err:
