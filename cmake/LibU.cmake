@@ -207,6 +207,8 @@ list(TRANSFORM _libu_srcs PREPEND "${LIBU_SOURCE_DIR}/srcs/")
 # left EINVAL behind, and a setting of 0 silently keeps its default (seen
 # with worker_max_procs 0 on macOS). Build a copy of misc.c that clears it;
 # stop if the pinned LibU no longer has that code.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${LIBU_SOURCE_DIR}/srcs/toolbox/misc.c")
 file(READ "${LIBU_SOURCE_DIR}/srcs/toolbox/misc.c" _libu_misc)
 foreach(_call "tmp = strtol(nptr, &endptr, 10);"
         "tmp = strtoumax(nptr, (char **) NULL, 10);")

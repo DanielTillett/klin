@@ -50,6 +50,7 @@ typedef struct cgi_limits_s
 typedef struct cgi_run_s
 {
     pid_t child;
+    io_t *out;          /* the worker's read end of the CGI stdout pipe */
     int timed_out;
 } cgi_run_t;
 
@@ -793,7 +794,8 @@ static int cgi_send_post(request_t *rq, int *pcgi_stdin)
 
     for(; clen > 0; clen -= c)
     {
-        c = io_read(post.client, buf, (size_t) U_MIN((ssize_t) sizeof(buf), clen));
+        c = io_read(post.client, buf,
+                (size_t) U_MIN((ssize_t) sizeof(buf), clen));
         if(c <= 0 || cgi_write_post(pcgi_stdin, buf, (size_t) c))
             break;
     }
@@ -870,7 +872,7 @@ static void cgi_kill(pid_t child)
     (void) kill(child, SIGKILL);
 }
 
-/* the cgi ran past its timeout: killed, its output ends */
+/* stop waiting for output even if another process still holds the pipe */
 static int cgi_cb_timeout(talarm_t *al, void *arg)
 {
     cgi_run_t *run = (cgi_run_t *) arg;
@@ -878,6 +880,8 @@ static int cgi_cb_timeout(talarm_t *al, void *arg)
     u_unused_args(al);
 
     run->timed_out = 1;
+    if(run->out)
+        io_close(run->out);
     cgi_kill(run->child);
     warn("cgi killed after its timeout (pid %d)", (int) run->child);
 
@@ -933,7 +937,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
     int cgi_stdin = -1, cgi_stdout = -1;
     pid_t child = -1;
     cgi_limits_t lim;
-    cgi_run_t run = { -1, 0 };
+    cgi_run_t run = { -1, NULL, 0 };
     talarm_t *al = NULL;
 
     dbg_err_if (rq == NULL);
@@ -953,9 +957,14 @@ static int cgi_serve(request_t *rq, response_t *rs)
     cgi_check_limits(&lim);
     crit_err_if(cgi_exec(rq, rs, &lim, &child, &cgi_stdin, &cgi_stdout));
 
+    /* give the io object ownership so closing it also ends its read wait */
+    crit_err_sif(io_fd_create(cgi_stdout, IO_FD_CLOSE, &cgi_in));
+    cgi_stdout = -1;
+
     /* killed when it runs too long (the alarm fires while its output or
        stdin is waited for) */
     run.child = child;
+    run.out = cgi_in;
     if(lim.timeout > 0)
         dbg_err_if(timerm_add(lim.timeout, cgi_cb_timeout, &run, &al));
 
@@ -968,9 +977,6 @@ static int cgi_serve(request_t *rq, response_t *rs)
     if(cgi_stdin != -1)
         close(cgi_stdin);
     cgi_stdin = -1;
-
-    /* the cgi's output; the descriptor is closed below, not by io_free */
-    crit_err_sif(io_fd_create(cgi_stdout, IO_FD_NO_FLAGS, &cgi_in));
 
     /* header of cgis whose name start with nph- must not be parsed */
     if(strncmp(filename, "nph-", 4))
@@ -987,7 +993,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
     cgi_relay(cgi_in, response_io(rs));
 
     io_free(cgi_in);
-    close(cgi_stdout);
+    run.out = NULL;
 
     /* the timeout still holds while the script runs on */
     if(al)

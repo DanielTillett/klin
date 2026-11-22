@@ -9,6 +9,8 @@ from http.cookies import SimpleCookie
 import os
 from pathlib import Path
 import re
+import shlex
+import shutil
 import signal
 import socket
 import ssl
@@ -1470,11 +1472,13 @@ def run_validation_checks(check, plain):
         check(status == want, f"Header validation {token!r}: {status}, expected {want}")
 
     # upload rules: size (413), Content-Type, count, unknown fields
-    def upload(path, *parts):
+    def upload(path, *parts, filename_param=None):
         body = b""
         for name, filename, ctype, data in parts:
             body += b"--XyZ\r\nContent-Disposition: form-data; name=\"" + name + b"\""
-            if filename is not None:
+            if filename_param is not None:
+                body += b"; filename=" + filename_param
+            elif filename is not None:
                 body += b"; filename=\"" + filename + b"\""
             body += b"\r\n" + (b"Content-Type: " + ctype + b"\r\n" if ctype else b"") + \
                 b"\r\n" + data + b"\r\n"
@@ -1530,6 +1534,10 @@ def run_validation_checks(check, plain):
         status, data = upload(path, *parts)
         check(status == want and (seen is None or seen in data),
               f"Upload validation ({name}): {status} {data[:200]!r}, expected {want} {seen!r}")
+    for invalid in (b"", b'"', b"''"):
+        status, _ = upload(b"/u1", (b"file", None, b"application/octet-stream", b""),
+                           filename_param=invalid)
+        check(status == 400, f"Invalid empty filename {invalid!r} passed: {status}")
     # an upload rule's name does not cover a URL-encoded argument either
     status, _ = get(b"/u1", body=b"file=x")
     check(status == 400, f"A URL-encoded argument named as an upload passed: {status}")
@@ -2619,6 +2627,11 @@ def make_file_tree(temp):
         "closed.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nclosed\\n'\nexec >&-\nsleep 33\n",
         "unread.sh": "exec sleep 47\n",
     }
+    setsid = shutil.which("setsid")
+    if setsid:
+        pidfile = shlex.quote(str(temp / "cgi-helper.pid"))
+        scripts["helper.sh"] = (f"{shlex.quote(setsid)} sleep 47 &\n"
+                                f"echo $! > {pidfile}\nwait\n")
     for name, body in scripts.items():
         (cgi / name).write_text("#!/bin/sh\n" + body)
         (cgi / name).chmod(0o755)
@@ -2824,6 +2837,22 @@ def run_file_checks(check, files, temp, cgi):
     time.sleep(0.3)
     left = subprocess.run(["pgrep", "-f", "sleep 3[12]"], capture_output=True, text=True).stdout
     check(not left.strip(), f"Processes of killed CGIs left: {left}")
+
+    # A helper in a separate session can keep stdout open after the CGI dies.
+    if (temp / "cgi-bin/helper.sh").exists():
+        pidfile = temp / "cgi-helper.pid"
+        try:
+            status, _, took = get(b"/cgi-bin/helper.sh")
+            check(status == b"504" and took < 6,
+                  f"CGI with a separate helper: {status} after {took:.1f}s")
+            pid = int(pidfile.read_text())
+            check(os.getsid(pid) == pid, "The CGI helper did not start a new session")
+        finally:
+            if pidfile.exists():
+                try:
+                    os.kill(int(pidfile.read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
 
     # a script that closes its output and runs on is still killed by the
     # timeout, and the response then goes out, on a connection that is not

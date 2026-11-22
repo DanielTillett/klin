@@ -73,7 +73,7 @@ int dypage_serve(dypage_args_t *args)
      * header (and an empty body) when the server flushes the codecs */
 
     /* The request hook can still write through the filter after we return. */
-    response_filter_detach_session(filter);
+    response_filter_detach_session(oio, ss);
     session_free(ss); args->ss = ss = NULL;
 
     return 0;

@@ -89,10 +89,11 @@ stream (`in`) itself has no blanket deadline, so set your own if the
 client is not trusted.
 
 **`send_timeout` gives each write to the client its own deadline.** The
-deadline starts with the write and covers every retry. On TLS connections
-each write handles up to one record. If the write runs out of time, klind
-closes the connection, so a client that stops reading cannot hold a
-worker. The timeout applies to every response, CGI output included.
+deadline starts with the write and covers every retry. Plain TCP writes
+use non-blocking sends while the deadline is in effect. On TLS
+connections each write handles up to one record. If the write runs out of
+time, klind closes the connection, so a client that stops reading cannot
+hold a worker. The timeout applies to every response, CGI output included.
 SSE and WebSocket writes have their own 30-second deadline as well,
 and the shorter of the two wins. 0 turns `send_timeout` off.
 
