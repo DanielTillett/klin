@@ -1058,7 +1058,12 @@ static int cgi_serve(request_t *rq, response_t *rs)
        client must not take it for the whole of it (checked after the reap,
        which runs the alarm too) */
     if(run.timed_out)
+    {
+        /* and what is left to flush, after this returns, is bounded too
+           (with send_timeout 0 a stalled client would hold the worker) */
         response_close_connection(rs);
+        io_set_write_timeout(response_io(rs), CGI_GRACE);
+    }
 
     return 0;
 err:
