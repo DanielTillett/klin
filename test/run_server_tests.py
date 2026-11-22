@@ -1453,6 +1453,7 @@ def run_validation_checks(check, plain):
             (b"/v/12a", 400, None),
             (b"/d?page=0&keep=1", 200, ["keep=1"]),                  # drop mode, unknown allowed
             (b"/d?page=7", 200, ["page=7"]),
+            (b"/d?PAGE=0&keep=1", 200, ["keep=1"]),                  # names match in any case
             (b"/r?page=1", 200, ["page=1"]),
             (b"/r?page=1&zzz=1", 400, None)]:                        # unknown rejected
         status, body = get(path)
@@ -1501,6 +1502,10 @@ def run_validation_checks(check, plain):
             ("size limit exactly", b"/u1", [(b"file", b"s.txt", b"text/plain", b"y" * 16)], 200,
              b"uploads=1"),
             ("too large", b"/u1", [big], 413, None),
+            ("field name in another case", b"/u1",
+             [(b"FILE", b"a.txt", b"text/plain", b"abc")], 200, b"uploads=1"),
+            ("too large, name in another case", b"/u1", [(b"FILE",) + big[1:]], 413,
+             None),
             ("wrong type", b"/u1", [(b"file", b"a.pdf", b"application/pdf", b"%PDF")], 400, None),
             ("no Content-Type", b"/u1", [(b"file", b"a.txt", None, b"abc")], 400, None),
             ("type with junk after it", b"/u1",
