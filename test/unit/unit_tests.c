@@ -452,7 +452,7 @@ static int write_file(const char *path, const char *text)
 
 static void test_config_parser(void)
 {
-    char longv[3001], text[3200], dir[] = "/tmp/klin-unit-XXXXXX", path[256],
+    char longv[1501], text[3200], dir[] = "/tmp/klin-unit-XXXXXX", path[256],
          conf[256];
     u_config_t *c = NULL;
     const char *v;

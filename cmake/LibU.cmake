@@ -285,7 +285,7 @@ foreach(_from
 endforeach()
 string(REPLACE
     "    crit_err_ifm (drv->open(p, &arg),\n        \"unable to access input file: %s\", p);"
-    "    if(drv->open(p, &arg))\n    {   /* 1: missing, which an optional include skips */\n        u_warn(\"unable to access input file: %s\", p);\n        return 1;\n    }"
+    "    if(drv->open(p, &arg))\n    {   /* 1: missing, which an optional include skips */\n        crit_err_ifm(access(p, F_OK) == 0 || errno != ENOENT, \"unable to access input file: %s\", p);\n        u_warn(\"no input file: %s\", p);\n        return 1;\n    }"
     _libu_config "${_libu_config}")
 string(REPLACE
     "                dbg_if(u_config_include(c, drv, subkey, overwrite));"
