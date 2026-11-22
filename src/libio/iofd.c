@@ -8,6 +8,10 @@
  */
 
 #include "klin_conf.h"
+#ifdef OS_WIN
+#include <winsock2.h>
+#include <limits.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 #include <u/libu.h>
@@ -87,7 +91,30 @@ again:
         goto err;
     }
 
-#ifndef OS_WIN
+#ifdef OS_WIN
+    if(ifd->issock)
+    {
+        u_long mode = 1;
+        int timed = io_->wr_timeout > 0;
+        int saved = 0;
+
+        /* Plain connections use blocking reads; switch only for this send. */
+        dbg_err_if(timed && ioctlsocket(ifd->fd, FIONBIO, &mode));
+        c = send(ifd->fd, buf, (int) U_MIN(size, (size_t) INT_MAX), 0);
+        if(c == SOCKET_ERROR)
+            saved = WSAGetLastError();
+        mode = 0;
+        if(timed && ioctlsocket(ifd->fd, FIONBIO, &mode))
+        {
+            (void) io_fd_close(io_);
+            goto err;
+        }
+        if(saved == WSAEINTR || (timed && saved == WSAEWOULDBLOCK))
+            goto again;
+        dbg_err_if(c == SOCKET_ERROR);
+        return c;
+    }
+#else
     /* with a deadline the write itself must not block: the wait above
        says only that some room is free (on macOS as little as 2048 bytes,
        SO_SNDLOWAT), and a blocking write waits for room for all of 'buf'.
@@ -97,21 +124,22 @@ again:
     {
         int fl = fcntl(ifd->fd, F_GETFL), saved;
 
-        if(fl >= 0 && !(fl & O_NONBLOCK))
-            (void) fcntl(ifd->fd, F_SETFL, fl | O_NONBLOCK);
+        dbg_err_sif(fl < 0);
+        if(!(fl & O_NONBLOCK))
+            dbg_err_sif(fcntl(ifd->fd, F_SETFL, fl | O_NONBLOCK) < 0);
         c = write(ifd->fd, buf, size);
         saved = errno;
-        if(fl >= 0 && !(fl & O_NONBLOCK))
-            (void) fcntl(ifd->fd, F_SETFL, fl);
+        if(!(fl & O_NONBLOCK) && fcntl(ifd->fd, F_SETFL, fl) < 0)
+        {
+            (void) io_fd_close(io_);
+            goto err;
+        }
         errno = saved;
         if(c < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
             goto again;
     } else
 #endif
-    if(!ifd->issock)
         c = write(ifd->fd, buf, size);
-    else
-        c = send(ifd->fd, buf, size, 0);
     if(c < 0 && errno == EINTR)
         goto again;
 

@@ -186,6 +186,9 @@ The limit applies to the whole data cookie, including its name and
 attributes, after sealing and hex encoding. A save that fails logs a
 save warning and leaves the browser's existing session cookies in place.
 A newly drawn or rotated id goes out only with the data sealed for it.
+Call `session_remove()` before the headers go out. If klind cannot prepare
+the deletion cookies, the call returns an error and the browser keeps
+its existing session cookies.
 
 Sessions in the format before 4.0 (AES-256-CBC, then an HMAC in
 `KL1_CLISES_HMAC`, with the IV in `KL1_CLISES_IV`) are still read in 4.x

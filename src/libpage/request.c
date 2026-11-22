@@ -1235,8 +1235,11 @@ static int parse_content_disposition(header_t *h, char *name, char *filename,
         } 
         else if(strncmp(tok, "filename=", fn_len) == 0) 
         {
+            int empty;
+
             /* skip the filename part */
             tok += fn_len;
+            empty = strcmp(tok, "\"\"") == 0;
 
             /* remove single or double quotes */
             if((q = is_quote(tok[0])) != 0)
@@ -1244,6 +1247,7 @@ static int parse_content_disposition(header_t *h, char *name, char *filename,
             if(strlen(tok) && tok[strlen(tok) - 1] == q)
                 tok[strlen(tok) - 1] = '\0';
 
+            nop_err_if(*tok == '\0' && !empty);
             dbg_if (u_strlcpy(filename, tok, prmsz));
             *has_filename = 1;
         } 

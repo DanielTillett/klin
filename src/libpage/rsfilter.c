@@ -17,6 +17,7 @@
 #include <klin/session.h>
 #include <klin/utils.h>
 #include <klin/io.h>
+#include <klin/ioprv.h>
 #include <klin/codec.h>
 #include <klin/http.h>
 #include <klin/response.h>
@@ -394,11 +395,20 @@ int response_filter_feeded(codec_t *codec)
     return rf->feeded; /* 1 if at least 1 byte has been written */
 }
 
-void response_filter_detach_session(codec_t *codec)
+void response_filter_detach_session(io_t *io, session_t *ss)
 {
-    response_filter_t *rf = (response_filter_t *) codec;
+    codec_t *codec;
 
-    rf->ss = NULL;
+    TAILQ_FOREACH(codec, &io->codec_chain, np)
+    {
+        if(codec->free != rf_free)
+            continue;
+
+        response_filter_t *rf = (response_filter_t *) codec;
+
+        if(rf->ss == ss)
+            rf->ss = NULL;
+    }
 }
 
 int response_filter_create(request_t *rq, response_t *rs, session_t *ss,

@@ -25,12 +25,14 @@ enum { RFBUFSZ = 4096 };
 struct response_s;
 struct request_s;
 struct session_s;
+struct io_s;
 typedef struct response_filter_s response_filter_t;
 
+/* The filter borrows ss (which may be NULL). Detach it before freeing ss. */
 int response_filter_create(struct request_s *rq, struct response_s *rs, 
     struct session_s *ss, codec_t **prf);
 int response_filter_feeded(codec_t *codec);
-void response_filter_detach_session(codec_t *codec);
+void response_filter_detach_session(struct io_s *io, struct session_s *ss);
 
 #ifdef __cplusplus
 }

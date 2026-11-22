@@ -13,6 +13,7 @@
 
 #include "klin_conf.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -360,6 +361,34 @@ static void test_timer(void)
     CHECK(!timerm_armed() && timerm_run() == -1);
     close(p[0]);
     close(p[1]);
+}
+
+static void test_timed_fd_write(void)
+{
+    int fd[2], flags;
+    io_t *out = NULL;
+    char got = 0;
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd))
+    {
+        CHECK(!"create timed socket pair");
+        return;
+    }
+    if(io_fd_create(fd[0], IO_FD_CLOSE, &out))
+    {
+        CHECK(!"create timed socket");
+        close(fd[0]);
+        close(fd[1]);
+        return;
+    }
+    flags = fcntl(fd[0], F_GETFL);
+    CHECK(flags >= 0 && !(flags & O_NONBLOCK));
+    io_set_write_timeout(out, 1);
+    CHECK(io_write(out, "x", 1) == 1 && io_flush(out) == 0);
+    CHECK(fcntl(fd[0], F_GETFL) == flags);
+    io_free(out);
+    CHECK(read(fd[1], &got, 1) == 1 && got == 'x');
+    close(fd[1]);
 }
 
 /* translate 'page' as 'uri'; return the generated C (to free) or NULL */
@@ -1260,11 +1289,31 @@ static void small_page(dypage_args_t *args)
     CHECK(io_write(response_io(args->rs), "x", 1) == 1);
 }
 
-static void test_output_after_dynamic_page(void)
+static void replace_page_filter(dypage_args_t *args)
+{
+    codec_t *spare = NULL, *replacement = NULL;
+    io_t *out = response_io(args->rs);
+
+    /* Fill the spare slot so discarding the original filter frees it. */
+    CHECK(response_filter_create(args->rq, args->rs, NULL, &spare) == 0);
+    if(spare == NULL)
+        return;
+    codec_free(spare);
+    CHECK(io_codecs_discard(out) == 0);
+
+    CHECK(response_filter_create(args->rq, args->rs, args->ss,
+                &replacement) == 0);
+    if(replacement == NULL)
+        return;
+    CHECK(io_codec_add_tail(out, replacement) == 0);
+    small_page(args);
+}
+
+static void test_output_after_dynamic_page(int replace)
 {
     http_t http = { 0 };
     session_opt_t so = { .type = SESSION_TYPE_MEMORY, .name = "klin_sid" };
-    dypage_args_t args = { .fun = small_page };
+    dypage_args_t args = { .fun = replace ? replace_page_filter : small_page };
     io_t *out = NULL;
     char body[RFBUFSZ], wire[RFBUFSZ + 1024];
     ssize_t len;
@@ -1331,7 +1380,12 @@ static void test_client_cookie_staging(void)
     CHECK(session_save(ss) != 0 && header_count_field(h, "Set-Cookie") == 0);
     CHECK(session_get_cipher_key(ss, out, &size) == 0 &&
             size == sizeof key && !memcmp(out, key, size));
+    CHECK(session_remove(ss) != 0 && !ss->removed);
+    CHECK(header_count_field(h, "Set-Cookie") == 0);
     strcpy(so.name, "klin_sid");
+    /* Commit must neither report success nor save in place of removal. */
+    CHECK(session_prv_commit(ss) == 0 && ss->committed && ss->sent == 0);
+    CHECK(header_count_field(h, "Set-Cookie") == 0);
     CHECK(session_save(ss) == 0 && header_count_field(h, "Set-Cookie") == 3);
 
 end:
@@ -1680,7 +1734,8 @@ int main(void)
     test_large_vars();
     test_request_arg_limit();
     test_large_forms();
-    test_output_after_dynamic_page();
+    test_output_after_dynamic_page(0);
+    test_output_after_dynamic_page(1);
 #ifdef SSL_OPENSSL
     test_client_cookie_staging();
 #endif
@@ -1688,6 +1743,7 @@ int main(void)
     test_memory_session_ppc();
     test_field_reuse();
     test_timer();
+    test_timed_fd_write();
     test_embedded_resources();
     test_translate();
     test_json_parse();

@@ -36,7 +36,11 @@ enum {
     CSRF_TOKEN_BYTES = 32
 };
 
-enum { SESSION_COMMIT_SENT = 1, SESSION_COMMIT_FAILED };
+enum {
+    SESSION_COMMIT_SENT = 1,
+    SESSION_COMMIT_FAILED,
+    SESSION_COMMIT_REMOVE_FAILED
+};
 
 /* variables the session keeps for itself (doc/SESSIONS.md) */
 static const char CREATED_VAR[] = "KLIN_SESSION_CREATED";
@@ -534,6 +538,8 @@ err:
 
 int session_remove(session_t *ss)
 {
+    int rc;
+
     dbg_return_if (ss == NULL, ~0);
     dbg_return_if (ss->remove == NULL, ~0);
 
@@ -541,9 +547,18 @@ int session_remove(session_t *ss)
     if(ss->so->type != SESSION_TYPE_CLIENT)
         (void) session_set_cookie(ss, ss->so->name, NULL);
 
-    ss->removed = 1;
+    rc = ss->remove(ss);
+    if(rc == 0)
+    {
+        ss->removed = 1;
+        if(ss->committed == SESSION_COMMIT_REMOVE_FAILED)
+            ss->committed = 0;
+    }
+    else if(!ss->committed)
+        /* Do not save the session over a failed removal. */
+        ss->committed = SESSION_COMMIT_REMOVE_FAILED;
 
-    return ss->remove(ss);
+    return rc;
 }
 
 int session_prv_init(session_t *ss, request_t *rq, response_t *rs)
@@ -707,6 +722,8 @@ int session_prv_commit(session_t *ss)
     if (ss->so->type != SESSION_TYPE_CLIENT)
         return ss->id[0] == '\0' ? session_prv_set_id(ss, NULL) : 0;
 
+    if (ss->committed == SESSION_COMMIT_REMOVE_FAILED)
+        ss->committed = SESSION_COMMIT_FAILED;
     if (ss->committed)
         return 0;
     if (!ss->removed && session_save(ss))
@@ -1175,6 +1192,9 @@ int session_regenerate_id(session_t *ss)
     dbg_err_if (session_gen_id(ss));
     dbg_err_if (session_set_filename(ss));
     dbg_err_if (session_set_created(ss));
+
+    if(ss->committed == SESSION_COMMIT_REMOVE_FAILED)
+        ss->committed = 0;
 
     return 0;
 err:

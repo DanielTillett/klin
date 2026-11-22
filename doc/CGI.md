@@ -38,8 +38,10 @@ limit, and the worker logs a warning the first time (`cgi max_memory is
 above the worker's hard limit`). On macOS `max_memory` cannot be applied
 at all, as with `worker_max_memory`, and the worker says so once. The
 script runs in a process group of its own, and when the timeout fires
-klind kills the script and that group. A child that moves to a group or
-session of its own (with setsid(2), say) escapes it.
+klind kills the script and that group. A child in its own group or
+session can survive. klind closes its end of the output pipe at the
+deadline, so a surviving child holding stdout open cannot delay the
+response.
 
 klind checks the timeout only while the worker is waiting: writing the
 POST body to the script, reading the script's output, writing that
