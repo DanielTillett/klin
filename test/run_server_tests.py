@@ -876,11 +876,14 @@ def run_sse_checks(args, check, plain, secure, temp):
         pass
     ping = stream.event()
     stream.close()
+    # the page creates the file before it writes the line, so wait for the line
     deadline = time.monotonic() + 3
-    while not mark.exists() and time.monotonic() < deadline:
+    seen = ""
+    while not seen.endswith("\n") and time.monotonic() < deadline:
         time.sleep(0.05)
-    check(ping == {"": "ping"} and mark.exists() and mark.read_text() == "closed\n",
-          f"Page did not see the client go away: {ping} {mark.exists()}")
+        seen = mark.read_text() if mark.exists() else ""
+    check(ping == {"": "ping"} and seen == "closed\n",
+          f"Page did not see the client go away: {ping} {seen!r}")
 
 
 class WebSocket:
