@@ -587,6 +587,35 @@ def run_auth_checks(args, check, plain, secure):
                                 digest_header(first, "alice", "wonder land", "/static/secret.txt"))
     check(" 401 " in status and "stale=true" in challenges[0], f"Expired nonce not stale: {challenges}")
 
+    if not args.prefork:
+        # In the iterative server both backends run in the same process.
+        # Hold an HTTPS challenge while the plain-HTTP table fills.
+        path = "/static/secret.txt"
+        _, other, _ = get(secure, path, context=tls)
+        _, challenges, _ = get(plain, path)
+        original = challenges[0]
+
+        def fill(challenge, cnonce, nc="00000001"):
+            return digest_header(challenge, "alice", "wonder land", path, cnonce=cnonce, nc=nc)
+
+        status, _, _ = get(plain, path, fill(original, "to-evict"))
+        check(" 200 " in status, f"Digest login before filling the table failed: {status}")
+        _, challenges, _ = get(plain, path)
+        current = challenges[0]
+        for i in range(129):
+            status, _, _ = get(plain, path, fill(current, f"fill-{i}"))
+            check(" 200 " in status, f"Digest table fill failed at slot {i}: {status}")
+        status, challenges, _ = get(plain, path, fill(original, "to-evict", "00000002"))
+        check(" 401 " in status and "stale=true" in challenges[0],
+              f"Digest accepted an evicted nonce count: {status} {challenges}")
+        status, fresh, _ = get(plain, path, fill(current, "new-client"))
+        check(" 401 " in status and "stale=true" in fresh[0],
+              f"Digest accepted an untracked count below the replay floor: {status} {fresh}")
+        status, _, _ = get(plain, path, fill(fresh[0], "new-client"))
+        check(" 200 " in status, f"Immediate Digest retry after eviction failed: {status}")
+        status, _, _ = get(secure, path, fill(other[0], "other-backend"), tls)
+        check(" 200 " in status, f"HTTP replay eviction affected HTTPS: {status}")
+
 
 SECURITY_HEADERS = """security_headers
     {
@@ -2343,6 +2372,20 @@ def run_session_checks(args, check, plain, client, files, limits, sessions, meml
                 check(call(port, b"", forged)[2] == "v=- user=-",
                       f"client: a session with a changed {name} was accepted")
             check(call(port, b"", cookies)[2] == "v=a user=alice", "client: sealed session not read")
+            # The plain data fits in 4 KB, but the sealed hex cookie does not.
+            oversized = b"&v=" + b"x" * 2048
+            for op in (b"set", b"big"):
+                status, fresh, _ = call(port, b"op=" + op + oversized, {})
+                check(status == 200 and not fresh,
+                      f"client: {op!r} published a partial session: {sorted(fresh)}")
+            status, fresh, _ = call(port, b"op=set&v=" + b"x" * 1975, {})
+            check(status == 200 and not fresh,
+                  "client: published a session whose hex and attributes exceed the limit")
+            status, rotated, _ = call(port, b"op=login" + oversized, cookies)
+            check(status == 200 and rotated == cookies,
+                  "client: a failed save replaced the cookies during ID rotation")
+            check(call(port, b"", rotated)[2] == "v=a user=alice",
+                  "client: failed rotation lost the previously saved session")
 
         # a page that prints more than the 4,096-byte buffer commits its
         # headers while it runs: a change made before that is kept, on a
@@ -2363,10 +2406,15 @@ def run_session_checks(args, check, plain, client, files, limits, sessions, meml
         # a client session changed after the headers had gone: the warning
         # is in the log ('memlog' keeps client sessions, and its log in
         # memory under prefork)
+        late_warning = b"client session changed after the response headers were sent"
+        call(memlog, b"op=big&v=" + b"x" * 2048, {})
+        reply = exchange(memlog, b"GET /memlog.kl1 HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        check(b"could not save the client session" in reply and late_warning not in reply,
+              f"Client session save failure was misreported: {reply[-600:]!r}")
         status, cookies, _ = call(memlog, b"op=set&v=a", {})
         call(memlog, b"op=late&v=c", cookies)
         reply = exchange(memlog, b"GET /memlog.kl1 HTTP/1.1\r\nHost: localhost\r\n\r\n")
-        check(b"client session changed after the response headers were sent" in reply,
+        check(late_warning in reply,
               f"No warning for a client session changed too late: {reply[-600:]!r}")
 
     # idle (2 s) and absolute (4 s) timeouts on 'limits'

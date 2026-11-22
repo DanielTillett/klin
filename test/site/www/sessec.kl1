@@ -31,6 +31,8 @@
         if(session_regenerate_id(session))
             response_set_status(response, 500);
         session_set(session, "user", "alice");
+        if((v = request_get_arg(request, "v")) != NULL)
+            session_set(session, "v", v);
         io_printf(out, "login\n");
     }
     else if(op && !strcmp(op, "csrf"))

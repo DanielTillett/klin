@@ -10,22 +10,22 @@
  * (RFC 7616, SHA-256 and, if a realm allows it, MD5). The configuration is
  * described in doc/AUTH.md.
  *
- * Digest nonces are stateless: "<time><HMAC-SHA256(secret, time:realm)>",
- * with a secret drawn when the server starts (before the prefork workers
- * fork, so every worker accepts the others' nonces). A nonce older than
- * nonce_lifetime is answered with stale=true.
+ * Digest nonces carry a monotonic time stamp and its HMAC-SHA256, which
+ * also covers the realm. Workers of the same backend share the signing
+ * key. A nonce older than nonce_lifetime is answered with stale=true.
  *
- * Replays: each process remembers the highest nonce count (nc) it has
+ * Replays: each backend in a process remembers the highest count it has
  * accepted for the last AUTH_NC_SLOTS (nonce, cnonce, user) triples, and
  * answers a repeated or lower count with stale=true, as for an old nonce:
  * a real client retries with a fresh nonce without asking the user, and a
- * replay has no password to do so. A nonce issued no later than one pushed
- * out of the full table is treated the same way, so eviction opens no
- * gap. The table is per process: under prefork a request replayed to
+ * replay has no password to do so. An untracked nonce issued no later than
+ * one pushed out of the full table is treated the same way, so eviction
+ * opens no gap. Under prefork a request replayed to
  * another worker is not caught, and under the fork model a child lives for
  * one connection. Use TLS. */
 
 #include "klin_conf.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +39,10 @@
 #include <klin/utils.h>
 #include "http_s.h"
 
+#ifdef OS_WIN
+#include <windows.h>
+#endif
+
 #include <klin/crypto.h>
 
 enum {
@@ -46,8 +50,7 @@ enum {
     AUTH_SCHEME_DIGEST = 2,
     AUTH_NONCE_LIFETIME = 300,          /* default, seconds                */
     AUTH_BASIC_CACHE = 8,               /* verified Basic credentials kept */
-    AUTH_BASIC_CACHE_TTL = 300,         /* seconds                         */
-    AUTH_NC_SLOTS = 128                 /* Digest nonce counts kept        */
+    AUTH_BASIC_CACHE_TTL = 300          /* seconds                         */
 };
 
 /* the scheme(s) a realm accepts */
@@ -193,8 +196,28 @@ static int auth_equal(const char *a, const char *b)
     return la == strlen(b) && kc_memeq(a, b, la);
 }
 
-/* the nonce for 'realm' issued at 't' */
-static int auth_nonce(http_t *h, const char *realm, unsigned long t,
+enum { AUTH_NS_PER_SEC = 1000000000 };
+
+/* The same clock in every worker, independent of the wall clock. */
+static int auth_nonce_now(uint64_t *now)
+{
+#ifdef OS_WIN
+    *now = (uint64_t) GetTickCount64() * 1000000;
+#else
+    struct timespec ts;
+
+    dbg_err_if(clock_gettime(CLOCK_MONOTONIC, &ts));
+    *now = (uint64_t) ts.tv_sec * AUTH_NS_PER_SEC + ts.tv_nsec;
+#endif
+    return 0;
+#ifndef OS_WIN
+err:
+    return ~0;
+#endif
+}
+
+/* the nonce for 'realm' with the given issuance stamp */
+static int auth_nonce(http_t *h, const char *realm, uint64_t stamp,
         char *out, size_t size)
 {
     unsigned char mac[KC_MD_MAX];
@@ -202,7 +225,7 @@ static int auth_nonce(http_t *h, const char *realm, unsigned long t,
     char ts[32], msg[512], hex[2 * KC_MD_MAX + 1];
     int n;
 
-    n = snprintf(ts, sizeof ts, "%016lx", t);
+    n = snprintf(ts, sizeof ts, "%016" PRIx64, stamp);
     dbg_err_if(n < 0 || (size_t) n >= sizeof ts);
     n = snprintf(msg, sizeof msg, "%s:%s", ts, realm);
     dbg_err_if(n < 0 || (size_t) n >= sizeof msg);
@@ -222,57 +245,47 @@ err:
 /* 0 if 'nonce' was issued by this server for 'realm'; *stale is set when
  * it is older than the realm's lifetime */
 static int auth_nonce_check(http_t *h, u_config_t *auth, const char *realm,
-        const char *nonce, int *stale)
+        const char *nonce, uint64_t *issued, int *stale)
 {
     char ts[17], want[128], *end;
-    unsigned long t;
+    uint64_t stamp, now;
     int lifetime;
 
     nop_err_if(strlen(nonce) < 16);
     memcpy(ts, nonce, 16);
     ts[16] = '\0';
-    t = strtoul(ts, &end, 16);
+    stamp = strtoull(ts, &end, 16);
     nop_err_if(*end != '\0');
 
-    dbg_err_if(auth_nonce(h, realm, t, want, sizeof want));
+    dbg_err_if(auth_nonce(h, realm, stamp, want, sizeof want));
     nop_err_if(!auth_equal(nonce, want));
 
     dbg_err_if(u_config_get_subkey_value_i(auth, "nonce_lifetime",
                 AUTH_NONCE_LIFETIME, &lifetime));
-    *stale = ((unsigned long) time(NULL) > t + (unsigned long) lifetime);
+    dbg_err_if(auth_nonce_now(&now));
+    *stale = (now / AUTH_NS_PER_SEC > stamp / AUTH_NS_PER_SEC +
+            (uint64_t) lifetime);
+    *issued = stamp;
 
     return 0;
 err:
     return ~0;
 }
 
-/* the highest nonce count accepted for each (nonce, cnonce, user), keyed
- * by an HMAC of the three, with the time the nonce was issued */
-static struct {
-    unsigned char key[16];
-    unsigned long issued, nc;
-} auth_nc[AUTH_NC_SLOTS];
-
-/* nonces issued up to this time, if not in auth_nc, are spent */
-static unsigned long auth_nc_floor;
-
 /* 0 if 'nc' is above every count accepted so far for this nonce, cnonce
  * and user (it is remembered); the nonce has been checked */
-static int auth_nc_check(http_t *h, const char *nonce, const char *cnonce,
-        const char *user, const char *nc)
+static int auth_nc_check(http_t *h, uint64_t issued, const char *nonce,
+        const char *cnonce, const char *user, const char *nc)
 {
     unsigned char mac[KC_MD_MAX];
-    char msg[1600], ts[17];
-    unsigned long count, issued;
-    int i, n, slot = -1;
+    auth_nc_entry_t *entry, *slot = NULL;
+    char msg[1600];
+    unsigned long count;
+    int i, n;
 
     nop_err_if(nc[0] == '\0' || strlen(nc) > 8 ||
             nc[strspn(nc, "0123456789abcdefABCDEF")] != '\0');
     nop_err_if((count = strtoul(nc, NULL, 16)) == 0);
-
-    memcpy(ts, nonce, 16);
-    ts[16] = '\0';
-    issued = strtoul(ts, NULL, 16);
 
     n = snprintf(msg, sizeof msg, "%s\n%s\n%s", nonce, cnonce, user);
     dbg_err_if(n < 0 || (size_t) n >= sizeof msg);
@@ -281,26 +294,26 @@ static int auth_nc_check(http_t *h, const char *nonce, const char *cnonce,
 
     for(i = 0; i < AUTH_NC_SLOTS; ++i)
     {
-        if(auth_nc[i].issued && kc_memeq(auth_nc[i].key, mac, 16))
+        entry = &h->auth_nc[i];
+        if(entry->issued && kc_memeq(entry->key, mac, 16))
         {
-            nop_err_if(count <= auth_nc[i].nc);     /* a replay */
-            auth_nc[i].nc = count;
+            nop_err_if(count <= entry->nc);     /* a replay */
+            entry->nc = count;
             return 0;
         }
         /* an empty slot, else the one of the oldest nonce */
-        if(slot < 0 || (auth_nc[slot].issued &&
-                    auth_nc[i].issued < auth_nc[slot].issued))
-            slot = i;
+        if(slot == NULL || entry->issued < slot->issued)
+            slot = entry;
     }
 
     /* its count may have been pushed out of the table */
-    nop_err_if(issued <= auth_nc_floor);
+    nop_err_if(issued <= h->auth_nc_floor);
 
-    if(auth_nc[slot].issued > auth_nc_floor)
-        auth_nc_floor = auth_nc[slot].issued;
-    memcpy(auth_nc[slot].key, mac, 16);
-    auth_nc[slot].issued = issued;
-    auth_nc[slot].nc = count;
+    if(slot->issued > h->auth_nc_floor)
+        h->auth_nc_floor = slot->issued;
+    memcpy(slot->key, mac, 16);
+    slot->issued = issued;
+    slot->nc = count;
 
     return 0;
 err:
@@ -359,6 +372,7 @@ static u_config_t *auth_digest(http_t *h, request_t *rq, vhost_t *vhost,
     char p[DP_COUNT][512], name[32], val[512], want[AUTH_HEX_SZ];
     const char *rname = u_config_get_subkey_value(realm, "name"), *ha1;
     u_config_t *user;
+    uint64_t issued;
     int i, alg;
 
     memset(p, 0, sizeof p);
@@ -378,7 +392,8 @@ static u_config_t *auth_digest(http_t *h, request_t *rq, vhost_t *vhost,
     /* the digest covers this request's target, not another one */
     nop_err_if(strcmp(p[DP_URI], request_get_uri(rq)));
 
-    nop_err_if(auth_nonce_check(h, vhost->auth, rname, p[DP_NONCE], stale));
+    nop_err_if(auth_nonce_check(h, vhost->auth, rname, p[DP_NONCE],
+                &issued, stale));
 
     nop_err_if((user = auth_find_user(vhost, p[DP_USER])) == NULL);
     nop_err_if((ha1 = auth_user_ha1(user, alg, rname)) == NULL);
@@ -387,12 +402,15 @@ static u_config_t *auth_digest(http_t *h, request_t *rq, vhost_t *vhost,
                 p[DP_CNONCE], request_get_method_name(rq), p[DP_URI], want));
     nop_err_if(!auth_equal(want, p[DP_RESPONSE]));
 
+    if(issued > h->auth_nonce_last)
+        h->auth_nonce_last = issued;
+
     /* right password, old nonce: ask again (stale=true), no new password */
     nop_err_if(*stale);
 
     /* a nonce count seen before: the same answer (a replay cannot follow
        it, as the retry needs the password) */
-    *stale = auth_nc_check(h, p[DP_NONCE], p[DP_CNONCE], p[DP_USER],
+    *stale = auth_nc_check(h, issued, p[DP_NONCE], p[DP_CNONCE], p[DP_USER],
             p[DP_NC]) != 0;
     nop_err_if(*stale);
 
@@ -570,7 +588,13 @@ int auth_challenge(http_t *h, request_t *rq, response_t *rs)
 #ifdef SSL_OPENSSL
     if(offered & AUTH_SCHEME_DIGEST)
     {
-        dbg_err_if(auth_nonce(h, rname, (unsigned long) time(NULL), nonce,
+        uint64_t now;
+
+        dbg_err_if(auth_nonce_now(&now));
+        /* The retry must beat both the replay floor and the rejected nonce,
+         * even on the same clock tick. */
+        h->auth_nonce_last = U_MAX(now, h->auth_nonce_last + 1);
+        dbg_err_if(auth_nonce(h, rname, h->auth_nonce_last, nonce,
                     sizeof nonce));
 
         for(i = 0; i < 2; ++i)

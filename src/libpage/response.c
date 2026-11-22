@@ -152,6 +152,15 @@ int response_set_cookie(response_t *rs, const char *name, const char *value,
 int response_set_cookie_ex(response_t *rs, const char *name, const char *value,
     time_t expire, const char *path, const char *domain, int flags)
 {
+    dbg_return_if(rs == NULL, ~0);
+
+    return response_cookie_add(rs->header, name, value, expire, path, domain,
+            flags);
+}
+
+int response_cookie_add(header_t *h, const char *name, const char *value,
+    time_t expire, const char *path, const char *domain, int flags)
+{
     enum { BUFSZ = COOKIE_MAX_SIZE, DATESZ = 64 };
     field_t *field = NULL;
     char buf[BUFSZ], date[DATESZ];
@@ -160,7 +169,7 @@ int response_set_cookie_ex(response_t *rs, const char *name, const char *value,
     int same_flags = flags & (RESPONSE_COOKIE_SAMESITE_LAX |
         RESPONSE_COOKIE_SAMESITE_STRICT | RESPONSE_COOKIE_SAMESITE_NONE);
 
-    dbg_err_if(rs == NULL || name == NULL || *name == '\0');
+    dbg_err_if(h == NULL || name == NULL || *name == '\0');
     for (p = (const unsigned char *)name; *p; ++p)
         dbg_err_if(!((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') ||
             (*p >= '0' && *p <= '9') || strchr("!#$%&'*+-.^_`|~", *p)));
@@ -201,7 +210,7 @@ int response_set_cookie_ex(response_t *rs, const char *name, const char *value,
     if (same_site)
         dbg_err_if(u_snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "; SameSite=%s", same_site));
     dbg_err_if(field_create("Set-Cookie", buf, &field));
-    dbg_err_if(header_add_field(rs->header, field));
+    dbg_err_if(header_add_field(h, field));
     return 0;
 err:
     if (field)

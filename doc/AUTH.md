@@ -111,7 +111,7 @@ sequenceDiagram
     Note over B: retries with the new nonce,<br/>without asking the user
 ```
 
-Nonces carry their own time and an HMAC-SHA256 over the time and realm,
+Nonces carry a monotonic time stamp and an HMAC-SHA256 over the stamp and realm,
 so klind needs no table to check them. It keeps a small one against
 replays (see [Security notes](#security-notes)). The `uri` in the Authorization field must
 be the request's own target, so a response computed for one page cannot
@@ -128,21 +128,23 @@ unless `basic_over_http` is set.
 Digest uses SHA-256. MD5 is offered only in realms that set `md5`, for
 clients that lack SHA-256.
 
-Digest nonces are signed with a key drawn when klind starts (before the
-prefork workers fork, so every worker accepts the others' nonces), and
-expire after `nonce_lifetime`. The client is then told `stale=true` and
-retries without asking the user.
+Digest nonces are signed with a key drawn for each HTTP backend when klind
+starts (before the workers fork, so workers of that backend accept each
+other's nonces). They expire after `nonce_lifetime`, measured on a
+monotonic clock so a change to the system time has no effect. The client
+is then told `stale=true` and retries without asking the user.
 
-Each klind process also remembers the highest nonce count (`nc`) it has
-accepted for the last 128 combinations of nonce, `cnonce` and user. A
-request that repeats a count, or goes back to a lower one, gets the same
+Each HTTP backend in a klind process remembers the highest nonce count
+(`nc`) it has accepted for the last 128 combinations of nonce, `cnonce`
+and user. A request that repeats a count, or goes back to a lower one, gets the same
 `stale=true` answer as an expired nonce. A browser then retries with a
 new nonce without asking the user; someone replaying a captured request
 cannot, as the retry needs the password. When the table is full the
-oldest entry goes, and nonces issued up to that one's time are treated as
-spent, so pushing entries out opens no gap. A client that sends requests
-on several connections at once can see an occasional `stale=true` when
-they arrive out of order, and retries.
+oldest entry goes, and untracked nonces issued up to that entry's stamp
+are treated as spent, so pushing entries out opens no gap. A stale
+challenge carries a newer stamp even within the same clock tick. A client
+that sends requests on several connections at once can see an occasional
+`stale=true` when they arrive out of order, and retries.
 
 The table is per process, so this protection is partial. The iterative
 model has one process and catches every replay. Under prefork each worker

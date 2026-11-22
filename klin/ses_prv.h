@@ -108,9 +108,9 @@ struct session_s
     session_opt_t *so;          /* runtime option                             */
     int raw;                    /* >0: saved and loaded without the cipher
                                    codec (the driver encrypts: client-side) */
-    int committed;              /* >0: the response headers have gone out
-                                   (a client session was saved then)      */
-    unsigned long long sent;    /* ... and the fingerprint of what was in it */
+    int id_pending;             /* new client id to send with its payload */
+    int committed;              /* client session status at header commit */
+    unsigned long long sent;    /* fingerprint after a successful commit */
 };
 
 /* main c'tor */
@@ -139,8 +139,8 @@ int session_file_module_init(u_config_t *config, session_opt_t *pso);
 int session_mem_module_init(u_config_t *config, session_opt_t *pso);
 int session_client_module_init(u_config_t *config, session_opt_t *pso);
 int session_module_term(session_opt_t *so);
-int session_set_cookie(session_t *ss, const char *name, const char *value,
-    time_t expire, const char *path, const char *domain, int secure);
+int session_prv_add_cookie(session_t *ss, header_t *h, const char *name,
+    const char *value);
 int session_module_term(session_opt_t *so);
 
 #ifdef __cplusplus

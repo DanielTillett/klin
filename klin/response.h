@@ -87,6 +87,9 @@ enum {
 };
 int response_set_cookie_ex(response_t *rs, const char *name, const char *value,
     time_t expire, const char *path, const char *domain, int flags);
+/* Add a formatted Set-Cookie field to a live or staging header. */
+int response_cookie_add(header_t *h, const char *name, const char *value,
+    time_t expire, const char *path, const char *domain, int flags);
 
 #ifdef __cplusplus
 }

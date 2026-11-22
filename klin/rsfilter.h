@@ -30,6 +30,7 @@ typedef struct response_filter_s response_filter_t;
 int response_filter_create(struct request_s *rq, struct response_s *rs, 
     struct session_s *ss, codec_t **prf);
 int response_filter_feeded(codec_t *codec);
+void response_filter_detach_session(codec_t *codec);
 
 #ifdef __cplusplus
 }

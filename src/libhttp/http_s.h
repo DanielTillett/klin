@@ -10,6 +10,7 @@
 #ifndef _KLIN_HTTP_S_H_
 #define _KLIN_HTTP_S_H_
 #include "klin_conf.h"
+#include <stdint.h>
 #include <u/libu.h>
 #include <klin/os.h>
 #include <klin/broker.h>
@@ -18,6 +19,16 @@
 #ifdef SSL_ON
 #include <klin/tls.h>
 #endif 
+
+#ifdef SSL_OPENSSL
+enum { AUTH_NC_SLOTS = 128 };
+
+typedef struct {
+    unsigned char key[16];
+    uint64_t issued;
+    unsigned long nc;
+} auth_nc_entry_t;
+#endif
 
 struct http_s 
 {
@@ -37,6 +48,11 @@ struct http_s
     int send_timeout;       /* secs a write may wait for the client (0: any) */
     /* HTTP authentication: signs the Digest nonces (auth.c) */
     unsigned char auth_secret[32];
+#ifdef SSL_OPENSSL
+    auth_nc_entry_t auth_nc[AUTH_NC_SLOTS];
+    uint64_t auth_nc_floor;   /* evicted nonces up to this stamp are stale */
+    uint64_t auth_nonce_last; /* newest nonce stamp issued or verified here */
+#endif
     /* caps on connections per client and on SSE/WebSocket ones (conntab) */
     int conn_class;
 };

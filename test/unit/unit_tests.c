@@ -24,8 +24,10 @@
 #include <klin/emb.h>
 #include <klin/field.h>
 #include <klin/header.h>
+#include <klin/dypage.h>
 #include <klin/io.h>
 #include <klin/ioprv.h>
+#include <klin/rsfilter.h>
 #include <klin/timer.h>
 #include <klin/translat.h>
 #include <klin/json.h>
@@ -1253,6 +1255,99 @@ end:
     test_http_term(&http);
 }
 
+static void small_page(dypage_args_t *args)
+{
+    CHECK(io_write(response_io(args->rs), "x", 1) == 1);
+}
+
+static void test_output_after_dynamic_page(void)
+{
+    http_t http = { 0 };
+    session_opt_t so = { .type = SESSION_TYPE_MEMORY, .name = "klin_sid" };
+    dypage_args_t args = { .fun = small_page };
+    io_t *out = NULL;
+    char body[RFBUFSZ], wire[RFBUFSZ + 1024];
+    ssize_t len;
+
+    http.sess_opt = &so;
+    if(test_http_init(&http, NULL) || request_create(&http, &args.rq) ||
+            response_create(&http, &args.rs) ||
+            io_mem_create(wire, sizeof wire, 0, &out))
+    {
+        CHECK(!"create dynamic page fixture");
+        goto end;
+    }
+    response_bind(args.rs, out);
+    CHECK(dypage_serve(&args) == 0 && args.ss == NULL);
+    CHECK(io_has_codecs(out) && !response_header_sent(args.rs));
+
+    /* This is where the request hook writes in http_serve_request(). */
+    memset(body, 'y', sizeof body);
+    CHECK(io_write(out, body, sizeof body) == sizeof body);
+    CHECK(response_header_sent(args.rs));
+    CHECK(io_flush(out) == 0);
+    len = io_tell(out);
+    CHECK(len > (ssize_t) sizeof body &&
+            !memcmp(wire + len - sizeof body, body, sizeof body));
+
+end:
+    if(args.rq)
+        request_free(args.rq);
+    if(args.rs)
+        response_free(args.rs);
+    test_http_term(&http);
+}
+
+#ifdef SSL_OPENSSL
+static void test_client_cookie_staging(void)
+{
+    http_t http = { 0 };
+    session_opt_t so = { .type = SESSION_TYPE_CLIENT, .name = "invalid sid" };
+    request_t *rq = NULL;
+    response_t *rs = NULL;
+    session_t *ss = NULL;
+    header_t *h;
+    char input[1], key[CIPHER_KEY_LEN] = { 0 }, out[CIPHER_KEY_LEN + 1];
+    size_t size = sizeof out;
+    io_t *in = NULL;
+
+    if(test_http_init(&http, NULL) || request_create(&http, &rq) ||
+            response_create(&http, &rs) ||
+            io_mem_create(input, sizeof input, 0, &in))
+    {
+        CHECK(!"create client session fixture");
+        goto end;
+    }
+    request_bind(rq, in);
+    if(session_client_create(&so, rq, rs, &ss))
+    {
+        CHECK(!"create client session");
+        goto end;
+    }
+    h = response_get_header(rs);
+    CHECK(session_set_cipher_key(ss, key, sizeof key) == 0);
+    CHECK(session_set(ss, "v", "a") == 0);
+    /* The id field fails after the data and mtime have been prepared. */
+    CHECK(session_save(ss) != 0 && header_count_field(h, "Set-Cookie") == 0);
+    CHECK(session_get_cipher_key(ss, out, &size) == 0 &&
+            size == sizeof key && !memcmp(out, key, size));
+    strcpy(so.name, "klin_sid");
+    CHECK(session_save(ss) == 0 && header_count_field(h, "Set-Cookie") == 3);
+
+end:
+    if(ss)
+    {
+        ss->removed = 1;
+        session_free(ss);
+    }
+    if(rq)
+        request_free(rq);
+    if(rs)
+        response_free(rs);
+    test_http_term(&http);
+}
+#endif
+
 static int save_test_session(session_t *ss, const char *id, const char *value)
 {
     strcpy(ss->filename, id);
@@ -1585,6 +1680,10 @@ int main(void)
     test_large_vars();
     test_request_arg_limit();
     test_large_forms();
+    test_output_after_dynamic_page();
+#ifdef SSL_OPENSSL
+    test_client_cookie_staging();
+#endif
     test_memory_session_eviction();
     test_memory_session_ppc();
     test_field_reuse();

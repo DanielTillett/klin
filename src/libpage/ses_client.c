@@ -134,6 +134,39 @@ err:
 
 enum { AEAD_EXTRA = KC_AEAD_NONCE + KC_AEAD_TAG, MTIME_SIZE = 32 };
 
+/* Prepare every field before publishing any of them to the response. */
+static int session_client_cookies(session_t *ss, const char *data,
+        const char *mtime)
+{
+    header_t staged = { 0 }, *out = response_get_header(ss->rs);
+    field_t *f;
+
+    TAILQ_INIT(&staged.fields);
+    dbg_err_if(session_prv_add_cookie(ss, &staged, KL1_CLISES_DATA, data));
+    dbg_err_if(session_prv_add_cookie(ss, &staged, KL1_CLISES_MTIME, mtime));
+
+    /* the old format's cookies go */
+    if(!data || request_get_cookie(ss->rq, KL1_CLISES_HMAC))
+        dbg_err_if(session_prv_add_cookie(ss, &staged, KL1_CLISES_HMAC, NULL));
+    if(!data || request_get_cookie(ss->rq, KL1_CLISES_IV))
+        dbg_err_if(session_prv_add_cookie(ss, &staged, KL1_CLISES_IV, NULL));
+    if(!data || ss->id_pending)
+        dbg_err_if(session_prv_add_cookie(ss, &staged, ss->so->name,
+                    data ? ss->id : NULL));
+
+    /* Moving the prepared fields needs no allocation. */
+    while((f = TAILQ_FIRST(&staged.fields)) != NULL)
+    {
+        header_del_field(&staged, f);
+        header_add_field(out, f);
+    }
+    ss->id_pending = 0;
+    return 0;
+err:
+    header_clear(&staged);
+    return ~0;
+}
+
 /* what the tag covers besides the data */
 static int session_client_aad(session_t *ss, const char *mtime, char *aad,
         size_t size)
@@ -144,8 +177,8 @@ static int session_client_aad(session_t *ss, const char *mtime, char *aad,
 static int session_client_save(session_t *ss)
 {
     session_opt_t *so = ss->so;
-    unsigned char sealed[COOKIE_MAX_SIZE + AEAD_EXTRA];
-    char hex[2 * sizeof sealed + 1], mtime[MTIME_SIZE], aad[128];
+    unsigned char sealed[COOKIE_MAX_SIZE / 2];
+    char hex[COOKIE_MAX_SIZE], mtime[MTIME_SIZE], aad[128];
     char *buf = NULL;
     size_t sz;
     time_t now;
@@ -155,11 +188,11 @@ static int session_client_save(session_t *ss)
     /* the session data, compressed if asked: this driver encrypts it */
     ss->raw = 1;
     dbg_err_if(session_prv_save_to_buf(ss, &buf, &sz));
-    warn_err_ifm(sz > COOKIE_MAX_SIZE,
+    warn_err_ifm(sz >= sizeof sealed - AEAD_EXTRA,
                 "session data too big for client-side sessions");
 
     dbg_err_sif ((now = time(NULL)) == (time_t) -1);
-    dbg_err_if (u_snprintf(mtime, sizeof mtime, "%d", (ss->mtime = (int) now)));
+    dbg_err_if (u_snprintf(mtime, sizeof mtime, "%d", (int) now));
     dbg_err_if (session_client_aad(ss, mtime, aad, sizeof aad));
 
     /* a fresh nonce for every save */
@@ -169,17 +202,9 @@ static int session_client_save(session_t *ss)
     dbg_err_if(u_hexncpy_s(hex, sizeof hex, (const char *) sealed,
                 sz + AEAD_EXTRA, HEXCPY_ENCODE) <= 0);
 
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_DATA, hex, 0, NULL, NULL, 0));
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_MTIME, mtime, 0, NULL,
-                NULL, 0));
-
-    /* the old format's cookies go */
-    if(request_get_cookie(ss->rq, KL1_CLISES_HMAC))
-        dbg_err_if(session_set_cookie(ss, KL1_CLISES_HMAC, NULL, 0, NULL,
-                    NULL, 0));
-    if(request_get_cookie(ss->rq, KL1_CLISES_IV))
-        dbg_err_if(session_set_cookie(ss, KL1_CLISES_IV, NULL, 0, NULL,
-                    NULL, 0));
+    /* The formatter checks the complete cookie, including attributes. */
+    dbg_err_if(session_client_cookies(ss, hex, mtime));
+    ss->mtime = (int) now;
 
     kc_cleanse(buf, sz);
     u_free(buf);
@@ -187,7 +212,10 @@ static int session_client_save(session_t *ss)
     return 0;
 err:
     if(buf)
+    {
+        kc_cleanse(buf, sz);
         u_free(buf);
+    }
     return ~0;
 }
 
@@ -249,21 +277,9 @@ static int session_client_term(session_t *ss)
 
 static int session_client_remove(session_t *ss)
 {
-    dbg_err_if (ss == NULL);
-    
-    /* removes all clises-related cookies */
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_DATA, NULL, 0, NULL,
-        NULL, 0));
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_MTIME, NULL, 0, NULL,
-        NULL, 0));
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_HMAC, NULL, 0, NULL,
-        NULL, 0));
-    dbg_err_if(session_set_cookie(ss, KL1_CLISES_IV, NULL, 0, NULL,
-        NULL, 0));
+    dbg_return_if (ss == NULL, ~0);
 
-    return 0;
-err:
-    return ~0;
+    return session_client_cookies(ss, NULL, NULL);
 }
 
 int session_client_create(session_opt_t *so, request_t *rq, response_t *rs, 
