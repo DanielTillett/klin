@@ -385,7 +385,9 @@ static void test_timed_fd_write(void)
     CHECK(flags >= 0 && !(flags & O_NONBLOCK));
     io_set_write_timeout(out, 1);
     CHECK(io_write(out, "x", 1) == 1 && io_flush(out) == 0);
-    CHECK(fcntl(fd[0], F_GETFL) == flags);
+    /* the blocking mode is restored (compare that bit only: after a write
+       macOS also reports a kernel flag, FWASWRITTEN, in F_GETFL) */
+    CHECK((fcntl(fd[0], F_GETFL) & O_NONBLOCK) == (flags & O_NONBLOCK));
     io_free(out);
     CHECK(read(fd[1], &got, 1) == 1 && got == 'x');
     close(fd[1]);
