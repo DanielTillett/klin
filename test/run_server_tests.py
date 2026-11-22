@@ -1505,6 +1505,10 @@ def run_validation_checks(check, plain):
             ("no Content-Type", b"/u1", [(b"file", b"a.txt", None, b"abc")], 400, None),
             ("type with junk after it", b"/u1",
              [(b"file", b"a.txt", b"text/plain junk", b"abc")], 400, None),
+            ("type at the metadata limit", b"/u1",
+             [(b"file", b"a.txt", b"text/plain; x=" + b"a" * 241, b"abc")], 200, b"uploads=1"),
+            ("type exceeds the metadata limit", b"/u1",
+             [(b"file", b"a.txt", b"text/plain" + b" " * 245 + b"junk", b"abc")], 400, None),
             ("type/* with an empty subtype", b"/u1", [(b"file", b"p", b"image//", b"x")], 400,
              None),
             ("type without a subtype", b"/u1", [(b"file", b"p", b"image/", b"x")], 400, None),
@@ -1515,6 +1519,8 @@ def run_validation_checks(check, plain):
                                                              b"o")], 400, None),
             ("empty file input", b"/u1", [(b"file", b"", b"application/octet-stream", b"")], 200,
              b"file=(none)\nuploads=0\n"),
+            ("space inside filename quotes", b"/u1", [(b"file", b" ", b"text/plain", b"")], 200,
+             b"uploads=1"),
             ("no file, not required", b"/u1", [(b"field", None, None, b"v")], 200, b"uploads=0"),
             ("plain field with an upload's name", b"/u1", [(b"file", None, None, b"x")], 400,
              None),
@@ -1538,6 +1544,13 @@ def run_validation_checks(check, plain):
         status, _ = upload(b"/u1", (b"file", None, b"application/octet-stream", b""),
                            filename_param=invalid)
         check(status == 400, f"Invalid empty filename {invalid!r} passed: {status}")
+    for filename in (b'"" \t', b'"" \t; unused=value'):
+        part = (b"file", None, b"text/plain", b"")
+        status, data = upload(b"/u1", part, filename_param=filename)
+        check(status == 200 and b"uploads=0" in data,
+              f"Empty filename {filename!r} counted as a file: {status} {data[:200]!r}")
+        status, _ = upload(b"/u2", part, filename_param=filename)
+        check(status == 400, f"Empty filename {filename!r} satisfied required: {status}")
     # an upload rule's name does not cover a URL-encoded argument either
     status, _ = get(b"/u1", body=b"file=x")
     check(status == 400, f"A URL-encoded argument named as an upload passed: {status}")
@@ -2622,6 +2635,8 @@ def make_file_tree(temp):
         "limits.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\n'\n"
                      "echo \"cpu=$(ulimit -t) as=$(ulimit -v) core=$(ulimit -c)\"\n",
         "sleep.sh": "sleep 31\n",
+        "partial-header.sh": "printf 'Set-Cookie: cgi_timeout=1\\r\\nLocation: /cgi-only\\r\\n'\n"
+                             "exec sleep 58\n",
         "late.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\npartial\\n'\nsleep 32 &\nwait\n",
         "spin.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nspinning\\n'\nwhile :; do :; done\n",
         "closed.sh": "printf 'Content-Type: text/plain\\r\\n\\r\\nclosed\\n'\nexec >&-\nsleep 33\n",
@@ -2632,6 +2647,11 @@ def make_file_tree(temp):
         pidfile = shlex.quote(str(temp / "cgi-helper.pid"))
         scripts["helper.sh"] = (f"{shlex.quote(setsid)} sleep 47 &\n"
                                 f"echo $! > {pidfile}\nwait\n")
+        pidfile = shlex.quote(str(temp / "cgi-stdin-helper.pid"))
+        # The shell otherwise gives a background command /dev/null as stdin.
+        scripts["stdin-helper.sh"] = (
+            f"exec 3<&0\n{shlex.quote(setsid)} sh -c 'echo $$ > \"$1\"; exec sleep 59' "
+            f"sh {pidfile} <&3 3<&- >/dev/null &\nwait\n")
     for name, body in scripts.items():
         (cgi / name).write_text("#!/bin/sh\n" + body)
         (cgi / name).chmod(0o755)
@@ -2838,6 +2858,13 @@ def run_file_checks(check, files, temp, cgi):
     left = subprocess.run(["pgrep", "-f", "sleep 3[12]"], capture_output=True, text=True).stdout
     check(not left.strip(), f"Processes of killed CGIs left: {left}")
 
+    reply = exchange(files, b"GET /cgi-bin/partial-header.sh HTTP/1.1\r\nHost: localhost\r\n\r\n",
+                     timeout=10)
+    head, _, body = reply.partition(b"\r\n\r\n")
+    check(head.startswith(b"HTTP/1.1 504") and not body and
+          b"\r\nset-cookie:" not in head.lower() and b"\r\nlocation:" not in head.lower(),
+          f"CGI timeout while reading headers: {reply[:300]!r}")
+
     # A helper in a separate session can keep stdout open after the CGI dies.
     if (temp / "cgi-bin/helper.sh").exists():
         pidfile = temp / "cgi-helper.pid"
@@ -2894,10 +2921,30 @@ def run_file_checks(check, files, temp, cgi):
     check(closed and 4 < took < 9, f"CGI POST body: connection not closed by post_timeout "
           f"({'closed' if closed else 'open'} after {took:.1f}s)")
 
+    # The CGI deadline ends the relay even if a separate session still holds stdin.
+    body = b"x" * (1 << 20)
+    if (temp / "cgi-bin/stdin-helper.sh").exists():
+        pidfile = temp / "cgi-stdin-helper.pid"
+        try:
+            start = time.monotonic()
+            reply = exchange(files, b"POST /cgi-bin/stdin-helper.sh HTTP/1.1\r\nHost: localhost\r\n"
+                             b"Content-Type: application/octet-stream\r\n"
+                             b"Content-Length: %d\r\n\r\n" % len(body) + body, timeout=10)
+            took = time.monotonic() - start
+            check(reply.startswith(b"HTTP/1.1 504") and took < 4.5,
+                  f"CGI with a separate stdin helper after {took:.1f}s: {reply[:300]!r}")
+            pid = int(pidfile.read_text())
+            check(os.getsid(pid) == pid, "The CGI stdin helper did not start a new session")
+        finally:
+            if pidfile.exists():
+                try:
+                    os.kill(int(pidfile.read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
     # a script that never reads its stdin, with no timeout of its own
     # (slow.test: timeout 0), while more is POSTed than the pipe holds:
     # post_timeout cuts the relay to the script too, which is killed
-    body = b"x" * (1 << 20)
     with socket.create_connection(("127.0.0.1", files), timeout=15) as sock:
         start = time.monotonic()
         try:
