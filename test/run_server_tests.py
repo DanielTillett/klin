@@ -1805,6 +1805,56 @@ def run_keymgr_policy_checks(check, plain):
     check(body == expected, f"Key manager signing policy: {body}")
 
 
+def run_cgi_stall_checks(check, daemon, env, temp):
+    """A CGI timeout ends a response whose client stopped reading, even with
+    send_timeout 0: the iterative server (one client at a time) answers the
+    next client soon after the CGI's timeout, not when the first reads."""
+    site = temp / "cgi-stall"
+    (site / "cgi").mkdir(parents=True)
+    script = site / "cgi" / "flood.sh"
+    script.write_text("#!/bin/sh\nprintf 'Content-Type: text/plain\r\n\r\n'\n"
+                      "head -c 67108864 /dev/zero\n")
+    script.chmod(0o755)
+    (site / "hello.txt").write_text("hello\n")
+    port = free_port()
+    config = temp / "cgi-stall.conf"
+    config.write_text(f"server_list s\nallow_root yes\ns\n{{\ntype http\n"
+                      f"addr tcp4://127.0.0.1:{port}\ndir_root /www\nsend_timeout 0\n"
+                      f"dir_alias /pub {site}\ncgi\n{{\nscript_alias /cgi {site / 'cgi'}\n"
+                      f"timeout 2\n}}\n}}\n")
+    process = subprocess.Popen([str(daemon), "-F", "-d", "-f", str(config)], env=env,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               start_new_session=True)
+    stalled = None
+    try:
+        deadline = time.monotonic() + 10
+        while process.poll() is None and time.monotonic() < deadline:
+            try:
+                socket.create_connection(("127.0.0.1", port), timeout=0.2).close()
+                break
+            except OSError:
+                time.sleep(0.1)
+        stalled = socket.create_connection(("127.0.0.1", port), timeout=10)
+        stalled.sendall(b"GET /cgi/flood.sh HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        started = time.monotonic()
+        try:
+            reply = exchange(port, b"GET /pub/hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+                             timeout=15)
+        except OSError:
+            reply = b""
+        took = time.monotonic() - started
+        check(reply.startswith(b"HTTP/1.1 200") and took < 10,
+              f"A CGI timeout did not end a stalled response: {reply[:40]!r} after {took:.1f} s")
+    finally:
+        if stalled:
+            stalled.close()
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+
+
 def run_keymgr_start_checks(check, daemon, env, temp, cert, key):
     """klind started with its standard output and error closed: the key
     manager's control socket may then be descriptor 1 or 2, which its own
@@ -3063,6 +3113,8 @@ def run_bad_auth_checks(check, daemon, env, temp):
                        ("max_count as a block", upload % "max_count\n{\nx 1\n}"),
                        ("required not yes or no", upload % "required yse"),
                        ("required as a block", upload % "required\n{\nx 1\n}"),
+                       ("bare max_size (no value)", upload % "max_size"),
+                       ("bare required (no value)", upload % "required"),
                        ("unknown key", upload % "maxsize 5")]:
         check(not validated(good, body), f"klind started with a bad upload rule ({name})")
 
@@ -3155,6 +3207,8 @@ def run_server_checks(args, env, output, daemon):
                         "-keyout", str(key), "-out", str(cert), "-days", "1", "-subj", "/CN=localhost"],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         run_keymgr_start_checks(check, daemon, env, temp, cert, key)
+        if has_cgi:
+            run_cgi_stall_checks(check, daemon, env, temp)
         run_keymgr_dump_checks(check, daemon, env, temp, cert, key)
         run_bad_tls_checks(check, daemon, env, temp, cert, key)
         run_ipv6_checks(args, check, daemon, env, temp, cert, key)
