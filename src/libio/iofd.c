@@ -47,8 +47,9 @@ static ssize_t io_fd_read(io_t *io_, char *buf, size_t size)
 again:
     /* while an alarm is set (a timeout), wait for data with the alarms
        running: one may close the descriptor */
-    if(timerm_armed())
-        nop_err_if(timerm_wait(&ifd->fd, TIMERM_WAIT_READ));
+    if((timerm_armed() && timerm_wait(&ifd->fd, TIMERM_WAIT_READ)) ||
+            ifd->fd < 0)
+        return ifd->fd < 0 && (ifd->flags & IO_FD_EOF_ON_CLOSE) ? 0 : -1;
 
     if(!ifd->issock)
         c = read(ifd->fd, buf, size);

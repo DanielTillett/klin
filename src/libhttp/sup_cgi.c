@@ -957,8 +957,9 @@ static int cgi_serve(request_t *rq, response_t *rs)
     cgi_check_limits(&lim);
     crit_err_if(cgi_exec(rq, rs, &lim, &child, &cgi_stdin, &cgi_stdout));
 
-    /* give the io object ownership so closing it also ends its read wait */
-    crit_err_sif(io_fd_create(cgi_stdout, IO_FD_CLOSE, &cgi_in));
+    /* closing the pipe ends its read wait and preserves buffered output */
+    crit_err_sif(io_fd_create(cgi_stdout, IO_FD_CLOSE | IO_FD_EOF_ON_CLOSE,
+                &cgi_in));
     cgi_stdout = -1;
 
     /* killed when it runs too long (the alarm fires while its output or
