@@ -419,8 +419,8 @@ static void test_alarm_during_write(void)
     CHECK(io_write(out, big, BIG) < BIG || io_flush(out) != 0);
     CHECK(fd[1] == -1 && time(NULL) - t0 <= 5);
     CHECK(timerm_del(a) == 0);
+    io_free(out);       /* flushes what is left: still EPIPE, not SIGPIPE */
     (void) signal(SIGPIPE, old);
-    io_free(out);
     u_free(big);
 }
 
