@@ -72,7 +72,8 @@ int dypage_serve(dypage_args_t *args)
     /* if nothing has been printed by the script the filter prints the
      * header (and an empty body) when the server flushes the codecs */
 
-    /* save and destroy the session */
+    /* The request hook can still write through the filter after we return. */
+    response_filter_detach_session(filter);
     session_free(ss); args->ss = ss = NULL;
 
     return 0;

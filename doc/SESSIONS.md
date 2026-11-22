@@ -182,6 +182,11 @@ at that moment with whatever it holds then. A change the page makes after
 that cannot reach the browser: klind logs a warning and the change is
 lost. On a large page, set the session first and print afterwards.
 
+The limit applies to the whole data cookie, including its name and
+attributes, after sealing and hex encoding. A save that fails logs a
+save warning and leaves the browser's existing session cookies in place.
+A newly drawn or rotated id goes out only with the data sealed for it.
+
 Sessions in the format before 4.0 (AES-256-CBC, then an HMAC in
 `KL1_CLISES_HMAC`, with the IV in `KL1_CLISES_IV`) are still read in 4.x
 and rewritten in the new format. 5.0 removes that. The keys of both are

@@ -394,6 +394,13 @@ int response_filter_feeded(codec_t *codec)
     return rf->feeded; /* 1 if at least 1 byte has been written */
 }
 
+void response_filter_detach_session(codec_t *codec)
+{
+    response_filter_t *rf = (response_filter_t *) codec;
+
+    rf->ss = NULL;
+}
+
 int response_filter_create(request_t *rq, response_t *rs, session_t *ss,
     codec_t **prf)
 {

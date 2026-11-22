@@ -36,6 +36,8 @@ enum {
     CSRF_TOKEN_BYTES = 32
 };
 
+enum { SESSION_COMMIT_SENT = 1, SESSION_COMMIT_FAILED };
+
 /* variables the session keeps for itself (doc/SESSIONS.md) */
 static const char CREATED_VAR[] = "KLIN_SESSION_CREATED";
 static const char CSRF_VAR[] = "KLIN_CSRF_TOKEN";
@@ -59,22 +61,28 @@ static void session_adopt_old_key_var(session_t *ss)
         var_free(v);
 }
 
-int session_set_cookie(session_t *ss, const char *name, const char *value,
-    time_t expire, const char *path, const char *domain, int secure)
+int session_prv_add_cookie(session_t *ss, header_t *h, const char *name,
+    const char *value)
 {
     int flags = RESPONSE_COOKIE_HTTPONLY | RESPONSE_COOKIE_SAMESITE_LAX;
     dbg_return_if(ss == NULL, ~0);
-    if (secure || io_is_secure(request_io(ss->rq)))
+    if (io_is_secure(request_io(ss->rq)))
         flags |= RESPONSE_COOKIE_SECURE;
-    return response_set_cookie_ex(ss->rs, name, value, expire,
-        path ? path : "/", domain, flags);
+    return response_cookie_add(h, name, value, 0, "/", NULL, flags);
 }
 
+static int session_set_cookie(session_t *ss, const char *name,
+    const char *value)
+{
+    return session_prv_add_cookie(ss, response_get_header(ss->rs), name,
+            value);
+}
 
 struct save_cb_params_s
 {
     session_t *ss;
     io_t *io;
+    int failed;
 };
 
 typedef struct save_cb_params_s save_cb_params_t;
@@ -226,11 +234,11 @@ err:
 
 int session_prv_calc_maxsize(var_t *v, void *p)
 {
-    const char *value = NULL;
+    const char *name;
     size_t *psz = (size_t*)p;
 
     dbg_err_if (v == NULL);
-    dbg_err_if (var_get_name(v) == NULL);
+    dbg_err_if ((name = var_get_name(v)) == NULL);
     dbg_err_if (psz == NULL);
 
 #ifdef SSL_ON
@@ -238,14 +246,15 @@ int session_prv_calc_maxsize(var_t *v, void *p)
     {   /* a block plus the padding block */
         *psz = CODEC_CIPHER_BLOCK_LEN * 2;
     }
+    if(!strcmp(name, SESSION_KEY_VAR) || !strcmp(name, SESSION_KEY_VAR_OLD))
+        *psz += 3 * CODEC_CIPHER_BLOCK_LEN; /* URL encoding after padding */
 #endif
 
     /* name= */
-    *psz += 3 * strlen(var_get_name(v)) + 3;
+    *psz += 3 * strlen(name) + 3;
 
     /* value */
-    if((value = var_get_value(v)) != NULL)
-        *psz += 3 * strlen(value) + 1; /* worse case (i.e. longest string) */
+    *psz += 3 * var_get_value_size(v) + 1;
 
     return 0;
 err:
@@ -279,6 +288,7 @@ int session_prv_save_to_buf(session_t *ss, char **pbuf, size_t *psz)
     io_t *io = NULL;
     char *buf = NULL;
     size_t sz = 0;
+    ssize_t written;
 
     dbg_err_if (ss == NULL);
     dbg_err_if (pbuf == NULL);
@@ -304,13 +314,13 @@ int session_prv_save_to_buf(session_t *ss, char **pbuf, size_t *psz)
     dbg_err_if(io_codecs_remove(io));
 
     /* get the number of bytes written to the io (so to 'buf') */
-    sz = io_tell(io);
+    dbg_err_if((written = io_tell(io)) < 0);
 
     io_free(io);
     io = NULL;
 
     *pbuf = buf;
-    *psz = sz;
+    *psz = (size_t) written;
 
     return 0;
 err:
@@ -369,19 +379,22 @@ static int session_gen_id(session_t *ss)
 
     dbg_err_if (ss == NULL);
 
-    /* Initialize sid to empty string. */
     ss->id[0] = '\0';
-
     dbg_err_if(u_random_bytes(random, sizeof(random)));
     u_tohex(ss->id, (const char *)random, sizeof(random));
 
+    /* A client id is sent only with the payload sealed for it. */
+    if(ss->so->type == SESSION_TYPE_CLIENT)
+    {
+        ss->id_pending = 1;
+        return 0;
+    }
+
     /* Remove previous SID, if any. */ 
-    dbg_err_if (session_set_cookie(ss, ss->so->name, NULL,
-                0, NULL, NULL, 0));
+    dbg_err_if (session_set_cookie(ss, ss->so->name, NULL));
 
     /* Set the cookie ID. */
-    dbg_err_if (session_set_cookie(ss, ss->so->name, ss->id,
-                0, NULL, NULL, 0));
+    dbg_err_if (session_set_cookie(ss, ss->so->name, ss->id));
 
     return 0;
 err:
@@ -467,6 +480,7 @@ static void session_forget(session_t *ss)
 {
     (void) session_clean(ss);
     ss->id[0] = '\0';
+    ss->id_pending = 0;
     ss->filename[0] = '\0';
 }
 
@@ -477,7 +491,8 @@ static void session_expire(session_t *ss)
     u_dbg("session %s expired", ss->id);
     (void) session_clean(ss);
     (void) ss->remove(ss);
-    (void) session_set_cookie(ss, ss->so->name, NULL, 0, NULL, NULL, 0);
+    if(ss->so->type != SESSION_TYPE_CLIENT)
+        (void) session_set_cookie(ss, ss->so->name, NULL);
     session_forget(ss);
 }
 
@@ -489,7 +504,10 @@ int session_save(session_t *ss)
     /* No vars set: if cookie empty it's a no-op, otherwise remove stored
      * cookies. */
     if (!session_has_user_vars(ss))
-        return (ss->id[0] == '\0') ? 0 : session_remove(ss);
+    {
+        dbg_err_if(ss->id[0] != '\0' && session_remove(ss));
+        return 0;
+    }
 
     /* the start of the absolute timeout */
     if (session_get(ss, CREATED_VAR) == NULL)
@@ -502,8 +520,15 @@ int session_save(session_t *ss)
         dbg_err_if (session_prv_set_id(ss, NULL)); 
     }
 
-    return ss->save(ss);
+    dbg_err_if(ss->save(ss));
+    return 0;
 err:
+    if(ss->so->type == SESSION_TYPE_CLIENT)
+    {
+        const char *path = request_get_filename(ss->rq);
+
+        warn("could not save the client session for %s", path ? path : "");
+    }
     return ~0;
 }
 
@@ -513,7 +538,8 @@ int session_remove(session_t *ss)
     dbg_return_if (ss->remove == NULL, ~0);
 
     /* remove the cookie */
-    session_set_cookie(ss, ss->so->name, NULL, 0, NULL, NULL, 0);
+    if(ss->so->type != SESSION_TYPE_CLIENT)
+        (void) session_set_cookie(ss, ss->so->name, NULL);
 
     ss->removed = 1;
 
@@ -683,13 +709,13 @@ int session_prv_commit(session_t *ss)
 
     if (ss->committed)
         return 0;
-    ss->committed = 1;
-
-    /* a failed save (too big for a cookie, say) loses the change, as it
-       would in session_free(), but not the response */
-    if (!ss->removed)
-        dbg_if (session_save(ss));
-    ss->sent = session_fingerprint(ss);
+    if (!ss->removed && session_save(ss))
+        ss->committed = SESSION_COMMIT_FAILED;
+    else
+    {
+        ss->sent = session_fingerprint(ss);
+        ss->committed = SESSION_COMMIT_SENT;
+    }
 
     return 0;
 }
@@ -698,14 +724,14 @@ int session_free(session_t *ss)
 {
     if (ss)
     {
-        if (ss->committed)
+        if (ss->committed == SESSION_COMMIT_SENT)
         {
             if (session_fingerprint(ss) != ss->sent)
                 warn("%s: the client session changed after the response "
                         "headers were sent; the change is lost",
                         request_get_uri(ss->rq));
         }
-        else if(!ss->removed)
+        else if(!ss->committed && !ss->removed)
             dbg_if(session_save(ss));
 
         /* driver cleanup */
@@ -1026,14 +1052,16 @@ int session_prv_save_to_io(session_t *ss, io_t *out)
     /* pass io and session pointers to the callback function */
     prm.io = out;
     prm.ss = ss;
+    prm.failed = 0;
 
     /* so a key set by an older page is saved (encrypted) as the key */
     session_adopt_old_key_var(ss);
 
     vars_foreach(ss->vars, session_prv_save_var, (void*)&prm);
+    dbg_err_if(prm.failed);
 
     /* remove all codecs and flush */
-    io_codecs_remove(out);
+    dbg_err_if(io_codecs_remove(out));
 
     return 0;
 err:
@@ -1053,10 +1081,12 @@ int session_prv_save_var(var_t *v, void *vp)
     char sname[NAMESZ], svalue[VALSZ];
     char *uname = sname, *uvalue = svalue;
     save_cb_params_t *pprm = (save_cb_params_t*)vp;
-    /* encrypted key buffer */
+#ifdef SSL_ON
     unsigned char ekey[CODEC_CIPHER_KEY_BUFSZ]; /* key + padding block */
-    unsigned char pkey[CODEC_CIPHER_KEY_BUFSZ];
-    size_t nsz, vsz, eksz, pksz;
+    size_t eksz = sizeof ekey;
+#endif
+    const char *value;
+    size_t nsz, vsz, value_size;
     int rc = ~0;
 
     dbg_err_if (v == NULL);
@@ -1067,14 +1097,6 @@ int session_prv_save_var(var_t *v, void *vp)
 
     /* buffers must be at least three times the src data to URL-encode  */
     nsz = 1 + 3 * strlen(var_get_name(v));  /* name buffer size  */
-    vsz = 1 + 3 * var_get_value_size(v);    /* value buffer size */
-
-#ifdef SSL_ON
-    vsz += CODEC_CIPHER_BLOCK_LEN; /* encryption may enlarge the content up 
-                                       to CODEC_CIPHER_BLOCK_LEN -1         */
-#else
-    u_unused_args(ekey, eksz, pkey, pksz);
-#endif
 
     /* if the buffer on the stack is too small alloc a bigger one */
     if(NAMESZ <= nsz)
@@ -1084,42 +1106,32 @@ int session_prv_save_var(var_t *v, void *vp)
     dbg_err_if(u_urlncpy_s(uname, nsz, var_get_name(v), strlen(var_get_name(v)),
         URLCPY_ENCODE) <= 0);
 
-    if(var_get_value(v))
+    if((value = var_get_value(v)) != NULL)
     {
-        /* if the buffer on the stack is too small alloc a bigger one */
-        if(VALSZ <= vsz)
-            dbg_err_if((uvalue = u_zalloc(vsz)) == NULL);
+        value_size = var_get_value_size(v);
 
 #ifdef SSL_ON
         if(!strcmp(var_get_name(v), SESSION_KEY_VAR))
         {
-			memset(pkey, 0, sizeof(pkey)); /* plain text key */
-			memset(ekey, 0, sizeof(ekey)); /* encrypted text key */
-
-			/* copy the actual key to a zero-ed buffer of size key (i.e. if the
-			 * key is shorted then the buffer the trailing bytes will be 0s */
-			pksz = var_get_value_size(v);
-
-            err_err_ifm(pksz != CODEC_CIPHER_KEY_LEN,
+            err_err_ifm(value_size != CODEC_CIPHER_KEY_LEN,
                     "bad encryption key; it must be %u bytes long",
                     CODEC_CIPHER_KEY_LEN);
 
-			memcpy(pkey, var_get_value(v), pksz);
-
-			eksz = sizeof(ekey);;
-
             /* encrypt the key and save it to ekey */
-            dbg_err_if(u_cipher_encrypt(KC_AES_256_CBC, 
-                pprm->ss->so->session_key, pprm->ss->so->session_iv, 
-                (char *)ekey, &eksz, (const char *)pkey, pksz));
+            dbg_err_if(u_cipher_encrypt(KC_AES_256_CBC,
+                pprm->ss->so->session_key, pprm->ss->so->session_iv,
+                (char *)ekey, &eksz, value, value_size));
 
-            /* save it to the var list */
-            dbg_err_if(var_set_bin_value(v, ekey, eksz));
+            /* Keep the in-memory key usable if the save fails or is retried. */
+            value = (const char *) ekey;
+            value_size = eksz;
         }
 #endif
 
-        dbg_err_if(u_urlncpy_s(uvalue, vsz, var_get_value(v), var_get_value_size(v),
-            URLCPY_ENCODE) <= 0);
+        vsz = 1 + 3 * value_size;
+        if(VALSZ <= vsz)
+            dbg_err_if((uvalue = u_zalloc(vsz)) == NULL);
+        dbg_err_if(u_urlncpy_s(uvalue, vsz, value, value_size, URLCPY_ENCODE) < 0);
 
         dbg_err_if(io_printf(pprm->io, "%s=%s\n", uname, uvalue) < 0);
     } else 
@@ -1134,6 +1146,7 @@ err:
     if(uvalue && uvalue != svalue)
         u_free(uvalue);
 
+    pprm->failed = rc;
     return rc;
 }
 
@@ -1155,7 +1168,7 @@ int session_regenerate_id(session_t *ss)
 {
     dbg_return_if (ss == NULL, ~0);
 
-    if (ss->id[0] != '\0')
+    if (ss->id[0] != '\0' && ss->so->type != SESSION_TYPE_CLIENT)
         (void) ss->remove(ss);
     ss->removed = 0;
 

@@ -133,6 +133,7 @@ This is the process-wide state, and what happens to it in a forked child:
 | `ctx` (context.h) | shared; the child sets `ctx->pipc` |
 | timer list (timer.c) | the child drops the parent's alarms the first time it looks at the list (`timerm_adopt`). The cached pid is reset by `pthread_atfork` (glibc/macOS) |
 | field and response-filter caches (field.c, rsfilter.c) | per process, inherited as they are (they only hold free memory) |
+| Digest nonce key and replay state (auth.c, http_s.h) | each HTTP backend's signing key is inherited. The nonce counts, eviction floor and last stamp start empty in the child and are updated only in that process |
 | server watchdog and spare flags (server.c) | set in the child by `server_spawn_child` |
 
 ### Signals
