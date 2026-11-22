@@ -1,15 +1,0 @@
-usernam
-user
-{
- nam% u
- digest SHA-256 0011 R
- password pbkdf2-sha256$1$AAAAA1AAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc",AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-;vvv, qop=auth, nc=00000001, cnonce="c"
-user
-{
- name u
-011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc",AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-;

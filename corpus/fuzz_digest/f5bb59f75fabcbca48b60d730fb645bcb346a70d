@@ -1,1 +1,0 @@
-username="u", realm="R", nonce="1.abc",uri="/x", responsme="u", realm="R", nonce="1.abc", uri="R", nonce="Ñabc", uri="/x", response="00"once="1.abc", uri="R", nonce="1abc", uri="/x", response="00", alg256, q}
