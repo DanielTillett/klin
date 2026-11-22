@@ -1744,45 +1744,65 @@ def run_keymgr_policy_checks(check, plain):
 def run_keymgr_start_checks(check, daemon, env, temp, cert, key):
     """klind started with its standard output and error closed: the key
     manager's control socket may then be descriptor 1 or 2, which its own
-    /dev/null replaced; HTTPS must still work."""
+    /dev/null replaced; HTTPS must still work. Then klind's exit status: a
+    failure when its key manager dies, 0 when SIGTERM or SIGINT stops it."""
     port = free_port()
     config = temp / "keymgr-start.conf"
     config.write_text(f"server_list s\nallow_root yes\ns\n{{\ntype https\n"
                       f"addr tcp4://127.0.0.1:{port}\ndir_root /www\n"
                       f"cert_file {cert}\nkey_file {key}\n}}\n")
+    context = client_context(ssl.TLSVersion.TLSv1_3)
 
     def close_output():
         os.close(1)
         os.close(2)
 
-    process = subprocess.Popen([str(daemon), "-F", "-d", "-f", str(config)], env=env,
-                               stdin=subprocess.DEVNULL, preexec_fn=close_output)
-    try:
+    def start():
+        process = subprocess.Popen([str(daemon), "-F", "-d", "-f", str(config)], env=env,
+                                   stdin=subprocess.DEVNULL, preexec_fn=close_output)
         deadline = time.monotonic() + 10
         reply = b""
         while process.poll() is None and time.monotonic() < deadline:
             try:
-                reply = exchange(port, b"GET /pid.kl1 HTTP/1.1\r\nHost: localhost\r\n\r\n",
-                                 client_context(ssl.TLSVersion.TLSv1_3))
+                reply = exchange(port, b"GET /pid.kl1 HTTP/1.1\r\nHost: localhost\r\n\r\n", context)
                 break
             except OSError:
                 time.sleep(0.2)
+        return process, reply
+
+    def wait(process):
+        try:
+            return process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            return None
+
+    process, reply = start()
+    try:
         check(b"200 OK" in reply, f"HTTPS failed with klind's output closed: {reply[:200]!r}")
-        # a key manager that dies stops klind with a failure status, so
-        # that systemd's Restart=on-failure starts it again
+        # a key manager that dies stops klind with a failure status (an exit
+        # code, not a signal), so that systemd's Restart=on-failure starts it
         if Path("/proc/self/stat").exists():
             managers = key_managers(process.pid, klind_processes(process.pid))
             check(len(managers) == 1, f"Key managers: {sorted(managers)}")
             os.kill(managers.pop(), signal.SIGKILL)
-            try:
-                status = process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                status = None
-            check(status not in (None, 0),
+            status = wait(process)
+            check(status is not None and status > 0,
                   f"klind exit status {status} after its key manager died")
     finally:
         process.kill()
         process.wait()
+
+    # stopping klind stops its key manager too: that is not a failure
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        process, reply = start()
+        try:
+            check(b"200 OK" in reply, f"HTTPS failed before {sig.name}: {reply[:200]!r}")
+            process.send_signal(sig)
+            status = wait(process)
+            check(status == 0, f"klind exit status {status} after {sig.name} with a key manager")
+        finally:
+            process.kill()
+            process.wait()
 
 
 def ipv6_loopback():
@@ -2583,6 +2603,31 @@ def files_config(temp):
     }}"""
 
 
+def run_tls_send_timeout_checks(check, port):
+    """An HTTPS client that stops reading leaves the server free to serve
+    another request before the stalled client drains its receive buffer."""
+    context = client_context(ssl.TLSVersion.TLSv1_3)
+    with socket.create_connection(("127.0.0.1", port), timeout=10) as raw:
+        with context.wrap_socket(raw, server_hostname="localhost") as sock:
+            sock.sendall(b"GET /static/pub/big.bin HTTP/1.1\r\nHost: localhost\r\n\r\n")
+            head = sock.recv(16384)
+            check(head.startswith(b"HTTP/1.1 200"), f"TLS large file: {head[:80]!r}")
+            # Give the two-second write deadline time to expire before
+            # checking the server. Prefork may serve this with a spare.
+            time.sleep(5)
+            reply = exchange(port, b"GET /static/hello.txt HTTP/1.1\r\nHost: localhost\r\n\r\n",
+                             context)
+            check(reply.endswith(b"klin integration test\n"),
+                  f"HTTPS stopped serving during a send_timeout: {reply[:200]!r}")
+            got = len(head)
+            try:
+                while chunk := sock.recv(65536):
+                    got += len(chunk)
+            except (ConnectionResetError, ssl.SSLEOFError):
+                pass
+            check(got < BIG_FILE, f"TLS send_timeout: a stalled client got {got} bytes")
+
+
 def run_file_checks(check, files, temp, cgi):
     """File system and CGI hardening (doc/FILES.md, doc/CGI.md): paths that try to
     leave the document root, encoded and Windows-style; the symlink policies
@@ -2937,7 +2982,7 @@ def run_server_checks(args, env, output, daemon):
                 ("plain", plain, False, "memory",
                  auth + "\n    " + ROUTES + "\n    " + VALIDATION),
                 ("client", client, False, "client", SECURITY_HEADERS + "\n    " + ACCESS),
-                ("secure", secure, True, "client", auth),
+                ("secure", secure, True, "client", "send_timeout 2\n    " + auth),
                 ("files", files, False, f"file\n        file.path {sessions}",
                  # worker_max_procs 0: RLIMIT_NPROC counts all the processes
                  # of the user running the tests (hundreds on a desktop),
@@ -3125,6 +3170,7 @@ def run_server_checks(args, env, output, daemon):
                                                                           "CMAKE_C_FLAGS"))
                 run_route_checks(args, check, plain)
                 run_file_checks(check, files, temp, has_cgi)
+                run_tls_send_timeout_checks(check, secure)
                 run_access_checks(check, client, blocked, temp)
                 run_validation_checks(check, plain)
                 run_sandbox_checks(args, check, process.pid, plain, memlog, files if has_cgi else None,

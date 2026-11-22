@@ -10,6 +10,8 @@
 #ifndef _KLIN_TIMERM_H_
 #define _KLIN_TIMERM_H_
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +38,8 @@ int timerm_run(void);
 int timerm_armed(void);
 int timerm_wait(int *pfd, int events);
 int timerm_wait_max(int *pfd, int events, int secs);
+int64_t timerm_deadline(int secs);
+int timerm_wait_until(int *pfd, int events, int64_t deadline);
 
 #ifdef __cplusplus
 }
