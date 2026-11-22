@@ -1,0 +1,19 @@
+POST /f HTTP/1.1
+Host:tanHost=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data||||||||||||2
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿndary=ÿ;ÿo
+Content-Length:Tran‡
+
+ 
+
+--ÿqÿCon=:headmCo

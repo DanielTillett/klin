@@ -1,0 +1,23 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataGltipart/form-dataGETboundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data; name=:bfbb/0.
+Hst: HEADloca
+
+ POSTlg /f HTTP/1.1
+Host: x
+Content-Type:mulÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿûÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿm-data; name=Ce$:bbbb/0.
+Hst: HEADloca
+
+ lgth: 121ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ2
+
+ 
+
+--ÿqÿÿÿÿÿt
+Ce:b--ÿqÿÿ
+ lgCo

@@ -1,0 +1,17 @@
+GET /a/b?xHTf HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-ura/b?xHTf HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-TypeonteGET / HTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×: 'a=b; klin_sid=0123
+lencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-TypeonteGET / HTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×: 'a=b; klin_sid=0123
+

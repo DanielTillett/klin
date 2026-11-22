@@ -1,0 +1,41 @@
+POST /f HTTP/1.1
+Host: lllllllllllllllll
+Host:tandary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ nontent-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ-Ty|o
+Content-Length: 3308
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿe$:Contens-itDposition: form-
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿ|||||||||||||||||GE5boundary=ÿ: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿe$:ent-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿe$:Contens-itDposition: form-
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿtent-Length: 1212
+
+ 
+
+--ÿq
+C1

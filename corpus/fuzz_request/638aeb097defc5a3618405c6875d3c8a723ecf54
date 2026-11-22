@@ -1,0 +1,14 @@
+GET /a/b?x¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾multipart/form-data¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET on: form-data; name=y=%21 HtGET /ab8oundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1Co&ntent-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmtuprliat/foHTTP/1.1 boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Type; k application/x-www-f; lin_%id=klinaÿmultipar¾¾¾=2&yHost HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 HtGET /ab8Xx=TT/1%2e%2e=T
+COokie: aÿmultipart/form-data; boundCookie:GET poform-data; 
+COokie: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2eCoPOST%2e le%2e 6locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Type; k ap½plicaklinaÿmultipar¾¾¾Ò2&y=%20 HT8
+
+hao
+ltCoo
+GET /
+

@@ -1,0 +1,15 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:e:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipvrt/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&ContentContent-Type-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundar?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿmary=ÿÿÿÿÿÿ: bContent-Type; káa=b; lÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Pypnamary=ÿÿÿÿÿÿ: bContent-Type; ka=b; lÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01231Q©QQQQQQQQQQQQQQQQQQQ boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿ; lin_%id=klinaÿmultipart=ÿÿÿÿÿÿ: bContent-Ty©pname=y=%21 Ht
+COokie: aÿmart/form-dontent-Type; k a=b; lin_%id=klinaÿ_%id=klinaÿmultip; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form--dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Pypnamary=ÿÿÿÿÿÿ: bContent-Type; kÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form--dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Pypnamary=ÿÿÿÿÿÿ: bContent-Type; ka=b; lÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01231Q©QQQQQQQQQQQQQQQQQQQ boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿ; lin_%id=klinaÿmultipart=ÿÿÿÿÿÿ: bContent-Ty©pname=y=%21 Ht
+COokie: aÿmart/form-dontent-Type; k a=b; lin_%id=klinaÿ:GET /Áb/?x=0&Conte Ht
+COokie: 'aÿmultipart/form-data1 boundary?x=1&Content-Di¢sposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultip; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form--dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Pypnamary=ÿÿÿÿÿÿ: bContent-Type; ka=b; lÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipaQQ575
+
+
+

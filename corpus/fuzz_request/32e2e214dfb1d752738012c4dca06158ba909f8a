@@ -1,0 +1,4 @@
+GET /a/b=%40 HTTP/1.1
+Hosst: localhost
+Cookie:GET %x==%20 HT%x=
+

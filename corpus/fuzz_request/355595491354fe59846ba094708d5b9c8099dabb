@@ -1,0 +1,30 @@
+GET /a/b?x=POST%10ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿHTTP/1.0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿPÿÿÿÿÿ HTTP/1.1
+Host: localhost
+Cookie: a=b; klinmultiparP/1.1
+HoHostst: localhost
+CoDisposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form%data; boundary=ÿÿÿÿÿÿ: bContent-Type; k'a=b; lin_%id=klinaÿmultipart/fori-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-ModifiedÑSinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01231QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ.2
+Host: x
+Content-Type: application/x-www-for&-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: applicat-TypeonteGET / ÈTTP/1nteGE0Qe:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultiplocalhost
+Cookie:GET /Áb/?x=0&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿlication/x-www-form-urlencoded
+Content-LengthC: LengthC: 11Content-TypeonteGET / HTTP/2.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 !8:49:37TP/1ki×: 'a=b; klin_sid=0Qe:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipaïïïïïïïïïïïrt/form-data{ boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-DisposŽ‹ion: form-data; name=y=%21 Ht
+COokie: aÿmultiplocalhost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Cont#ent-Disposi%00n: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k'a=b; lin_%id=klinaÿmultipart/form-dontent­Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-Sinceÿÿÿÿltipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-Sinceÿÿÿÿÿÿ:QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQe:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿokie: a=b; klinmultipart/fET / HTTP/1.0ÿx=1&y=%20 Hg: chut/fET / HTTP/1.0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿEced-rnoing: chunked
+Content-Length: 0
+

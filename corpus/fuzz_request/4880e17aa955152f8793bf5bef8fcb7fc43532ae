@@ -1,0 +1,53 @@
+POST /f HTTP/1.1
+Host:tanHTTP/1.0daryContent-Typet-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1211
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Contens-itDposition: form-fata; filename=:hea`m-dat1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; nLength: 1213
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=ensa; filename=:headm-dataÿ
+oonent-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCteonata; filename=:hea`m-dat1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data;Disposition: form-dtame=@ a; filename=:htentÃLength: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=ensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; ata; filename=:hea`m-dat1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data;Disposition: form-data; name=@ name=Ce$:Contensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCContensa; filename=Expect-dataÿo
+COntent-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-datame=CteontentÃLength: 2426
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=@ name=Ce$:Contensa; filename=å:o
+Content-Length: 1211
+
+
+--ÿqÿCone=:headdwwwwwwwwnt-Di=-fata; filenao

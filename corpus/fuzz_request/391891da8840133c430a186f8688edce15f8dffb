@@ -1,0 +1,9 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-Typeontent-Type
+
+a=1&b=2%41c

@@ -1,0 +1,5 @@
+POST /f HTTP/1.1
+Host: x
+CoNtent-Length: 13
+
+clo=sea=12d

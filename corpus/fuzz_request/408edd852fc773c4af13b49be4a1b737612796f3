@@ -1,0 +1,14 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataGETboundary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-daunÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data; name=Ce$:bbbb/0.
+Hst: Hst: loca
+
+ lgCo

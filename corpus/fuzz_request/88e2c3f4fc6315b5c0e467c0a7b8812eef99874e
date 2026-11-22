@@ -1,0 +1,15 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataGETboundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿ
+Content-Disposition: form-data; ntenh: 1212
+
+:
+--ÿHŒŒ·p0.
+Hsa
+
+ lgCo

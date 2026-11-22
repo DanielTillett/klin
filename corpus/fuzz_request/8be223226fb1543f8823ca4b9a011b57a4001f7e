@@ -1,0 +1,18 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipndary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&ContentÒDisposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bConnt-Type; ka=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%idified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01231Qtiplocalhost
+Cookie:Gÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; nli_%id=klinaÿ:GET /Áb/?x=1&Conte Ht
+COokie: aÿmHTTP/1.1ulGET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; nam,e=y=%21 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; ka=b; lin_%id=klinaÿmultipart/foPATCHrm-dontent-Type; k a=b; lin_%idified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=02462Qtiplocalhost
+Cookie:GET /Áb/?x=1&Content-~isposition: form-data; name=y=%21 Ht
+COokie: aÿ li’©%id=klinaÿaaaaaaaaaaaaaaaaaaÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data; boudary=ÿÿÿÿÿÿ: bContent-\ype; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=bultipart/form-dontent-Type; k //~b?xHTki=; knskid a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=02462QQQQQQQQQQQQQQQQQ575
+
+
+

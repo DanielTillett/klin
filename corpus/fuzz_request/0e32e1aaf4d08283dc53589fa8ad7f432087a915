@@ -1,0 +1,6 @@
+POST /f HTTP/1.0
+Host: x
+Content-Type:multipart/form-datanch; boundary=ÿklinanaCa: x
+Content-Length: 81
+
+a=GE±±1&b=2ööW

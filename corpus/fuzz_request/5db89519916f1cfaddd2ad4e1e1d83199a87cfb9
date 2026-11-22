@@ -1,0 +1,15 @@
+POST /f HTTP/1.1
+Host:tagt: x
+Content-Type:multipart/form-dataGE0boundaRy=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ nata; filename=:headm-ÿÿÿÿÿÿÿÿÿÿllntent-Length: 1212
+
+ 
+
+--ÿqÿonC
+t
+ lCgo
