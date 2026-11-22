@@ -41,6 +41,9 @@ typedef struct cgi_env_s
  * time, MB of address space; 0 sets none */
 enum { CGI_TIMEOUT = 60, CGI_MAX_CPU = 30, CGI_MAX_MEMORY = 512 };
 
+/* seconds a client has, after a cgi's timeout, to take what was relayed */
+enum { CGI_GRACE = 2 };
+
 typedef struct cgi_limits_s
 {
     int timeout, max_cpu, max_memory;
@@ -53,6 +56,7 @@ typedef struct cgi_run_s
     io_t *out;          /* the worker's read end of the CGI stdout pipe */
     int in_fd;          /* the worker's write end of the CGI stdin pipe */
     io_t *client;       /* the connection, while output is relayed to it */
+    talarm_t *grace;    /* closes it if the relay is still stuck */
     int timed_out;
 } cgi_run_t;
 
@@ -887,6 +891,21 @@ static void cgi_kill(pid_t child)
     (void) kill(child, SIGKILL);
 }
 
+/* a write to a client that stopped reading is still waited for (with
+   send_timeout 0 nothing else ends it) after the cgi's timeout: close the
+   connection, as it would be after the cut anyway */
+static int cgi_cb_grace(talarm_t *al, void *arg)
+{
+    cgi_run_t *run = (cgi_run_t *) arg;
+
+    u_unused_args(al);
+
+    if(run->client)
+        (void) io_close(run->client);
+
+    return 0;
+}
+
 /* stop waiting on either pipe even if another process still holds it */
 static int cgi_cb_timeout(talarm_t *al, void *arg)
 {
@@ -902,11 +921,10 @@ static int cgi_cb_timeout(talarm_t *al, void *arg)
         close(run->in_fd);
         run->in_fd = -1;
     }
-    /* a write to a client that stopped reading may be what is waited for
-       (with send_timeout 0 nothing else ends it): the connection goes too,
-       as it would after the cut anyway */
-    if(run->client)
-        (void) io_close(run->client);
+    /* output already relayed or buffered still goes to a client that reads
+       it; one that does not is cut CGI_GRACE seconds later */
+    if(run->client && run->grace == NULL)
+        (void) timerm_add(CGI_GRACE, cgi_cb_grace, run, &run->grace);
     cgi_kill(run->child);
     warn("cgi killed after its timeout (pid %d)", (int) run->child);
 
@@ -962,7 +980,7 @@ static int cgi_serve(request_t *rq, response_t *rs)
     int cgi_stdout = -1;
     pid_t child = -1;
     cgi_limits_t lim;
-    cgi_run_t run = { -1, NULL, -1, NULL, 0 };
+    cgi_run_t run = { -1, NULL, -1, NULL, NULL, 0 };
     talarm_t *al = NULL;
 
     dbg_err_if (rq == NULL);
@@ -1019,6 +1037,11 @@ static int cgi_serve(request_t *rq, response_t *rs)
         cgi_relay(cgi_in, run.client);
     }
     run.client = NULL;
+    if(run.grace)
+    {
+        timerm_del(run.grace);
+        run.grace = NULL;
+    }
 
     io_free(cgi_in);
     run.out = NULL;
@@ -1039,6 +1062,8 @@ static int cgi_serve(request_t *rq, response_t *rs)
 
     return 0;
 err:
+    if(run.grace)
+        timerm_del(run.grace);
     if(al)
         timerm_del(al);
     if(cgi_in)
