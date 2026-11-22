@@ -1,7 +1,0 @@
-POST /f HTTP/1.1
-Host:
-Content-Type:multipart/form-data; boundary=20 Ht
-COokie: aÿmn
-Content-Length: 47
-
-aöW

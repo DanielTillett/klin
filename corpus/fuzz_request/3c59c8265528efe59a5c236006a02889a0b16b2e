@@ -1,7 +1,0 @@
-GET /a;b?xÿúÿÿÿ HTTP/1.1
-Host: locost
-Cookie: a=b]; t
-Cookie:host
-Cinmost: localhost
-Cookie: a=b;: 0
-

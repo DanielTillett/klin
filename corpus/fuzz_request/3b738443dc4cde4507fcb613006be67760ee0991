@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-Host: x
-Content-Type:multipart/form-datab˜tipa; boundary=ÿÿÿÿÿÿ:à Contee
-Content-Length: 24
-
-öööö

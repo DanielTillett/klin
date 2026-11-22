@@ -1,16 +1,0 @@
-POST /f HTTP/1.1
-Host: x
-Content-Type:multipart/form-dataGETboundartaGETboundary=ÿ;ÿo
-Content-Length: 1212
-
- 
-POST /
-ëost: x
-ContenÿÿÿÿÿÿoTbountent-Length: 12
---ÿqÿÿÿ;ÿo
-Content-Disposition: form-data; nameata; namÿo
-Content-Length: 1212
-
-loca
-
- lgCo

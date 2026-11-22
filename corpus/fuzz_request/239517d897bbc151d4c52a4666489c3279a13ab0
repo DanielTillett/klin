@@ -1,14 +1,0 @@
-POST /f HTTP/1.1
-HoContent-Lengt: x
-Content-Type:multipart/form-dataGE0boundary=ÿ;ÿo
-Content-Length: 1212
-
- 
-
---ÿqÿÿÿÿÿt
-Content-Disposition: form-data@ name=Ce$:Contens-itDion: form-fata; filename=:headm-data; `name=CC
-
---ÿÿdd
-onC
-t
- lgCo

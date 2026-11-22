@@ -1,4 +1,0 @@
-GET /a/b?x=1&y=%20 HTTP/1.1
-Host: lhost
-Cookie: a=b; klin_sid=0123
-

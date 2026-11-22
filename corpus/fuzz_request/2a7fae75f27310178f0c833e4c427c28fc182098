@@ -1,6 +1,0 @@
-GET / HTTP/1.0
-If-Modified-.Since: P/1.0
-If-Modified-Since: Sun,TP/1.1
-Transfer-EncodinIf-Modified-.Since: P/1.0
-I
-

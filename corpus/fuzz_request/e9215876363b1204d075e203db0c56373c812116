@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-sHost: x
-Content-Type:multipart/form-datanK boundary=ÿ;ÿÿedd
-Content-Length: 32
-
---ÿ%aQQQQQW
