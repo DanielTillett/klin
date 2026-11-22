@@ -36,7 +36,8 @@ enum io_type_e
 
 enum io_fd_flags {
     IO_FD_NO_FLAGS,
-    IO_FD_CLOSE /* close(2) fd on io_free           */
+    IO_FD_CLOSE,         /* close(2) fd on io_free */
+    IO_FD_EOF_ON_CLOSE   /* return EOF when io_close() cuts a read short */
 };
 
 enum io_mem_flags {
