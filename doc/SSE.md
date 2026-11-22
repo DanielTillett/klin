@@ -1,0 +1,135 @@
+# Server-Sent Events
+
+A page can stream events to the browser using the HTML EventSource API
+(`text/event-stream`). Use it when the server has news to push and the
+browser only listens; for two-way traffic, see [WEBSOCKET.md](WEBSOCKET.md).
+
+## A streaming page
+
+Include `<klin/sse.h>`, start the stream, then loop on `sse_wait()`.
+The loop below waits on `my_fd`, a pipe or socket of your own that
+carries one event's text per read:
+
+```html
+<%!
+#include <unistd.h>
+#include <klin/sse.h>
+%><%
+    if(sse_start(request, response))
+        return;
+
+    /* wait for my_fd (a pipe, a socket...) with a 15 s keep-alive */
+    for(;;)
+    {
+        int w = sse_wait(request, my_fd, 15000);
+
+        if(w == SSE_CLOSED)
+            break;                      /* the client went away */
+        if(w == SSE_TIMEOUT && sse_comment(response, "ping"))
+            break;
+        if(w == SSE_READY)
+        {
+            char buf[256];
+            ssize_t n = read(my_fd, buf, sizeof buf - 1);
+
+            if(n <= 0)
+                break;                  /* your source closed or failed */
+            buf[n] = '\0';
+            if(sse_send(response, "update", NULL, buf))
+                break;
+        }
+    }
+%>
+```
+
+Read the descriptor before sending: `sse_wait()` only says it is
+readable, and if you leave the data there the next wait returns
+`SSE_READY` again straight away.
+
+**The wait loop is Unix-only.** On a native Windows build `sse_wait()`
+returns `SSE_CLOSED` at once, so the loop above ends on its first pass.
+
+Put nothing before the code block, not even a line break. `sse_start()`
+sends the response header, and from then on everything the page prints
+goes to the client as it is written.
+
+## How the stream runs
+
+A stream, from the browser's first request to the moment it closes the
+tab:
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (EventSource)
+    participant P as Page in a klind worker
+    participant S as Your event source (my_fd)
+    B->>P: GET /events.kl1
+    P->>B: 200, text/event-stream, then ": klin" comment
+    loop until a send fails or the client closes (Unix only)
+        P->>P: sse_wait() polls client socket and my_fd
+        alt my_fd readable
+            S-->>P: SSE_READY, page reads my_fd
+            P->>B: event line (update) and data lines, no id line
+        else timeout passes
+            P->>B: ": ping" comment
+        end
+    end
+    B->>P: closes the connection
+    P->>P: sse_wait() returns SSE_CLOSED, page ends
+```
+
+`sse_start()` writes a short `: klin` comment straight after the header,
+so the header actually leaves the server rather than sitting in a buffer
+until the first event.
+
+The example passes NULL as the event id, so its events carry no `id:`
+line, and a browser that reconnects has no `Last-Event-ID` to send. Give
+each event an id if the page needs to carry on where the browser left
+off.
+
+## The calls
+
+| Call | What it does |
+| --- | --- |
+| `sse_start(rq, rs)` | Sets `Content-Type: text/event-stream`, `Cache-Control: no-store` and `X-Accel-Buffering: no` (so proxies that buffer, such as nginx, pass events on at once), and sends the header now. |
+| `sse_send(rs, event, id, data)` | Sends one event. `event` (the type; NULL means the browser's default, `message`) and `id` must each be one line, or NULL. `data` may hold line breaks: each line becomes a `data:` line and the browser gets the line breaks back. |
+| `sse_comment(rs, text)` | Sends a comment line, to keep an idle stream open through proxies that close silent connections. |
+| `sse_retry(rs, ms)` | Tells the browser how long to wait before reconnecting. |
+| `sse_last_event_id(rq)` | The id of the last event the browser got, sent in `Last-Event-ID` when it reconnects, so the page can carry on from there. NULL on a first connection. |
+| `sse_wait(rq, fd, ms)` | Waits until `fd` is readable (`SSE_READY`; pass -1 for no descriptor), `ms` milliseconds pass (`SSE_TIMEOUT`; -1 for no limit) or the client closes the connection (`SSE_CLOSED`). It waits in poll(2) on the client socket and `fd`, and runs the timer's alarms meanwhile. |
+
+Every send returns non-zero once writing to the client fails, which is
+how a page finds out the client has gone. When that happens, stop
+streaming. (`sse_send()` also returns non-zero for an `event` or `id`
+with a line break in it.) A send the client does not take within 30 s
+closes the connection, so a client that stops reading holds a worker for
+at most that long per send.
+
+On HTTP/1.1 the stream is chunked. When the page ends, the connection can
+carry another request only if keep-alive is on (`keep_alive`, the
+default), the client asked to keep it, `keep_alive_max` has not been
+reached and the server is not in the iterative model; otherwise klind
+closes it. On HTTP/1.0 the end of the stream closes the connection. TLS
+works the same way.
+
+## Streams and workers
+
+**A stream holds its connection, and so a whole worker, for as long as it
+lasts.** In the prefork model the watchdog asks the parent for another
+worker after a second (as it does for any slow page), and the streaming
+worker exits when its connection ends, which may be after more requests on
+a kept-alive connection. Size `prefork.max_child` for the number of
+streams you expect. The iterative model (`-d`, or `model iterative`) runs
+one process, which serves nothing else while a stream is open.
+
+To stop streams taking every worker, `max_streams` caps the SSE and
+WebSocket connections open at once across all of a server's workers
+(default 100; 0 turns the cap off). Beyond it `sse_start()` sets
+503 with `Retry-After: 5` and returns non-zero, so the page's
+`if(sse_start(...)) return;` ends the page and that answer is sent. The
+slot belongs to the connection, not the stream: it is freed when the
+connection closes, so a finished stream still counts while its
+connection is kept alive for more requests. See [LIMITS.md](LIMITS.md).
+
+See also: [WEBSOCKET.md](WEBSOCKET.md) for two-way traffic, and
+[LIMITS.md](LIMITS.md) for `max_streams` and the other limits.

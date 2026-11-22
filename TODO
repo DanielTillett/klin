@@ -1,0 +1,84 @@
+KLIN TODO
+----------
+
+Reviewed for Klin 4.0.0 (21 Nov 2026). Items are in priority order within
+each section. Completed work is recorded in the ChangeLog.
+
+
+PLANNED: SECURITY AND CORRECTNESS
+
+* File sessions: store them in a private directory instead of /tmp by
+  default, and create session files with O_NOFOLLOW/O_EXCL. The 128-bit random
+  session IDs make symlink attacks impractical today, but /tmp is shared.
+* Session locking: concurrent requests in the same session can overwrite
+  each other's session data (lost updates).
+* Disable core dumps in klind and its workers (setrlimit RLIMIT_CORE), with
+  a configuration option to re-enable them for debugging; dumps can contain
+  session keys and user data. The TLS key manager and CGI scripts already
+  have none.
+* HTML-escaped output: <%= expr %> prints its value unescaped, so pages that
+  echo request data are open to cross-site scripting unless the author
+  escapes by hand. Add an escaping output helper (io_html_printf) and an
+  escaping output tag; changing <%= %> itself would break existing pages.
+
+
+PLANNED: FEATURES AND TESTING
+
+* HTTP/1.1 request side: chunked request bodies (now rejected with 400) and
+  answering "Expect: 100-continue". Persistent connections are done; needs
+  careful tests, as it touches the hardened parser.
+* Prefork and keep-alive: a worker idle on a kept-alive connection counts as
+  busy and may cause another worker to start; consider scoping the busy
+  timer to request processing and counting requests (not connections) in
+  prefork.max_requests_per_child.
+* Streaming file uploads: a per-chunk upload callback, so large uploads do
+  not have to be held in memory or a temporary file (important on small
+  devices).
+* Code coverage reporting in CI for the test suites (ClusterFuzzLite
+  reports the fuzzers' coverage only), to show what the tests miss.
+* Longer fuzzing campaigns: ClusterFuzzLite fuzzes half an hour a day per
+  sanitizer; OSS-Fuzz would run far longer (the ClusterFuzzLite files are
+  written to serve an OSS-Fuzz application, doc/FUZZING.md).
+* Platform coverage: *BSD is untested; native Windows (MinGW) builds and
+  serves in the single-process model only, with a smoke test rather than the
+  full server tests; MSVC needs LibU ported. C++ pages (.klx) are not
+  supported by the CMake build.
+
+
+
+PLANNED: 5.0.0, REMOVING THE KLONE NAMES
+
+The names KLone used are accepted throughout 4.x (README, RENAMED FROM
+KLONE) and go in 5.0.0, the next major release. Announce it in the last
+4.x release notes. To remove them:
+
+* delete cmake/klone_compat.cmake and its include and three calls in
+  CMakeLists.txt (the KLONE_* settings, the forwarding headers, the
+  klone/kloned links);
+* delete the code marked "before KLone was renamed Klin": the klone_sid
+  cookie, KLONE_CIPHER_KEY, .klone pages and /index.klone, the embedded
+  /etc/kloned.conf and the klone_sess_* session file migration
+  (git grep -n "before KLone was renamed Klin" lists every place);
+* drop the RENAMED FROM KLONE section from README, keeping one line on the
+  history, and the compatibility checks in test/run_build_checks.py and
+  test/run_server_tests.py;
+* decide about the Windows service name (kloned).
+
+
+POSSIBLE EXTRAS (only if a user needs them)
+
+* HTTP Basic authentication helper for protected pages (only over TLS).
+* Printf-style output tag, e.g. <%=fmt arg %>.
+* Binary session values (session_bin_set).
+* Request/response convenience helpers.
+* Performance: faster request_parse for POST data and argument parsing.
+
+
+DROPPED
+
+* MatrixSSL and CyaSSL backends, OpenSSL TLS-PSK, the Kilt URL module.
+* u_sendmail, scheduled ("cron") pages, per-script ulimits.
+* Client-side sessions split across several cookies (browsers limit cookie
+  size; use server-side sessions for large data).
+* KoanLogic website, product and marketing tasks, and the 3.x release
+  checklist.

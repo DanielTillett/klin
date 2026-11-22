@@ -1,0 +1,2229 @@
+LLVMFuzzerTestOneInput:
+   21|    160|{
+   22|    160|    int sv[2], type, rc, i;
+   23|    160|    const char *msg;
+   24|    160|    size_t len;
+   25|    160|    ws_t ws;
+   26|    160|    io_t *io = NULL;
+   27|       |
+   28|    160|    if(size > FUZZ_MAX)
+  ------------------
+  |  Branch (28:8): [True: 0, False: 160]
+  ------------------
+   29|      0|        return 0;
+   30|    160|    signal(SIGPIPE, SIG_IGN);
+   31|    160|    if(socketpair(AF_UNIX, SOCK_STREAM, 0, sv))
+  ------------------
+  |  Branch (31:8): [True: 0, False: 160]
+  ------------------
+   32|      0|        abort();
+   33|       |    /* a socket pair holds more than FUZZ_MAX bytes: this never blocks */
+   34|    160|    {
+   35|    160|        int big = 4 * FUZZ_MAX;
+   36|    160|        (void) setsockopt(sv[0], SOL_SOCKET, SO_SNDBUF, &big, sizeof big);
+   37|    160|        (void) setsockopt(sv[1], SOL_SOCKET, SO_RCVBUF, &big, sizeof big);
+   38|    160|    }
+   39|    160|    if(size && write(sv[0], data, size) != (ssize_t) size)
+  ------------------
+  |  Branch (39:8): [True: 160, False: 0]
+  |  Branch (39:16): [True: 0, False: 160]
+  ------------------
+   40|      0|        abort();
+   41|    160|    close(sv[0]);   /* end of input; replies get EPIPE */
+   42|       |
+   43|    160|    if(io_fd_create(sv[1], IO_FD_CLOSE, &io))
+  ------------------
+  |  Branch (43:8): [True: 0, False: 160]
+  ------------------
+   44|      0|        abort();
+   45|    160|    memset(&ws, 0, sizeof ws);
+   46|    160|    ws.io = io;
+   47|    160|    ws.max = 16384;
+   48|       |
+   49|  3.19k|    for(i = 0; i < 1000; ++i)
+  ------------------
+  |  Branch (49:16): [True: 3.19k, False: 0]
+  ------------------
+   50|  3.19k|    {
+   51|  3.19k|        rc = ws_recv(&ws, &type, &msg, &len);
+   52|  3.19k|        if(rc == WS_CLOSED || rc < 0)
+  ------------------
+  |  Branch (52:12): [True: 160, False: 3.03k]
+  |  Branch (52:31): [True: 0, False: 3.03k]
+  ------------------
+   53|    160|            break;
+   54|  3.03k|        if(rc == 0 && type == WS_TEXT && msg[len] != '\0')
+  ------------------
+  |  Branch (54:12): [True: 3.01k, False: 23]
+  |  Branch (54:23): [True: 1.76k, False: 1.25k]
+  |  Branch (54:42): [True: 0, False: 1.76k]
+  ------------------
+   55|      0|            abort();    /* a text message is NUL-terminated */
+   56|  3.03k|    }
+   57|       |
+   58|    160|    U_FREE(ws.msg);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+   59|    160|    io_free(io);
+   60|    160|    return 0;
+   61|    160|}
+
+u_malloc:
+   62|    231|{
+   63|    231|    return u_memory_fns.f_malloc(sz);
+   64|    231|}
+u_zalloc:
+   74|  3.73k|{
+   75|  3.73k|    return u_memory_fns.f_calloc(1, sz);
+   76|  3.73k|}
+u_realloc:
+   80|    206|{
+   81|    206|    return u_memory_fns.f_realloc(ptr, sz);
+   82|    206|}
+u_free:
+   86|  4.53k|{
+   87|  4.53k|    if (ptr)
+  ------------------
+  |  Branch (87:9): [True: 4.08k, False: 457]
+  ------------------
+   88|  4.08k|        u_memory_fns.f_free(ptr);
+   89|  4.53k|}
+
+io_close:
+  441|    160|{
+  442|    160|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  443|       |
+  444|    160|    if(io->close)
+  ------------------
+  |  Branch (444:8): [True: 160, False: 0]
+  ------------------
+  445|    160|        dbg_err_if(io->close(io));
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  446|       |
+  447|    160|    return 0;
+  448|      0|err:
+  449|      0|    return ~0;
+  450|    160|}
+io_free:
+  468|    160|{
+  469|    160|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  470|    160|    dbg_err_if (io->refcnt == 0);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  471|       |
+  472|       |    /* skip if this io_t has been dup'd and there are still one or more 
+  473|       |       references in use */
+  474|    160|    if(--io->refcnt)
+  ------------------
+  |  Branch (474:8): [True: 0, False: 160]
+  ------------------
+  475|      0|        return 0;
+  476|       |
+  477|       |    /* flush, remove and free all codecs */
+  478|    160|    dbg_if(io_codecs_remove(io));
+  ------------------
+  |  |  615|    160|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 160]
+  |  |  |  Branch (615:73): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  479|       |
+  480|    160|    dbg_if(io_flush(io));
+  ------------------
+  |  |  615|    160|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 71, False: 89]
+  |  |  |  Branch (615:73): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  481|       |
+  482|       |    /* flush and close the stream (but don't free it) */
+  483|    160|    dbg_if(io_close(io));
+  ------------------
+  |  |  615|    160|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 160]
+  |  |  |  Branch (615:73): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  484|       |
+  485|       |    /* free per-type alloc'ed data */
+  486|    160|    if(io->free)
+  ------------------
+  |  Branch (486:8): [True: 160, False: 0]
+  ------------------
+  487|    160|        dbg_if(io->free(io));
+  ------------------
+  |  |  615|    160|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 160]
+  |  |  |  Branch (615:73): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  488|       |
+  489|    160|    U_FREE(io->rbuf);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  490|    160|    U_FREE(io->ubuf);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  491|    160|    U_FREE(io->wbuf);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  492|    160|    U_FREE(io->name);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  493|    160|    U_FREE(io);
+  ------------------
+  |  |   47|    160|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  494|       |
+  495|    160|    return 0;
+  496|      0|err:
+  497|      0|    return ~0;
+  498|    160|}
+io_read:
+  591|  9.99k|{
+  592|  9.99k|    char *out = buf;
+  593|  9.99k|    size_t wr;
+  594|  9.99k|    ssize_t c;
+  595|       |
+  596|  9.99k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  9.99k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 9.99k]
+  |  |  |  Branch (626:77): [Folded, False: 9.99k]
+  |  |  ------------------
+  ------------------
+  597|  9.99k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  9.99k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 9.99k]
+  |  |  |  Branch (626:77): [Folded, False: 9.99k]
+  |  |  ------------------
+  ------------------
+  598|       |
+  599|  9.99k|    if(io->eof)
+  ------------------
+  |  Branch (599:8): [True: 0, False: 9.99k]
+  ------------------
+  600|      0|        return 0;
+  601|       |
+  602|       |    /* never read past the read limit */
+  603|  9.99k|    size = io_read_room(io, size);
+  604|       |
+  605|  19.9k|    while(size)
+  ------------------
+  |  Branch (605:11): [True: 9.99k, False: 9.90k]
+  ------------------
+  606|  9.99k|    {
+  607|  9.99k|        if(io->rcount == 0)
+  ------------------
+  |  Branch (607:12): [True: 249, False: 9.75k]
+  ------------------
+  608|    249|        {
+  609|    249|            dbg_err_if((c = io_underflow(io)) < 0);
+  ------------------
+  |  |  626|    249|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 249]
+  |  |  |  Branch (626:77): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+  610|    249|            if(c == 0)
+  ------------------
+  |  Branch (610:16): [True: 89, False: 160]
+  ------------------
+  611|     89|                break;
+  612|    249|        }
+  613|       |        /* copy out data */
+  614|  9.91k|        wr = U_MIN(io->rcount, size); 
+  ------------------
+  |  |   50|  9.91k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 9, False: 9.90k]
+  |  |  ------------------
+  ------------------
+  615|  9.91k|        memcpy(out, io->rbuf + io->roff, wr);
+  616|  9.91k|        io->rcount -= wr;
+  617|  9.91k|        io->roff += wr;
+  618|  9.91k|        io->rtot += wr;
+  619|  9.91k|        out += wr;
+  620|  9.91k|        size -= wr;
+  621|  9.91k|    }
+  622|       |
+  623|  9.99k|    return out - buf;
+  624|      0|err:
+  625|      0|    return -1;
+  626|  9.99k|}
+io_flush:
+  745|    231|{
+  746|    231|    ssize_t c;
+  747|    231|    size_t off = 0;
+  748|       |
+  749|    231|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    231|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 231]
+  |  |  |  Branch (626:77): [Folded, False: 231]
+  |  |  ------------------
+  ------------------
+  750|       | 
+  751|    231|    while(io->wcount)
+  ------------------
+  |  Branch (751:11): [True: 142, False: 89]
+  ------------------
+  752|    142|    {
+  753|    142|        c = io->write(io, io->wbuf + off, io->wcount);
+  754|    142|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|    142|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 142, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  755|      0|        if(c == 0)
+  ------------------
+  |  Branch (755:12): [True: 0, False: 0]
+  ------------------
+  756|      0|            break;
+  757|       |    
+  758|      0|        io->wcount -= c;
+  759|      0|        off += c;
+  760|      0|    }
+  761|       |
+  762|     89|    return 0;
+  763|    142|err:
+  764|    142|    return -1;
+  765|    231|}
+io_write:
+  811|    141|{
+  812|    141|    size_t sz = 0, rem = size;
+  813|    141|    ssize_t c = 0;
+  814|       |
+  815|    141|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  816|    141|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  817|       |    
+  818|    141|    if(io->wbuf == NULL)
+  ------------------
+  |  Branch (818:8): [True: 71, False: 70]
+  ------------------
+  819|     71|        dbg_err_if(io_wbuf_alloc(io)); /* alloc the write buffer */
+  ------------------
+  |  |  626|     71|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 71]
+  |  |  |  Branch (626:77): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+  820|       |
+  821|    282|    while(rem)
+  ------------------
+  |  Branch (821:11): [True: 141, False: 141]
+  ------------------
+  822|    141|    {
+  823|       |        /* a large block the codec leaves unchanged: skip the copy */
+  824|    141|        if(rem >= io->wbsz && (c = io_write_passthru(io, buf, rem)) != 0)
+  ------------------
+  |  Branch (824:12): [True: 0, False: 141]
+  |  Branch (824:31): [True: 0, False: 0]
+  ------------------
+  825|      0|        {
+  826|      0|            dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  827|      0|            buf += c;
+  828|      0|            rem -= (size_t) c;
+  829|      0|            continue;
+  830|      0|        }
+  831|       |
+  832|    141|        if(IO_WBUF_FULL(io)) /* if there's no more free space */
+  ------------------
+  |  |   26|    141|#define IO_WBUF_FULL(io) (io->wbsz == io->wcount)
+  |  |  ------------------
+  |  |  |  Branch (26:26): [True: 0, False: 141]
+  |  |  ------------------
+  ------------------
+  833|      0|            dbg_err_if(io_flush(io));
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  834|       |
+  835|    141|        sz = IO_WBUF_AVAIL(io);
+  ------------------
+  |  |   25|    141|#define IO_WBUF_AVAIL(io) (io->wbsz - io->wcount)
+  ------------------
+  836|    141|        c = io_transfer(io, io->wbuf + io->wcount, &sz, buf, rem);
+  837|    141|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  838|    141|        dbg_err_if(c == 0 && sz == 0); /* some bytes MUST be read or written */
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 141]
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  839|       |
+  840|    141|        io->wcount += sz;
+  841|    141|        buf += c;
+  842|    141|        rem -= c;
+  843|    141|    }
+  844|       |
+  845|    141|    return size;
+  846|      0|err:
+  847|      0|    return -1;
+  848|    141|}
+io_codecs_remove:
+ 1052|    160|{
+ 1053|    160|    codec_t *codec;
+ 1054|    160|    int rc = 0;
+ 1055|       |
+ 1056|    160|    dbg_return_if (io == NULL, ~0);
+  ------------------
+  |  |  619|    160|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 160]
+  |  |  |  Branch (619:79): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+ 1057|       |
+ 1058|    160|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|    160|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    160|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    160|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (1058:8): [True: 0, False: 160]
+  ------------------
+ 1059|      0|    {
+ 1060|      0|        if(io->wbuf)
+  ------------------
+  |  Branch (1060:12): [True: 0, False: 0]
+  ------------------
+ 1061|      0|            dbg_ifb(io_chain_flush(io))
+  ------------------
+  |  |  616|      0|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+ 1062|      0|                rc++;
+ 1063|       |
+ 1064|      0|        while((codec = TAILQ_FIRST(&io->codec_chain)) != NULL)
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  |  Branch (1064:15): [True: 0, False: 0]
+  ------------------
+ 1065|      0|        {
+ 1066|      0|            TAILQ_REMOVE(&io->codec_chain, codec, np);
+  ------------------
+  |  |  184|      0|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|      0|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 0]
+  |  |  ------------------
+  |  |  186|      0|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|      0|        else                                                                \
+  |  |  189|      0|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|      0|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|      0|}
+  ------------------
+ 1067|      0|            codec_free(codec);
+ 1068|      0|        }
+ 1069|      0|    }
+ 1070|       |
+ 1071|    160|    return rc;
+ 1072|    160|}
+io_pending:
+ 1318|    336|{
+ 1319|    336|    size_t n;
+ 1320|       |
+ 1321|    336|    dbg_return_if (io == NULL, 0);
+  ------------------
+  |  |  619|    336|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 336]
+  |  |  |  Branch (619:79): [Folded, False: 336]
+  |  |  ------------------
+  ------------------
+ 1322|       |
+ 1323|    336|    n = io->rcount;
+ 1324|    336|#ifdef SSL_ON
+ 1325|    336|    if(io->type == IO_TYPE_SSL)
+  ------------------
+  |  Branch (1325:8): [True: 0, False: 336]
+  ------------------
+ 1326|      0|        n += io_ssl_pending(io);
+ 1327|    336|#endif
+ 1328|       |
+ 1329|    336|    return n;
+ 1330|    336|}
+io_prv_create:
+ 1345|    160|{
+ 1346|    160|    io_t *io = NULL;
+ 1347|       |
+ 1348|    160|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+ 1349|       |
+ 1350|    160|    io = u_zalloc(dev_sz);
+ 1351|    160|    dbg_err_if(io == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+ 1352|       |
+ 1353|    160|    TAILQ_INIT(&io->codec_chain);
+  ------------------
+  |  |  135|    160|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|    160|        (head)->tqh_first = NULL;                                           \
+  |  |  137|    160|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|    160|}
+  ------------------
+ 1354|       |
+ 1355|       |    /* set refcnt to 1 */
+ 1356|    160|    io->refcnt++;
+ 1357|       |
+ 1358|       |    /* size of the io device struct (that's also a 'castable' io_t) */
+ 1359|    160|    io->size = dev_sz;
+ 1360|       |
+ 1361|    160|    *pio = io;
+ 1362|       |
+ 1363|    160|    return 0;
+ 1364|      0|err:
+ 1365|       |    U_FREE(io);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1366|      0|    return -1;
+ 1367|    160|}
+io.c:io_underflow:
+  502|    249|{
+  503|    249|    ssize_t c;
+  504|    249|    size_t sz;
+  505|       |
+  506|    249|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    249|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 249]
+  |  |  |  Branch (626:77): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+  507|       |
+  508|    249|    if(io->rbuf == NULL)
+  ------------------
+  |  Branch (508:8): [True: 160, False: 89]
+  ------------------
+  509|    160|        dbg_err_if(io_rbuf_alloc(io)); /* alloc the read buffer */
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  510|       |
+  511|    249|    while(io->rcount == 0)
+  ------------------
+  |  Branch (511:11): [True: 249, False: 0]
+  ------------------
+  512|    249|    {
+  513|    249|        int read_codecs = !TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs;
+  ------------------
+  |  |  334|    498|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    249|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    249|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (513:27): [True: 0, False: 249]
+  |  Branch (513:61): [True: 0, False: 0]
+  ------------------
+  514|       |
+  515|    249|        if(io->ucount == 0)
+  ------------------
+  |  Branch (515:12): [True: 249, False: 0]
+  ------------------
+  516|    249|        {
+  517|    249|            if(!read_codecs)
+  ------------------
+  |  Branch (517:16): [True: 249, False: 0]
+  ------------------
+  518|    249|            {
+  519|    249|                dbg_err_if((c = io->read(io, io->rbuf, io->rbsz)) < 0);
+  ------------------
+  |  |  626|    249|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 249]
+  |  |  |  Branch (626:77): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+  520|    249|                io->rcount = c;
+  521|    249|                io->roff = 0;
+  522|    249|                break;
+  523|    249|            }
+  524|       |
+  525|      0|            if(io->ubuf == NULL)
+  ------------------
+  |  Branch (525:16): [True: 0, False: 0]
+  ------------------
+  526|      0|            {
+  527|      0|                io->ubuf = (char*)u_malloc(io->rbsz);
+  528|      0|                dbg_err_if(io->ubuf == NULL);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  529|      0|            }
+  530|       |
+  531|      0|            dbg_err_if((c = io->read(io, io->ubuf, io->rbsz)) < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  532|      0|            if(c == 0)
+  ------------------
+  |  Branch (532:16): [True: 0, False: 0]
+  ------------------
+  533|      0|            {   /* eof, try to get some buffered (already transformed) bytes
+  534|       |                   from the codec */
+  535|      0|                sz = io->rbsz;
+  536|      0|                c = io_chain_flush_chunk(io, io->rbuf, &sz);
+  537|      0|                dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  538|      0|                io->rcount = sz;
+  539|      0|                io->roff = 0;
+  540|      0|                if(c == 0)
+  ------------------
+  |  Branch (540:20): [True: 0, False: 0]
+  ------------------
+  541|      0|                    io->eof++;
+  542|      0|                break;
+  543|      0|            }
+  544|      0|            io->ucount = c;
+  545|      0|        }
+  546|       |
+  547|       |        /* Drain any raw bytes left by read codecs before refilling, even
+  548|       |           if the chain has since been removed or made write-only. */
+  549|      0|        sz = io->rbsz;
+  550|      0|        if(!read_codecs)
+  ------------------
+  |  Branch (550:12): [True: 0, False: 0]
+  ------------------
+  551|      0|        {
+  552|      0|            c = U_MIN(sz, io->ucount);
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  553|      0|            memcpy(io->rbuf, io->ubuf + io->uoff, c);
+  554|      0|            sz = c;
+  555|      0|        } else
+  556|      0|            dbg_err_if((c = io_transfer(io, io->rbuf, &sz,
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  557|      0|                io->ubuf + io->uoff, io->ucount)) < 0);
+  558|      0|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  559|      0|        dbg_err_if(c == 0 && sz == 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  560|      0|        io->ucount -= c;
+  561|      0|        if(io->ucount == 0)
+  ------------------
+  |  Branch (561:12): [True: 0, False: 0]
+  ------------------
+  562|      0|            io->uoff = 0;
+  563|      0|        else
+  564|      0|            io->uoff += c;
+  565|       |
+  566|      0|        io->rcount = sz;
+  567|      0|        io->roff = 0;
+  568|      0|    }
+  569|       |
+  570|    249|    return io->rcount;
+  571|      0|err:
+  572|      0|    return -1;
+  573|    249|}
+io.c:io_rbuf_alloc:
+  210|    160|{
+  211|    160|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  212|       |    
+  213|    160|    io->rbsz = IO_RD_BUFSZ; /* set the buffer size */
+  214|       |
+  215|    160|    io->rbuf = (char*)u_malloc(io->rbsz);
+  216|    160|    dbg_err_if(io->rbuf == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  217|    160|    io->roff = 0;
+  218|       |
+  219|    160|    return 0;
+  220|      0|err:
+  221|      0|    return ~0;
+  222|    160|}
+io.c:io_wbuf_alloc:
+  226|     71|{
+  227|     71|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|     71|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 71]
+  |  |  |  Branch (626:77): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+  228|       |
+  229|       |    /* set the buffer size (unless chosen with io_set_write_buffer_size) */
+  230|     71|    if(io->wbsz == 0)
+  ------------------
+  |  Branch (230:8): [True: 71, False: 0]
+  ------------------
+  231|     71|        io->wbsz = IO_WR_BUFSZ;
+  232|       |
+  233|       |    /* if a dup'd io_t already alloc'd a buffer then use it */
+  234|     71|    io->wbuf = (char*)u_malloc(io->wbsz);
+  235|     71|    dbg_err_if(io->wbuf == NULL);
+  ------------------
+  |  |  626|     71|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 71]
+  |  |  |  Branch (626:77): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+  236|       |
+  237|     71|    return 0;
+  238|      0|err:
+  239|      0|    return ~0;
+  240|     71|}
+io.c:io_transfer:
+  320|    141|{
+  321|    141|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  322|    141|    dbg_err_if (src == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  323|    141|    dbg_err_if (dst == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  324|    141|    dbg_err_if (dcount == NULL);
+  ------------------
+  |  |  626|    141|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 141]
+  |  |  |  Branch (626:77): [Folded, False: 141]
+  |  |  ------------------
+  ------------------
+  325|       |
+  326|    141|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|    141|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    141|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    141|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (326:8): [True: 0, False: 141]
+  ------------------
+  327|      0|    {
+  328|      0|        return io_transform(io, TAILQ_FIRST(&io->codec_chain), 
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  329|      0|            dst, dcount, src, sz); 
+  330|    141|    } else {
+  331|    141|        ssize_t wr = U_MIN(sz, *dcount); 
+  ------------------
+  |  |   50|    141|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 141, False: 0]
+  |  |  ------------------
+  ------------------
+  332|    141|        memcpy(dst, src, wr);
+  333|    141|        *dcount = wr;
+  334|    141|        return wr;
+  335|    141|    }
+  336|      0|err:
+  337|      0|    return -1;
+  338|    141|}
+io.c:io_read_room:
+ 1198|  9.99k|{
+ 1199|  9.99k|    if(!io->rlimited)
+  ------------------
+  |  Branch (1199:8): [True: 9.99k, False: 0]
+  ------------------
+ 1200|  9.99k|        return size;
+ 1201|       |
+ 1202|      0|    return io->rtot >= io->rlimit ? 0 : U_MIN(size, io->rlimit - io->rtot);
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  |  Branch (1202:12): [True: 0, False: 0]
+  ------------------
+ 1203|  9.99k|}
+
+io_fd_create:
+  150|    160|{
+  151|    160|    io_fd_t *ifd = NULL;
+  152|    160|    io_t *io = NULL;
+  153|       |
+  154|    160|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  155|       |
+  156|       |    /* create through an io_t pointer: storing one in 'ifd' via a cast
+  157|       |       (io_t**)&ifd breaks strict aliasing (LTO then miscompiled it) */
+  158|    160|    dbg_err_if(io_create(io_fd_t, &io));
+  ------------------
+  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 160]
+  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  159|    160|    ifd = (io_fd_t *) io;
+  160|       |
+  161|    160|    ifd->io.type = IO_TYPE_FD;
+  162|       |
+  163|    160|    ifd->fd = fd;
+  164|    160|    ifd->flags = flags;
+  165|    160|    ifd->io.read = io_fd_read;
+  166|    160|    ifd->io.write = io_fd_write;
+  167|    160|    ifd->io.seek = io_fd_seek;
+  168|    160|    ifd->io.tell = io_fd_tell;
+  169|    160|    ifd->io.close = io_fd_close; 
+  170|    160|    ifd->io.free = io_fd_free; 
+  171|       |    
+  172|       |#ifdef OS_WIN
+  173|       |    u_long ret;
+  174|       |    if(ioctlsocket(fd, FIONREAD, &ret) == 0)
+  175|       |        ifd->issock++; /* is a socket, use recv/send instead of read/write  */
+  176|       |    _setmode(fd, _O_BINARY); /* we never want Windows CR/LF translation */
+  177|       |#endif
+  178|       |
+  179|    160|    *pio = (io_t*)ifd;
+  180|       |
+  181|    160|    return 0;
+  182|      0|err:
+  183|      0|    if(ifd)
+  ------------------
+  |  Branch (183:8): [True: 0, False: 0]
+  ------------------
+  184|      0|        io_free((io_t*)ifd);
+  185|      0|    return ~0;
+  186|    160|}
+iofd.c:io_fd_read:
+   36|    249|{
+   37|    249|    io_fd_t *ifd = (io_fd_t *) io_;
+   38|    249|    ssize_t c;
+   39|       |
+   40|    249|    dbg_return_if (ifd == NULL, ~0);
+  ------------------
+  |  |  619|    249|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 249]
+  |  |  |  Branch (619:79): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+   41|    249|    dbg_return_if (buf == NULL, ~0);
+  ------------------
+  |  |  619|    249|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 249]
+  |  |  |  Branch (619:79): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+   42|       |    
+   43|    249|again:
+   44|       |    /* while an alarm is set (a timeout), wait for data with the alarms
+   45|       |       running: one may close the descriptor */
+   46|    249|    if(timerm_armed())
+  ------------------
+  |  Branch (46:8): [True: 249, False: 0]
+  ------------------
+   47|    249|        nop_err_if(timerm_wait(&ifd->fd, TIMERM_WAIT_READ));
+  ------------------
+  |  |  382|    249|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 249]
+  |  |  |  Branch (382:74): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+   48|       |
+   49|    249|    if(!ifd->issock)
+  ------------------
+  |  Branch (49:8): [True: 249, False: 0]
+  ------------------
+   50|    249|        c = read(ifd->fd, buf, size);
+   51|      0|    else
+   52|      0|        c = recv(ifd->fd, buf, size, 0);
+   53|       |    /* if(c < 0 && (errno == EINTR || errno == EAGAIN)) */
+   54|    249|    if(c < 0 && errno == EINTR)
+  ------------------
+  |  Branch (54:8): [True: 0, False: 249]
+  |  Branch (54:17): [True: 0, False: 0]
+  ------------------
+   55|      0|        goto again; 
+   56|       |
+   57|    249|    dbg_err_sif(c == -1); 
+  ------------------
+  |  |  627|    249|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 0, False: 249]
+  |  |  |  Branch (627:77): [Folded, False: 249]
+  |  |  ------------------
+  ------------------
+   58|       |
+   59|    249|    return c;
+   60|      0|err:
+   61|      0|    return -1;
+   62|    249|}
+iofd.c:io_fd_write:
+   65|    142|{
+   66|    142|    io_fd_t *ifd = (io_fd_t *) io_;
+   67|    142|    ssize_t c;
+   68|       |
+   69|    142|    dbg_return_if (ifd == NULL, ~0);
+  ------------------
+  |  |  619|    142|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 142]
+  |  |  |  Branch (619:79): [Folded, False: 142]
+  |  |  ------------------
+  ------------------
+   70|    142|    dbg_return_if (buf == NULL, ~0);
+  ------------------
+  |  |  619|    142|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 142]
+  |  |  |  Branch (619:79): [Folded, False: 142]
+  |  |  ------------------
+  ------------------
+   71|       | 
+   72|    142|again:
+   73|    142|    if(timerm_armed())
+  ------------------
+  |  Branch (73:8): [True: 71, False: 71]
+  ------------------
+   74|     71|        nop_err_if(timerm_wait(&ifd->fd, TIMERM_WAIT_WRITE));
+  ------------------
+  |  |  382|     71|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 71]
+  |  |  |  Branch (382:74): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+   75|       |
+   76|    142|    if(!ifd->issock)
+  ------------------
+  |  Branch (76:8): [True: 142, False: 0]
+  ------------------
+   77|    142|        c = write(ifd->fd, buf, size);
+   78|      0|    else
+   79|      0|        c = send(ifd->fd, buf, size, 0);
+   80|       |    /* if(c < 0 && (errno == EINTR || errno == EAGAIN)) */
+   81|    142|    if(c < 0 && errno == EINTR)
+  ------------------
+  |  Branch (81:8): [True: 142, False: 0]
+  |  Branch (81:17): [True: 0, False: 142]
+  ------------------
+   82|      0|        goto again; 
+   83|       |
+   84|    142|    dbg_err_sif(c == -1); 
+  ------------------
+  |  |  627|    142|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 142, False: 0]
+  |  |  |  Branch (627:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+   85|       |
+   86|      0|    return c;
+   87|    142|err:
+   88|    142|    return -1;
+   89|    142|}
+iofd.c:io_fd_close:
+  109|    320|{
+  110|    320|    io_fd_t *ifd = (io_fd_t *) io_;
+  111|    320|    dbg_return_if (ifd == NULL, ~0);
+  ------------------
+  |  |  619|    320|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 320]
+  |  |  |  Branch (619:79): [Folded, False: 320]
+  |  |  ------------------
+  ------------------
+  112|       |    
+  113|    320|    if(ifd->flags & IO_FD_CLOSE && ifd->fd != -1)
+  ------------------
+  |  Branch (113:8): [True: 320, False: 0]
+  |  Branch (113:36): [True: 160, False: 160]
+  ------------------
+  114|    160|    {
+  115|       |#ifdef OS_WIN
+  116|       |        if(ifd->issock)
+  117|       |        {
+  118|       |            closesocket(ifd->fd);
+  119|       |        } else
+  120|       |            close(ifd->fd);
+  121|       |#else
+  122|    160|            close(ifd->fd);
+  123|    160|#endif
+  124|    160|        ifd->fd = -1;
+  125|    160|    }
+  126|       |
+  127|    320|    return 0;
+  128|    320|}
+iofd.c:io_fd_free:
+  131|    160|{
+  132|    160|    io_fd_t *ifd = (io_fd_t *) io_;
+  133|    160|    dbg_if(io_fd_close(io_));
+  ------------------
+  |  |  615|    160|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 160]
+  |  |  |  Branch (615:73): [Folded, False: 160]
+  |  |  ------------------
+  ------------------
+  134|       |
+  135|    160|    return 0;
+  136|    160|}
+
+ws_recv:
+  569|  3.19k|{
+  570|  3.19k|    int rc;
+  571|       |
+  572|  3.19k|    dbg_return_if (ws == NULL || type == NULL || pdata == NULL ||
+  ------------------
+  |  |  619|  19.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:51): [True: 0, False: 3.19k]
+  |  |  |  Branch (619:51): [True: 0, False: 3.19k]
+  |  |  |  Branch (619:51): [True: 0, False: 3.19k]
+  |  |  |  Branch (619:51): [True: 0, False: 3.19k]
+  |  |  |  Branch (619:79): [Folded, False: 3.19k]
+  |  |  ------------------
+  ------------------
+  573|  3.19k|            plen == NULL, WS_CLOSED);
+  574|       |
+  575|  3.19k|    if(ws->ended)
+  ------------------
+  |  Branch (575:8): [True: 0, False: 3.19k]
+  ------------------
+  576|      0|        return WS_CLOSED;
+  577|       |
+  578|  3.50k|    do {
+  579|  3.50k|        if((rc = ws_read_frame(ws)) == 0)
+  ------------------
+  |  Branch (579:12): [True: 3.01k, False: 496]
+  ------------------
+  580|  3.01k|        {
+  581|  3.01k|            *type = ws->msg_type == WS_OP_TEXT ? WS_TEXT : WS_BINARY;
+  ------------------
+  |  Branch (581:21): [True: 1.76k, False: 1.25k]
+  ------------------
+  582|  3.01k|            *pdata = ws->msg;
+  583|  3.01k|            *plen = ws->len;
+  584|  3.01k|            ws->msg_type = 0;
+  585|  3.01k|            return 0;
+  586|  3.01k|        }
+  587|  3.50k|    } while(rc == WS_AGAIN && ws_buffered(ws));
+  ------------------
+  |  Branch (587:13): [True: 336, False: 160]
+  |  Branch (587:31): [True: 313, False: 23]
+  ------------------
+  588|       |
+  589|    183|    return rc;
+  590|  3.19k|}
+fuzz_ws.c:ws_buffered:
+  326|    336|{
+  327|    336|    return io_pending(ws->io) > 0;
+  328|    336|}
+fuzz_ws.c:ws_read_frame:
+  436|  3.50k|{
+  437|  3.50k|    unsigned char h[2], ext[8], mask[4];
+  438|  3.50k|    unsigned long long plen;
+  439|  3.50k|    char ctl[125];
+  440|  3.50k|    char *dst;
+  441|  3.50k|    size_t i, n;
+  442|  3.50k|    int op, fin, code, rc = WS_AGAIN;
+  443|  3.50k|    talarm_t *al = NULL;
+  444|       |
+  445|       |    /* a frame must arrive whole within WS_IO_TIMEOUT */
+  446|  3.50k|    dbg_err_if(timerm_add(WS_IO_TIMEOUT, ws_cb_timeout, ws->io, &al));
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  447|       |
+  448|  3.50k|    nop_err_if(ws_read(ws, h, 2));
+  ------------------
+  |  |  382|  3.50k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 57, False: 3.45k]
+  |  |  |  Branch (382:74): [Folded, False: 3.45k]
+  |  |  ------------------
+  ------------------
+  449|  3.45k|    fin = h[0] & 0x80;
+  450|  3.45k|    op = h[0] & 0x0F;
+  451|  3.45k|    plen = h[1] & 0x7F;
+  452|       |
+  453|       |    /* no extension was agreed: the RSV bits are 0; a client masks */
+  454|  3.45k|    if((h[0] & 0x70) || !(h[1] & 0x80))
+  ------------------
+  |  Branch (454:8): [True: 5, False: 3.44k]
+  |  Branch (454:25): [True: 7, False: 3.43k]
+  ------------------
+  455|     12|        code = WS_CLOSE_PROTOCOL;
+  456|  3.43k|    else if(op != WS_OP_CONT && op != WS_OP_TEXT && op != WS_OP_BINARY &&
+  ------------------
+  |  Branch (456:13): [True: 3.35k, False: 82]
+  |  Branch (456:33): [True: 1.52k, False: 1.82k]
+  |  Branch (456:53): [True: 274, False: 1.25k]
+  ------------------
+  457|    274|            op != WS_OP_CLOSE && op != WS_OP_PING && op != WS_OP_PONG)
+  ------------------
+  |  Branch (457:13): [True: 265, False: 9]
+  |  Branch (457:34): [True: 257, False: 8]
+  |  Branch (457:54): [True: 1, False: 256]
+  ------------------
+  458|      1|        code = WS_CLOSE_PROTOCOL;
+  459|  3.43k|    else
+  460|  3.43k|        code = 0;
+  461|  3.45k|    if(code)
+  ------------------
+  |  Branch (461:8): [True: 13, False: 3.43k]
+  ------------------
+  462|     13|        goto fail;
+  463|       |
+  464|  3.43k|    if(plen == 126)
+  ------------------
+  |  Branch (464:8): [True: 8, False: 3.42k]
+  ------------------
+  465|      8|    {
+  466|      8|        nop_err_if(ws_read(ws, ext, 2));
+  ------------------
+  |  |  382|      8|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 1, False: 7]
+  |  |  |  Branch (382:74): [Folded, False: 7]
+  |  |  ------------------
+  ------------------
+  467|      7|        plen = ((unsigned long long) ext[0] << 8) | ext[1];
+  468|  3.42k|    } else if(plen == 127) {
+  ------------------
+  |  Branch (468:15): [True: 4, False: 3.42k]
+  ------------------
+  469|      4|        nop_err_if(ws_read(ws, ext, 8));
+  ------------------
+  |  |  382|      4|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 1, False: 3]
+  |  |  |  Branch (382:74): [Folded, False: 3]
+  |  |  ------------------
+  ------------------
+  470|     27|        for(plen = 0, i = 0; i < 8; ++i)
+  ------------------
+  |  Branch (470:30): [True: 24, False: 3]
+  ------------------
+  471|     24|            plen = (plen << 8) | ext[i];
+  472|      3|    }
+  473|  3.43k|    nop_err_if(ws_read(ws, mask, 4));
+  ------------------
+  |  |  382|  3.43k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 9, False: 3.42k]
+  |  |  |  Branch (382:74): [Folded, False: 3.42k]
+  |  |  ------------------
+  ------------------
+  474|       |
+  475|  3.42k|    if(op >= WS_OP_CLOSE)
+  ------------------
+  |  Branch (475:8): [True: 271, False: 3.15k]
+  ------------------
+  476|    271|    {   /* control frames: short, whole, between the parts of a message */
+  477|    271|        if(!fin || plen > sizeof ctl)
+  ------------------
+  |  Branch (477:12): [True: 1, False: 270]
+  |  Branch (477:20): [True: 1, False: 269]
+  ------------------
+  478|      2|        {
+  479|      2|            code = WS_CLOSE_PROTOCOL;
+  480|      2|            goto fail;
+  481|      2|        }
+  482|    269|        nop_err_if(ws_read(ws, ctl, (size_t) plen));
+  ------------------
+  |  |  382|    269|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 2, False: 267]
+  |  |  |  Branch (382:74): [Folded, False: 267]
+  |  |  ------------------
+  ------------------
+  483|  1.45k|        for(i = 0; i < plen; ++i)
+  ------------------
+  |  Branch (483:20): [True: 1.19k, False: 267]
+  ------------------
+  484|  1.19k|            ctl[i] ^= mask[i % 4];
+  485|       |
+  486|    267|        if(op == WS_OP_PING)
+  ------------------
+  |  Branch (486:12): [True: 7, False: 260]
+  ------------------
+  487|      7|            nop_err_if(ws_send_frame(ws, WS_OP_PONG, ctl, (size_t) plen));
+  ------------------
+  |  |  382|      7|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 7, False: 0]
+  |  |  |  Branch (382:74): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  488|    260|        else if(op == WS_OP_CLOSE)
+  ------------------
+  |  Branch (488:17): [True: 7, False: 253]
+  ------------------
+  489|      7|        {   /* answer with the client's code (1000 if it gave none) */
+  490|      7|            code = plen >= 2 ? ((unsigned char) ctl[0] << 8) |
+  ------------------
+  |  Branch (490:20): [True: 6, False: 1]
+  ------------------
+  491|      6|                (unsigned char) ctl[1] : WS_CLOSE_NORMAL;
+  492|      7|            (void) ws_send_close(ws, code == 1005 ? WS_CLOSE_NORMAL : code,
+  ------------------
+  |  Branch (492:38): [True: 2, False: 5]
+  ------------------
+  493|      7|                    NULL);
+  494|      7|            ws->ended = 1;
+  495|      7|            rc = WS_CLOSED;
+  496|      7|        }
+  497|    260|        timerm_del(al);
+  498|    260|        return rc;
+  499|    267|    }
+  500|       |
+  501|       |    /* a data frame: a new message, or the next part of the current one */
+  502|  3.15k|    if((op == WS_OP_CONT) != (ws->msg_type != 0))
+  ------------------
+  |  Branch (502:8): [True: 2, False: 3.15k]
+  ------------------
+  503|      2|    {
+  504|      2|        code = WS_CLOSE_PROTOCOL;
+  505|      2|        goto fail;
+  506|      2|    }
+  507|  3.15k|    if(op != WS_OP_CONT)
+  ------------------
+  |  Branch (507:8): [True: 3.07k, False: 76]
+  ------------------
+  508|  3.07k|    {
+  509|  3.07k|        ws->msg_type = op;
+  510|  3.07k|        ws->len = 0;
+  511|  3.07k|    }
+  512|  3.15k|    if(plen > ws->max || ws->len + plen > ws->max)
+  ------------------
+  |  Branch (512:8): [True: 1, False: 3.15k]
+  |  Branch (512:26): [True: 0, False: 3.15k]
+  ------------------
+  513|      1|    {
+  514|      1|        code = WS_CLOSE_TOO_BIG;
+  515|      1|        goto fail;
+  516|      1|    }
+  517|       |
+  518|  3.15k|    n = (size_t) plen;
+  519|  3.15k|    dbg_err_if(ws_grow(ws, n));
+  ------------------
+  |  |  626|  3.15k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.15k]
+  |  |  |  Branch (626:77): [Folded, False: 3.15k]
+  |  |  ------------------
+  ------------------
+  520|  3.15k|    dst = ws->msg + ws->len;
+  521|  3.15k|    nop_err_if(ws_read(ws, dst, n));
+  ------------------
+  |  |  382|  3.15k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 19, False: 3.13k]
+  |  |  |  Branch (382:74): [Folded, False: 3.13k]
+  |  |  ------------------
+  ------------------
+  522|  10.5k|    for(i = 0; i < n; ++i)
+  ------------------
+  |  Branch (522:16): [True: 7.40k, False: 3.13k]
+  ------------------
+  523|  7.40k|        dst[i] ^= mask[i % 4];
+  524|  3.13k|    ws->len += n;
+  525|  3.13k|    timerm_del(al);
+  526|  3.13k|    al = NULL;
+  527|       |
+  528|  3.13k|    if(!fin)
+  ------------------
+  |  Branch (528:8): [True: 83, False: 3.05k]
+  ------------------
+  529|     83|        return WS_AGAIN;
+  530|       |
+  531|  3.05k|    ws->msg[ws->len] = '\0';
+  532|  3.05k|    if(ws->msg_type == WS_OP_TEXT &&
+  ------------------
+  |  Branch (532:8): [True: 1.79k, False: 1.25k]
+  ------------------
+  533|  1.79k|            !ws_utf8_ok((unsigned char *) ws->msg, ws->len))
+  ------------------
+  |  Branch (533:13): [True: 39, False: 1.76k]
+  ------------------
+  534|     39|    {
+  535|     39|        code = WS_CLOSE_DATA;
+  536|     39|        goto fail;
+  537|     39|    }
+  538|       |
+  539|  3.01k|    return 0;
+  540|       |
+  541|     57|fail:
+  542|     57|    if(al)
+  ------------------
+  |  Branch (542:8): [True: 18, False: 39]
+  ------------------
+  543|     18|        timerm_del(al);
+  544|     57|    (void) ws_send_close(ws, code, NULL);
+  545|     57|    ws->ended = 1;
+  546|     57|    return WS_CLOSED;
+  547|     96|err:
+  548|     96|    if(al)
+  ------------------
+  |  Branch (548:8): [True: 96, False: 0]
+  ------------------
+  549|     96|        timerm_del(al);
+  550|     96|    ws->ended = 1;
+  551|     96|    return WS_CLOSED;
+  552|  3.05k|}
+fuzz_ws.c:ws_read:
+  408|  10.3k|{
+  409|  10.3k|    return (len && io_read(ws->io, buf, len) != (ssize_t) len) ? ~0 : 0;
+  ------------------
+  |  Branch (409:13): [True: 9.99k, False: 385]
+  |  Branch (409:20): [True: 89, False: 9.90k]
+  ------------------
+  410|  10.3k|}
+fuzz_ws.c:ws_grow:
+  414|  3.15k|{
+  415|  3.15k|    size_t cap;
+  416|  3.15k|    char *m;
+  417|       |
+  418|       |    /* there is always a buffer, even for an empty first message: it ends
+  419|       |       with a NUL (found by fuzzing: an empty message wrote through NULL) */
+  420|  3.15k|    if(ws->msg != NULL && ws->len + more <= ws->cap)
+  ------------------
+  |  Branch (420:8): [True: 3.04k, False: 112]
+  |  Branch (420:27): [True: 2.94k, False: 94]
+  ------------------
+  421|  2.94k|        return 0;
+  422|    206|    cap = U_MAX(ws->cap * 2, ws->len + more);
+  ------------------
+  |  |   49|    206|#define U_MAX(a, b) ((a) > (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (49:22): [True: 34, False: 172]
+  |  |  ------------------
+  ------------------
+  423|    206|    dbg_err_if((m = u_realloc(ws->msg, cap + 1)) == NULL);
+  ------------------
+  |  |  626|    206|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 206]
+  |  |  |  Branch (626:77): [Folded, False: 206]
+  |  |  ------------------
+  ------------------
+  424|    206|    ws->msg = m;
+  425|    206|    ws->cap = cap;
+  426|       |
+  427|    206|    return 0;
+  428|      0|err:
+  429|      0|    return ~0;
+  430|    206|}
+fuzz_ws.c:ws_utf8_ok:
+  128|  1.79k|{
+  129|  1.79k|    size_t i = 0, n, k;
+  130|  1.79k|    unsigned long cp;
+  131|       |
+  132|  4.41k|    while(i < len)
+  ------------------
+  |  Branch (132:11): [True: 2.65k, False: 1.76k]
+  ------------------
+  133|  2.65k|    {
+  134|  2.65k|        if(s[i] < 0x80)
+  ------------------
+  |  Branch (134:12): [True: 2.37k, False: 279]
+  ------------------
+  135|  2.37k|        {
+  136|  2.37k|            ++i;
+  137|  2.37k|            continue;
+  138|  2.37k|        }
+  139|    279|        if(s[i] >= 0xC2 && s[i] <= 0xDF)
+  ------------------
+  |  Branch (139:12): [True: 260, False: 19]
+  |  Branch (139:28): [True: 80, False: 180]
+  ------------------
+  140|     80|            n = 1, cp = s[i] & 0x1F;
+  141|    199|        else if(s[i] >= 0xE0 && s[i] <= 0xEF)
+  ------------------
+  |  Branch (141:17): [True: 180, False: 19]
+  |  Branch (141:33): [True: 126, False: 54]
+  ------------------
+  142|    126|            n = 2, cp = s[i] & 0x0F;
+  143|     73|        else if(s[i] >= 0xF0 && s[i] <= 0xF4)
+  ------------------
+  |  Branch (143:17): [True: 54, False: 19]
+  |  Branch (143:33): [True: 51, False: 3]
+  ------------------
+  144|     51|            n = 3, cp = s[i] & 0x07;
+  145|     22|        else
+  146|     22|            return 0;
+  147|    257|        if(len - i <= n)
+  ------------------
+  |  Branch (147:12): [True: 3, False: 254]
+  ------------------
+  148|      3|            return 0;       /* cut short */
+  149|    718|        for(k = 1; k <= n; ++k)
+  ------------------
+  |  Branch (149:20): [True: 474, False: 244]
+  ------------------
+  150|    474|        {
+  151|    474|            if((s[i + k] & 0xC0) != 0x80)
+  ------------------
+  |  Branch (151:16): [True: 10, False: 464]
+  ------------------
+  152|     10|                return 0;
+  153|    464|            cp = (cp << 6) | (s[i + k] & 0x3F);
+  154|    464|        }
+  155|    244|        if((n == 2 && (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF))) ||
+  ------------------
+  |  Branch (155:13): [True: 121, False: 123]
+  |  Branch (155:24): [True: 1, False: 120]
+  |  Branch (155:39): [True: 75, False: 45]
+  |  Branch (155:55): [True: 1, False: 74]
+  ------------------
+  156|    242|                (n == 3 && (cp < 0x10000 || cp > 0x10FFFF)))
+  ------------------
+  |  Branch (156:18): [True: 48, False: 194]
+  |  Branch (156:29): [True: 1, False: 47]
+  |  Branch (156:45): [True: 1, False: 46]
+  ------------------
+  157|      4|            return 0;
+  158|    240|        i += n + 1;
+  159|    240|    }
+  160|       |
+  161|  1.76k|    return 1;
+  162|  1.79k|}
+fuzz_ws.c:ws_send_frame:
+   73|     71|{
+   74|     71|    unsigned char h[10];
+   75|     71|    size_t hl = 2, i;
+   76|     71|    talarm_t *al = NULL;
+   77|       |
+   78|     71|    h[0] = (unsigned char) (0x80 | op);    /* FIN: never fragmented here */
+   79|     71|    if(len < 126)
+  ------------------
+  |  Branch (79:8): [True: 71, False: 0]
+  ------------------
+   80|     71|        h[1] = (unsigned char) len;
+   81|      0|    else if(len <= 0xFFFF)
+  ------------------
+  |  Branch (81:13): [True: 0, False: 0]
+  ------------------
+   82|      0|    {
+   83|      0|        h[1] = 126;
+   84|      0|        h[2] = (unsigned char) (len >> 8);
+   85|      0|        h[3] = (unsigned char) len;
+   86|      0|        hl = 4;
+   87|      0|    } else {
+   88|      0|        h[1] = 127;
+   89|      0|        for(i = 0; i < 8; ++i)
+  ------------------
+  |  Branch (89:20): [True: 0, False: 0]
+  ------------------
+   90|      0|            h[2 + i] = (unsigned char) ((unsigned long long) len >> (56 - 8 * i));
+   91|      0|        hl = 10;
+   92|      0|    }
+   93|       |
+   94|     71|    dbg_err_if(timerm_add(WS_IO_TIMEOUT, ws_cb_timeout, ws->io, &al));
+  ------------------
+  |  |  626|     71|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 71]
+  |  |  |  Branch (626:77): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+   95|     71|    nop_err_if(io_write(ws->io, (const char *) h, hl) < (ssize_t) hl);
+  ------------------
+  |  |  382|     71|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 71]
+  |  |  |  Branch (382:74): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+   96|     71|    nop_err_if(len && io_write(ws->io, data, len) < (ssize_t) len);
+  ------------------
+  |  |  382|    212|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 70, False: 1]
+  |  |  |  Branch (382:48): [True: 0, False: 70]
+  |  |  |  Branch (382:74): [Folded, False: 71]
+  |  |  ------------------
+  ------------------
+   97|     71|    nop_err_if(io_flush(ws->io));
+  ------------------
+  |  |  382|     71|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 71, False: 0]
+  |  |  |  Branch (382:74): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+   98|      0|    timerm_del(al);
+   99|       |
+  100|      0|    return 0;
+  101|     71|err:
+  102|     71|    if(al)
+  ------------------
+  |  Branch (102:8): [True: 71, False: 0]
+  ------------------
+  103|     71|        timerm_del(al);
+  104|     71|    return ~0;
+  105|     71|}
+fuzz_ws.c:ws_send_close:
+  109|     64|{
+  110|     64|    char body[125];
+  111|     64|    size_t rl = reason ? U_MIN(strlen(reason), sizeof body - 2) : 0;
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  |  Branch (111:17): [True: 0, False: 64]
+  ------------------
+  112|       |
+  113|     64|    if(ws->close_sent)
+  ------------------
+  |  Branch (113:8): [True: 0, False: 64]
+  ------------------
+  114|      0|        return 0;
+  115|     64|    ws->close_sent = 1;
+  116|       |
+  117|     64|    body[0] = (char) (code >> 8);
+  118|     64|    body[1] = (char) (code & 0xFF);
+  119|     64|    if(rl)
+  ------------------
+  |  Branch (119:8): [True: 0, False: 64]
+  ------------------
+  120|      0|        memcpy(body + 2, reason, rl);
+  121|       |
+  122|     64|    return ws_send_frame(ws, WS_OP_CLOSE, body, 2 + rl);
+  123|     64|}
+
+timerm_run:
+  138|    320|{
+  139|    320|    talarm_t *al;
+  140|    320|    int64_t now;
+  141|       |
+  142|    320|    timerm_adopt();
+  143|       |
+  144|    320|    if(timer == NULL)
+  ------------------
+  |  Branch (144:8): [True: 0, False: 320]
+  ------------------
+  145|      0|        return -1;
+  146|       |
+  147|    320|    for(now = timerm_now();; now = timerm_now())
+  148|    320|    {
+  149|    320|        if((al = TAILQ_FIRST(&timer->alist)) == NULL)
+  ------------------
+  |  |  311|    320|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  |  Branch (149:12): [True: 0, False: 320]
+  ------------------
+  150|      0|            return -1;
+  151|       |
+  152|    320|        if(al->expire > now)
+  ------------------
+  |  Branch (152:12): [True: 320, False: 0]
+  ------------------
+  153|    320|            return (int) U_MIN(al->expire - now, INT32_MAX);
+  ------------------
+  |  |   50|    320|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 320, False: 0]
+  |  |  ------------------
+  ------------------
+  154|       |
+  155|      0|        TAILQ_REMOVE(&timer->alist, al, np);
+  ------------------
+  |  |  184|      0|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|      0|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 0]
+  |  |  ------------------
+  |  |  186|      0|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|      0|        else                                                                \
+  |  |  189|      0|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|      0|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|      0|}
+  ------------------
+  156|      0|        (void) al->cb(al, al->arg);
+  157|      0|    }
+  158|    320|}
+timerm_armed:
+  167|    391|{
+  168|    391|    if(timer == NULL || TAILQ_EMPTY(&timer->alist))
+  ------------------
+  |  |  334|    391|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    391|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    391|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  |  |  |  Branch (334:9): [True: 71, False: 320]
+  |  |  ------------------
+  ------------------
+  |  Branch (168:8): [True: 0, False: 391]
+  ------------------
+  169|     71|        return 0;
+  170|       |
+  171|    320|    timerm_adopt();     /* the alarms may be the parent's */
+  172|       |
+  173|       |    return !TAILQ_EMPTY(&timer->alist);
+  ------------------
+  |  |  334|    320|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    320|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    320|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  174|    391|}
+timerm_wait:
+  191|    320|{
+  192|    320|    int ms, rc;
+  193|       |
+  194|    320|    dbg_return_if (pfd == NULL, ~0);
+  ------------------
+  |  |  619|    320|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 320]
+  |  |  |  Branch (619:79): [Folded, False: 320]
+  |  |  ------------------
+  ------------------
+  195|       |
+  196|    320|    for(;;)
+  197|    320|    {
+  198|    320|        ms = timerm_run();
+  199|       |
+  200|    320|        nop_err_if(*pfd < 0);   /* closed by an alarm */
+  ------------------
+  |  |  382|    320|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 320]
+  |  |  |  Branch (382:74): [Folded, False: 320]
+  |  |  ------------------
+  ------------------
+  201|       |
+  202|       |#ifdef OS_WIN
+  203|       |        {
+  204|       |            fd_set rd, wr;
+  205|       |            struct timeval tv, *ptv = NULL;
+  206|       |
+  207|       |            FD_ZERO(&rd); FD_ZERO(&wr);
+  208|       |            if(events & TIMERM_WAIT_READ)
+  209|       |                FD_SET((SOCKET) *pfd, &rd);
+  210|       |            if(events & TIMERM_WAIT_WRITE)
+  211|       |                FD_SET((SOCKET) *pfd, &wr);
+  212|       |            if(ms >= 0)
+  213|       |            {
+  214|       |                tv.tv_sec = ms / 1000;
+  215|       |                tv.tv_usec = (ms % 1000) * 1000;
+  216|       |                ptv = &tv;
+  217|       |            }
+  218|       |            rc = select(0, &rd, &wr, NULL, ptv);
+  219|       |            if(rc == SOCKET_ERROR)
+  220|       |                return 0;   /* not a socket: files are always ready */
+  221|       |        }
+  222|       |#else
+  223|    320|        {
+  224|    320|            struct pollfd p;
+  225|       |
+  226|    320|            p.fd = *pfd;
+  227|    320|            p.events = ((events & TIMERM_WAIT_READ) ? POLLIN : 0) |
+  ------------------
+  |  Branch (227:25): [True: 249, False: 71]
+  ------------------
+  228|    320|                ((events & TIMERM_WAIT_WRITE) ? POLLOUT : 0);
+  ------------------
+  |  Branch (228:18): [True: 71, False: 249]
+  ------------------
+  229|    320|            p.revents = 0;
+  230|       |
+  231|    320|            rc = poll(&p, 1, ms);
+  232|    320|            if(rc < 0 && errno == EINTR)
+  ------------------
+  |  Branch (232:16): [True: 0, False: 320]
+  |  Branch (232:26): [True: 0, False: 0]
+  ------------------
+  233|      0|                continue;
+  234|    320|            dbg_err_sif(rc < 0);
+  ------------------
+  |  |  627|    320|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 0, False: 320]
+  |  |  |  Branch (627:77): [Folded, False: 320]
+  |  |  ------------------
+  ------------------
+  235|    320|        }
+  236|    320|#endif
+  237|       |        /* ready, or an error the read or write will report */
+  238|    320|        if(rc > 0)
+  ------------------
+  |  Branch (238:12): [True: 320, False: 0]
+  ------------------
+  239|    320|            return 0;
+  240|    320|    }
+  241|       |
+  242|      0|err:
+  243|      0|    return ~0;
+  244|    320|}
+timerm_reschedule:
+  266|  3.57k|{
+  267|  3.57k|    talarm_t *item = NULL;
+  268|       |
+  269|  3.57k|    dbg_return_if (cb == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  270|  3.57k|    dbg_return_if (al == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  271|  3.57k|    dbg_return_if (timer == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  272|       |
+  273|  3.57k|    timerm_adopt();
+  274|       |
+  275|  3.57k|    al->cb = cb;
+  276|  3.57k|    al->arg = arg;
+  277|  3.57k|    al->expire = timerm_now() + (int64_t) secs * 1000;
+  278|  3.57k|    al->owner = timerm_getpid();
+  279|       |
+  280|       |    /* insert al ordered by the expire field (smaller first) */
+  281|  3.57k|    TAILQ_FOREACH(item, &timer->alist, np)
+  ------------------
+  |  |  339|  3.57k|        for((var) = TAILQ_FIRST(head);                                      \
+  |  |  ------------------
+  |  |  |  |  311|  3.57k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |  340|  3.59k|            (var) != TAILQ_END(head);                                       \
+  |  |  ------------------
+  |  |  |  |  315|  3.59k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  |  |  |  Branch (340:13): [True: 14, False: 3.57k]
+  |  |  ------------------
+  |  |  341|  3.57k|            (var) = TAILQ_NEXT(var, field))
+  |  |  ------------------
+  |  |  |  |  319|     14|#define TAILQ_NEXT(elm, field)  ((elm)->field.tqe_next)
+  |  |  ------------------
+  ------------------
+  282|     14|        if(al->expire < item->expire)
+  ------------------
+  |  Branch (282:12): [True: 0, False: 14]
+  ------------------
+  283|      0|            break;
+  284|       |
+  285|  3.57k|    if(item)
+  ------------------
+  |  Branch (285:8): [True: 0, False: 3.57k]
+  ------------------
+  286|      0|        TAILQ_INSERT_BEFORE(item, al, np);
+  ------------------
+  |  |  175|      0|#define TAILQ_INSERT_BEFORE(listelm, elm, field) do {                       \
+  |  |  176|      0|        (elm)->field.tqe_prev = (listelm)->field.tqe_prev;                  \
+  |  |  177|      0|        (elm)->field.tqe_next = (listelm);                                  \
+  |  |  178|      0|        *(listelm)->field.tqe_prev = (elm);                                 \
+  |  |  179|      0|        (listelm)->field.tqe_prev = &(elm)->field.tqe_next;                 \
+  |  |  180|      0|} while (0)
+  |  |  ------------------
+  |  |  |  Branch (180:10): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  287|  3.57k|    else
+  288|  3.57k|        TAILQ_INSERT_TAIL(&timer->alist, al, np);
+  ------------------
+  |  |  154|  3.57k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
+  |  |  155|  3.57k|        (elm)->field.tqe_next = NULL;                                       \
+  |  |  156|  3.57k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
+  |  |  157|  3.57k|        *(head)->tqh_last = (elm);                                          \
+  |  |  158|  3.57k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
+  |  |  159|  3.57k|}
+  ------------------
+  289|       |
+  290|  3.57k|    return 0;
+  291|  3.57k|}
+timerm_add:
+  294|  3.57k|{
+  295|  3.57k|    talarm_t *al = NULL;
+  296|       |
+  297|  3.57k|    dbg_return_if (cb == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  298|  3.57k|    dbg_return_if (pa == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  299|       |
+  300|  3.57k|    if(timer == NULL)
+  ------------------
+  |  Branch (300:8): [True: 1, False: 3.57k]
+  ------------------
+  301|      1|        dbg_err_if(timerm_create(&timer));
+  ------------------
+  |  |  626|      1|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1]
+  |  |  |  Branch (626:77): [Folded, False: 1]
+  |  |  ------------------
+  ------------------
+  302|       |
+  303|  3.57k|    al = (talarm_t*)u_zalloc(sizeof(talarm_t));
+  304|  3.57k|    dbg_err_if(al == NULL);
+  ------------------
+  |  |  626|  3.57k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (626:77): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  305|       |
+  306|  3.57k|    al->timer = timer;
+  307|       |
+  308|  3.57k|    dbg_err_if(timerm_reschedule(al, secs, cb, arg));
+  ------------------
+  |  |  626|  3.57k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (626:77): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  309|       |
+  310|  3.57k|    *pa = al;
+  311|       |
+  312|  3.57k|    return 0;
+  313|      0|err:
+  314|       |    U_FREE(al);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  315|      0|    return ~0;
+  316|  3.57k|}
+timerm_del:
+  332|  3.57k|{
+  333|  3.57k|    dbg_return_if(a == NULL, ~0);
+  ------------------
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  334|       |
+  335|  3.57k|    timerm_adopt();
+  336|       |
+  337|  3.57k|    if(timer && timerm_alarm_pending(a))
+  ------------------
+  |  Branch (337:8): [True: 3.57k, False: 0]
+  |  Branch (337:17): [True: 3.57k, False: 0]
+  ------------------
+  338|  3.57k|        TAILQ_REMOVE(&timer->alist, a, np);
+  ------------------
+  |  |  184|  3.57k|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|  3.57k|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 3.57k]
+  |  |  ------------------
+  |  |  186|  3.57k|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|  3.57k|        else                                                                \
+  |  |  189|  3.57k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|  3.57k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|  3.57k|}
+  ------------------
+  339|       |
+  340|  3.57k|    U_FREE(a);
+  ------------------
+  |  |   47|  3.57k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.57k]
+  |  |  ------------------
+  ------------------
+  341|       |
+  342|  3.57k|    return 0;
+  343|  3.57k|}
+timer.c:timerm_adopt:
+  112|  7.79k|{
+  113|  7.79k|    static pid_t list_pid = 0;
+  114|  7.79k|    pid_t pid = timerm_getpid();
+  115|  7.79k|    talarm_t *al, *next;
+  116|       |
+  117|  7.79k|    if(timer == NULL || list_pid == pid)
+  ------------------
+  |  Branch (117:8): [True: 0, False: 7.79k]
+  |  Branch (117:25): [True: 7.79k, False: 1]
+  ------------------
+  118|  7.79k|        return;
+  119|      1|    list_pid = pid;
+  120|       |
+  121|      1|    for(al = TAILQ_FIRST(&timer->alist); al != NULL; al = next)
+  ------------------
+  |  |  311|      1|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  |  Branch (121:42): [True: 0, False: 1]
+  ------------------
+  122|      0|    {
+  123|      0|        next = TAILQ_NEXT(al, np);
+  ------------------
+  |  |  319|      0|#define TAILQ_NEXT(elm, field)  ((elm)->field.tqe_next)
+  ------------------
+  124|      0|        if(al->owner != pid)
+  ------------------
+  |  Branch (124:12): [True: 0, False: 0]
+  ------------------
+  125|       |            TAILQ_REMOVE(&timer->alist, al, np);
+  ------------------
+  |  |  184|      0|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|      0|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 0]
+  |  |  ------------------
+  |  |  186|      0|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|      0|        else                                                                \
+  |  |  189|      0|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|      0|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|      0|}
+  ------------------
+  126|      0|    }
+  127|      1|}
+timer.c:timerm_now:
+   94|  3.89k|{
+   95|       |#if defined(OS_WIN)
+   96|       |    return (int64_t) GetTickCount64();
+   97|       |#else
+   98|  3.89k|#if defined(CLOCK_MONOTONIC)
+   99|  3.89k|    struct timespec ts;
+  100|       |
+  101|  3.89k|    if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+  ------------------
+  |  Branch (101:8): [True: 3.89k, False: 0]
+  ------------------
+  102|  3.89k|        return (int64_t) ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+  103|      0|#endif
+  104|      0|    return (int64_t) time(0) * 1000;
+  105|  3.89k|#endif
+  106|  3.89k|}
+timer.c:timerm_getpid:
+   71|  11.3k|{
+   72|  11.3k|#ifdef TIMERM_PID_CACHE
+   73|  11.3k|    static int registered = 0;
+   74|       |
+   75|  11.3k|    if(timerm_pid == 0)
+  ------------------
+  |  Branch (75:8): [True: 1, False: 11.3k]
+  ------------------
+   76|      1|    {
+   77|      1|        if(!registered)
+  ------------------
+  |  Branch (77:12): [True: 1, False: 0]
+  ------------------
+   78|      1|        {
+   79|      1|            if(pthread_atfork(NULL, NULL, timerm_forget_pid))
+  ------------------
+  |  Branch (79:16): [True: 0, False: 1]
+  ------------------
+   80|      0|                return getpid();
+   81|      1|            registered = 1;
+   82|      1|        }
+   83|      1|        timerm_pid = getpid();
+   84|      1|    }
+   85|       |
+   86|  11.3k|    return timerm_pid;
+   87|       |#else
+   88|       |    return getpid();
+   89|       |#endif
+   90|  11.3k|}
+timer.c:timerm_create:
+  247|      1|{
+  248|      1|    timerm_t *t = NULL;
+  249|       |
+  250|      1|    dbg_return_if (pt == NULL, ~0);
+  ------------------
+  |  |  619|      1|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 1]
+  |  |  |  Branch (619:79): [Folded, False: 1]
+  |  |  ------------------
+  ------------------
+  251|       |
+  252|      1|    t = u_zalloc(sizeof(timerm_t));
+  253|      1|    dbg_err_if(t == NULL);
+  ------------------
+  |  |  626|      1|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1]
+  |  |  |  Branch (626:77): [Folded, False: 1]
+  |  |  ------------------
+  ------------------
+  254|       |
+  255|      1|    TAILQ_INIT(&t->alist);
+  ------------------
+  |  |  135|      1|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|      1|        (head)->tqh_first = NULL;                                           \
+  |  |  137|      1|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|      1|}
+  ------------------
+  256|       |
+  257|      1|    *pt = t;
+  258|       |
+  259|      1|    return 0;
+  260|      0|err:
+  261|      0|    return ~0;
+  262|      1|}
+timer.c:timerm_alarm_pending:
+  319|  3.57k|{
+  320|  3.57k|    talarm_t *t;
+  321|       |
+  322|  3.57k|    TAILQ_FOREACH(t, &timer->alist,np)
+  ------------------
+  |  |  339|  3.57k|        for((var) = TAILQ_FIRST(head);                                      \
+  |  |  ------------------
+  |  |  |  |  311|  3.57k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |  340|  3.59k|            (var) != TAILQ_END(head);                                       \
+  |  |  ------------------
+  |  |  |  |  315|  3.59k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  |  |  |  Branch (340:13): [True: 3.59k, False: 0]
+  |  |  ------------------
+  |  |  341|  3.57k|            (var) = TAILQ_NEXT(var, field))
+  |  |  ------------------
+  |  |  |  |  319|     14|#define TAILQ_NEXT(elm, field)  ((elm)->field.tqe_next)
+  |  |  ------------------
+  ------------------
+  323|  3.59k|    {
+  324|  3.59k|        if(t == a)
+  ------------------
+  |  Branch (324:12): [True: 3.57k, False: 14]
+  ------------------
+  325|  3.57k|            return 1;   /* found */
+  326|  3.59k|    }
+  327|      0|    return 0;
+  328|  3.57k|}
+

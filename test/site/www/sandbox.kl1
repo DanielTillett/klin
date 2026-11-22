@@ -1,0 +1,50 @@
+<%!
+    #include <errno.h>
+    #include <signal.h>
+    #include <string.h>
+    #include <unistd.h>
+    #include <sys/mman.h>
+    #include <sys/socket.h>
+    #include <sys/syscall.h>
+
+    static const char *sandbox_errno(int r)
+    {
+        return r == 0 ? "OK" : errno == EPERM ? "EPERM" :
+            errno == ENOENT ? "ENOENT" : "OTHER";
+    }
+%><%
+    /* ?try=link: a call outside the sandbox's list (EPERM in a sandbox,
+       ENOENT without); ?try=unshare: one the sandbox kills the worker for;
+       argument checks (EPERM in a sandbox, OK without): ?try=netlink, a
+       socket family other than UNIX, IPv4 and IPv6; ?try=wx, memory both
+       writable and executable; ?try=parent, a signal (0: none sent) to
+       klind; and what a worker may do: ?try=inet6, ?try=self */
+    const char *t = request_get_arg(request, "try");
+    void *m;
+    int r;
+
+    if(t && !strcmp(t, "link"))
+    {
+        r = link("/nonexistent-klin-sandbox", "/tmp/klin-sandbox-link");
+        io_printf(out, "%s\n", sandbox_errno(r));
+    } else if(t && !strcmp(t, "unshare")) {
+        (void) syscall(SYS_unshare, 0x10000000 /* CLONE_NEWUSER */);
+        io_printf(out, "survived\n");
+    } else if(t && (!strcmp(t, "netlink") || !strcmp(t, "inet6"))) {
+        r = socket(!strcmp(t, "inet6") ? AF_INET6 : AF_NETLINK,
+                !strcmp(t, "inet6") ? SOCK_STREAM : SOCK_RAW, 0);
+        io_printf(out, "%s\n", sandbox_errno(r < 0 ? -1 : 0));
+        if(r >= 0)
+            close(r);
+    } else if(t && !strcmp(t, "wx")) {
+        m = mmap(NULL, 4096, PROT_READ | PROT_WRITE | PROT_EXEC,
+                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        io_printf(out, "%s\n", sandbox_errno(m == MAP_FAILED ? -1 : 0));
+        if(m != MAP_FAILED)
+            munmap(m, 4096);
+    } else if(t && !strcmp(t, "parent")) {
+        io_printf(out, "%s\n", sandbox_errno(kill(getppid(), 0)));
+    } else if(t && !strcmp(t, "self")) {
+        io_printf(out, "%s\n", sandbox_errno(kill(getpid(), 0)));
+    }
+%>

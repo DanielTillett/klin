@@ -1,0 +1,4270 @@
+fuzz_translate.c:fuzz_string:
+   30|    167|{
+   31|    167|    char *s = malloc(size + 1);
+   32|       |
+   33|    167|    if(s == NULL)
+  ------------------
+  |  Branch (33:8): [True: 0, False: 167]
+  ------------------
+   34|      0|        abort();
+   35|    167|    memcpy(s, data, size);
+   36|    167|    s[size] = '\0';
+   37|    167|    return s;
+   38|    167|}
+
+LLVMFuzzerTestOneInput:
+   19|    167|{
+   20|    167|    static trans_info_t ti;
+   21|    167|    io_t *in = NULL, *out = NULL;
+   22|    167|    char *input;
+   23|    167|    int fd;
+   24|       |
+   25|    167|    if (size > FUZZ_MAX)
+  ------------------
+  |  Branch (25:9): [True: 0, False: 167]
+  ------------------
+   26|      0|        return 0;
+   27|    167|    input = fuzz_string(data, size);
+   28|    167|    memset(&ti, 0, sizeof ti);
+   29|    167|    (void) u_strlcpy(ti.uri, "/fuzz.kl1", sizeof ti.uri);
+   30|    167|    (void) u_strlcpy(ti.file_in, "fuzz.kl1", sizeof ti.file_in);
+   31|       |
+   32|    167|    if ((fd = open("/dev/null", O_WRONLY)) < 0)
+  ------------------
+  |  Branch (32:9): [True: 0, False: 167]
+  ------------------
+   33|      0|        abort();
+   34|    167|    if (io_mem_create(input, size, 0, &in) == 0 &&
+  ------------------
+  |  Branch (34:9): [True: 167, False: 0]
+  ------------------
+   35|    167|            io_fd_create(fd, IO_FD_CLOSE, &out) == 0)
+  ------------------
+  |  Branch (35:13): [True: 167, False: 0]
+  ------------------
+   36|    167|        (void) translate_script_to_c(in, out, &ti);
+   37|      0|    else
+   38|      0|        close(fd);
+   39|    167|    if (in)
+  ------------------
+  |  Branch (39:9): [True: 167, False: 0]
+  ------------------
+   40|    167|        io_free(in);
+   41|    167|    if (out)
+  ------------------
+  |  Branch (41:9): [True: 167, False: 0]
+  ------------------
+   42|    167|        io_free(out);
+   43|    167|    free(input);
+   44|    167|    return 0;
+   45|    167|}
+
+strlcat:
+   34|    167|{
+   35|    167|	char *d = dst;
+   36|    167|	const char *s = src;
+   37|    167|	size_t n = siz;
+   38|    167|	size_t dlen;
+   39|       |
+   40|       |	/* Find the end of dst and adjust bytes left but don't go past end */
+   41|  1.00k|	while (n-- != 0 && *d != '\0')
+  ------------------
+  |  Branch (41:9): [True: 1.00k, False: 0]
+  |  Branch (41:21): [True: 835, False: 167]
+  ------------------
+   42|    835|		d++;
+   43|    167|	dlen = d - dst;
+   44|    167|	n = siz - dlen;
+   45|       |
+   46|    167|	if (n == 0)
+  ------------------
+  |  Branch (46:6): [True: 0, False: 167]
+  ------------------
+   47|      0|		return(dlen + strlen(s));
+   48|  1.50k|	while (*s != '\0') {
+  ------------------
+  |  Branch (48:9): [True: 1.33k, False: 167]
+  ------------------
+   49|  1.33k|		if (n != 1) {
+  ------------------
+  |  Branch (49:7): [True: 1.33k, False: 0]
+  ------------------
+   50|  1.33k|			*d++ = *s;
+   51|  1.33k|			n--;
+   52|  1.33k|		}
+   53|  1.33k|		s++;
+   54|  1.33k|	}
+   55|    167|	*d = '\0';
+   56|       |
+   57|    167|	return(dlen + (s - src));	/* count does not include NUL */
+   58|    167|}
+
+strlcpy:
+   28|    501|{
+   29|    501|	char *d = dst;
+   30|    501|	const char *s = src;
+   31|    501|	size_t n = siz;
+   32|       |
+   33|       |	/* Copy as many bytes as will fit */
+   34|    501|	if (n != 0 && --n != 0) {
+  ------------------
+  |  Branch (34:6): [True: 501, False: 0]
+  |  Branch (34:16): [True: 501, False: 0]
+  ------------------
+   35|  4.17k|		do {
+   36|  4.17k|			if ((*d++ = *s++) == 0)
+  ------------------
+  |  Branch (36:8): [True: 501, False: 3.67k]
+  ------------------
+   37|    501|				break;
+   38|  4.17k|		} while (--n != 0);
+  ------------------
+  |  Branch (38:12): [True: 3.67k, False: 0]
+  ------------------
+   39|    501|	}
+   40|       |
+   41|       |	/* Not enough room in dst, add NUL and traverse rest of src */
+   42|    501|	if (n == 0) {
+  ------------------
+  |  Branch (42:6): [True: 0, False: 501]
+  ------------------
+   43|      0|		if (siz != 0)
+  ------------------
+  |  Branch (43:7): [True: 0, False: 0]
+  ------------------
+   44|      0|			*d = '\0';		/* NUL-terminate dst */
+   45|      0|		while (*s++)
+  ------------------
+  |  Branch (45:10): [True: 0, False: 0]
+  ------------------
+   46|      0|			;
+   47|      0|	}
+   48|       |
+   49|    501|	return(s - src - 1);	/* count does not include NUL */
+   50|    501|}
+
+u_log_write_ex:
+  147|     25|{
+  148|     25|    va_list ap;
+  149|     25|    err_type savederr;
+  ------------------
+  |  |   39|     25|#define err_type int
+  ------------------
+  150|     25|    int rc;
+  151|     25|    char msg[U_MAX_LOG_LENGTH], strerr[STRERR_BUFSZ], errmsg[STRERR_BUFSZ];
+  152|       |
+  153|     25|    save_errno(savederr);
+  ------------------
+  |  |   40|     25|#define save_errno(var) var = errno;
+  ------------------
+  154|       |
+  155|       |    /* build the message to send to the log system */
+  156|     25|    va_start(ap, fmt); 
+  157|     25|    rc = vsnprintf(msg, U_MAX_LOG_LENGTH, fmt, ap);
+  158|     25|    va_end(ap);
+  159|       |
+  160|     25|    if(rc >= U_MAX_LOG_LENGTH)
+  ------------------
+  |  Branch (160:8): [True: 0, False: 25]
+  ------------------
+  161|      0|        goto err; /* message too long */
+  162|       |
+  163|       |    /* init empty strings */
+  164|     25|    errmsg[0] = strerr[0] = 0;
+  165|       |
+  166|     25|    if(err)
+  ------------------
+  |  Branch (166:8): [True: 0, False: 25]
+  ------------------
+  167|      0|    {
+  168|      0|        u_strerror_r(err, strerr, sizeof(strerr));
+  169|      0|        snprintf(errmsg, sizeof(errmsg), "[errno: %d, %s]", err, strerr);
+  170|      0|        errmsg[sizeof(errmsg) - 1] = 0; /* paranoid set */
+  171|      0|    } 
+  172|       |
+  173|       |    /* ok, send the msg to the logger */
+  174|     25|    if(flags & LOG_WRITE_FLAG_CTX)
+  ------------------
+  |  Branch (174:8): [True: 25, False: 0]
+  ------------------
+  175|     25|        u_log(fac, lev, "[%s][%d:%s:%d:%s] %s %s", 
+  176|     25|               u_log_label(lev), getpid(), file, line, func, msg, errmsg);
+  177|      0|    else
+  178|      0|        u_log(fac, lev, "[%s][%d:::] %s %s", 
+  179|      0|               u_log_label(lev), getpid(), msg, errmsg);
+  180|       |
+  181|     25|    restore_errno(savederr);
+  ------------------
+  |  |   41|     25|#define restore_errno(var) errno = var;
+  ------------------
+  182|     25|    return 0;
+  183|      0|err:
+  184|       |    restore_errno(savederr);
+  ------------------
+  |  |   41|      0|#define restore_errno(var) errno = var;
+  ------------------
+  185|      0|    return ~0;
+  186|     25|}
+log.c:u_log_lock:
+   61|     25|{
+   62|     25|    if(f_lock)
+  ------------------
+  |  Branch (62:8): [True: 0, False: 25]
+  ------------------
+   63|      0|        f_lock(f_lock_arg);
+   64|     25|}
+log.c:u_log_unlock:
+   67|     25|{
+   68|     25|    if(f_unlock)
+  ------------------
+  |  Branch (68:8): [True: 0, False: 25]
+  ------------------
+   69|      0|        f_unlock(f_unlock_arg);
+   70|     25|}
+log.c:u_log:
+  100|     25|{
+  101|     25|    va_list ap;
+  102|     25|    char buf[U_MAX_LOG_LENGTH];
+  103|       |
+  104|     25|    va_start(ap, fmt); 
+  105|       |
+  106|     25|    u_log_lock();
+  107|       |
+  108|     25|    if(hook)
+  ------------------
+  |  Branch (108:8): [True: 0, False: 25]
+  ------------------
+  109|      0|    {
+  110|      0|        if(vsnprintf(buf, U_MAX_LOG_LENGTH, fmt, ap) > U_MAX_LOG_LENGTH)
+  ------------------
+  |  Branch (110:12): [True: 0, False: 0]
+  ------------------
+  111|      0|        {
+  112|      0|            va_end(ap);
+  113|      0|            u_log_unlock();
+  114|      0|            return ~0; /* buffer too small */
+  115|      0|        }
+  116|      0|        buf[U_MAX_LOG_LENGTH - 1] = 0; 
+  117|      0|        hook(hook_arg, level, buf);
+  118|      0|    } else 
+  119|     25|        vsyslog(fac | level, fmt, ap);
+  120|       |
+  121|     25|    u_log_unlock();
+  122|       |
+  123|     25|    va_end(ap);
+  124|       |
+  125|     25|    return 0;
+  126|     25|}
+log.c:u_log_label:
+   73|     25|{
+   74|     25|    switch(lev)
+   75|     25|    {
+   76|      0|    case LOG_DEBUG:  
+  ------------------
+  |  Branch (76:5): [True: 0, False: 25]
+  ------------------
+   77|      0|        return "dbg"; 
+   78|      0|    case LOG_INFO:   
+  ------------------
+  |  Branch (78:5): [True: 0, False: 25]
+  ------------------
+   79|      0|        return "inf"; 
+   80|      0|    case LOG_NOTICE: 
+  ------------------
+  |  Branch (80:5): [True: 0, False: 25]
+  ------------------
+   81|      0|        return "ntc"; 
+   82|     25|    case LOG_WARNING:
+  ------------------
+  |  Branch (82:5): [True: 25, False: 0]
+  ------------------
+   83|     25|        return "wrn";
+   84|      0|    case LOG_ERR:    
+  ------------------
+  |  Branch (84:5): [True: 0, False: 25]
+  ------------------
+   85|      0|        return "err";
+   86|      0|    case LOG_CRIT:   
+  ------------------
+  |  Branch (86:5): [True: 0, False: 25]
+  ------------------
+   87|      0|        return "crt";
+   88|      0|    case LOG_ALERT:   
+  ------------------
+  |  Branch (88:5): [True: 0, False: 25]
+  ------------------
+   89|      0|        return "alr";
+   90|      0|    case LOG_EMERG:   
+  ------------------
+  |  Branch (90:5): [True: 0, False: 25]
+  ------------------
+   91|      0|        return "emg";
+   92|      0|    default: 
+  ------------------
+  |  Branch (92:5): [True: 0, False: 25]
+  ------------------
+   93|       |        syslog(LOG_WARNING, 
+   94|      0|               "[wrn][%d:::] unknown log level: %d", getpid(), lev);
+   95|      0|        return "unk";
+   96|     25|    }
+   97|     25|}
+
+u_malloc:
+   62|  13.3k|{
+   63|  13.3k|    return u_memory_fns.f_malloc(sz);
+   64|  13.3k|}
+u_zalloc:
+   74|  13.5k|{
+   75|  13.5k|    return u_memory_fns.f_calloc(1, sz);
+   76|  13.5k|}
+u_free:
+   86|  37.3k|{
+   87|  37.3k|    if (ptr)
+  ------------------
+  |  Branch (87:9): [True: 26.8k, False: 10.5k]
+  ------------------
+   88|  26.8k|        u_memory_fns.f_free(ptr);
+   89|  37.3k|}
+
+u_strlcpy:
+  204|    501|{
+  205|    501|    return (strlcpy(dst, src, size) >= size ? ~0 : 0);
+  ------------------
+  |  Branch (205:13): [True: 0, False: 501]
+  ------------------
+  206|    501|}
+u_strlcat:
+  224|    167|{
+  225|    167|    return (strlcat(dst, src, size) >= size ? ~0 : 0);
+  ------------------
+  |  Branch (225:13): [True: 0, False: 167]
+  ------------------
+  226|    167|}
+u_snprintf:
+  360|  6.33k|{
+  361|  6.33k|    int wr;
+  362|  6.33k|    va_list ap;
+  363|       |
+  364|  6.33k|    va_start(ap, fmt);
+  365|  6.33k|    wr = vsnprintf(str, size, fmt, ap);
+  366|  6.33k|    va_end(ap);
+  367|       |
+  368|  6.33k|    dbg_err_sif (wr < 0);               /* output error */
+  ------------------
+  |  |  627|  6.33k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 0, False: 6.33k]
+  |  |  |  Branch (627:77): [Folded, False: 6.33k]
+  |  |  ------------------
+  ------------------
+  369|  6.33k|    dbg_err_if (size <= (size_t) wr);   /* overflow */
+  ------------------
+  |  |  626|  6.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.33k]
+  |  |  |  Branch (626:77): [Folded, False: 6.33k]
+  |  |  ------------------
+  ------------------
+  370|       |
+  371|       |    /* was: "dbg_err_if (wr >= (int) size);" bad cast ? */
+  372|       |
+  373|  6.33k|    return 0;
+  374|      0|err:
+  375|      0|    return ~0;
+  376|  6.33k|}
+u_use_unused_args:
+  481|  4.16k|{
+  482|  4.16k|    dummy = 0;
+  483|  4.16k|    return;
+  484|  4.16k|}
+
+io_close:
+  441|  3.50k|{
+  442|  3.50k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  443|       |
+  444|  3.50k|    if(io->close)
+  ------------------
+  |  Branch (444:8): [True: 3.50k, False: 0]
+  ------------------
+  445|  3.50k|        dbg_err_if(io->close(io));
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  446|       |
+  447|  3.50k|    return 0;
+  448|      0|err:
+  449|      0|    return ~0;
+  450|  3.50k|}
+io_free:
+  468|  3.50k|{
+  469|  3.50k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  470|  3.50k|    dbg_err_if (io->refcnt == 0);
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  471|       |
+  472|       |    /* skip if this io_t has been dup'd and there are still one or more 
+  473|       |       references in use */
+  474|  3.50k|    if(--io->refcnt)
+  ------------------
+  |  Branch (474:8): [True: 0, False: 3.50k]
+  ------------------
+  475|      0|        return 0;
+  476|       |
+  477|       |    /* flush, remove and free all codecs */
+  478|  3.50k|    dbg_if(io_codecs_remove(io));
+  ------------------
+  |  |  615|  3.50k|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (615:73): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  479|       |
+  480|  3.50k|    dbg_if(io_flush(io));
+  ------------------
+  |  |  615|  3.50k|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (615:73): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  481|       |
+  482|       |    /* flush and close the stream (but don't free it) */
+  483|  3.50k|    dbg_if(io_close(io));
+  ------------------
+  |  |  615|  3.50k|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (615:73): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  484|       |
+  485|       |    /* free per-type alloc'ed data */
+  486|  3.50k|    if(io->free)
+  ------------------
+  |  Branch (486:8): [True: 3.50k, False: 0]
+  ------------------
+  487|  3.50k|        dbg_if(io->free(io));
+  ------------------
+  |  |  615|  3.50k|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (615:73): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  488|       |
+  489|  3.50k|    U_FREE(io->rbuf);
+  ------------------
+  |  |   47|  3.50k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  490|  3.50k|    U_FREE(io->ubuf);
+  ------------------
+  |  |   47|  3.50k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  491|  3.50k|    U_FREE(io->wbuf);
+  ------------------
+  |  |   47|  3.50k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  492|  3.50k|    U_FREE(io->name);
+  ------------------
+  |  |   47|  3.50k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  493|  3.50k|    U_FREE(io);
+  ------------------
+  |  |   47|  3.50k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+  494|       |
+  495|  3.50k|    return 0;
+  496|      0|err:
+  497|      0|    return ~0;
+  498|  3.50k|}
+io_read:
+  591|  86.6k|{
+  592|  86.6k|    char *out = buf;
+  593|  86.6k|    size_t wr;
+  594|  86.6k|    ssize_t c;
+  595|       |
+  596|  86.6k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  86.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 86.6k]
+  |  |  |  Branch (626:77): [Folded, False: 86.6k]
+  |  |  ------------------
+  ------------------
+  597|  86.6k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  86.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 86.6k]
+  |  |  |  Branch (626:77): [Folded, False: 86.6k]
+  |  |  ------------------
+  ------------------
+  598|       |
+  599|  86.6k|    if(io->eof)
+  ------------------
+  |  Branch (599:8): [True: 0, False: 86.6k]
+  ------------------
+  600|      0|        return 0;
+  601|       |
+  602|       |    /* never read past the read limit */
+  603|  86.6k|    size = io_read_room(io, size);
+  604|       |
+  605|   170k|    while(size)
+  ------------------
+  |  Branch (605:11): [True: 86.6k, False: 83.3k]
+  ------------------
+  606|  86.6k|    {
+  607|  86.6k|        if(io->rcount == 0)
+  ------------------
+  |  Branch (607:12): [True: 6.66k, False: 80.0k]
+  ------------------
+  608|  6.66k|        {
+  609|  6.66k|            dbg_err_if((c = io_underflow(io)) < 0);
+  ------------------
+  |  |  626|  6.66k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.66k]
+  |  |  |  Branch (626:77): [Folded, False: 6.66k]
+  |  |  ------------------
+  ------------------
+  610|  6.66k|            if(c == 0)
+  ------------------
+  |  Branch (610:16): [True: 3.32k, False: 3.33k]
+  ------------------
+  611|  3.32k|                break;
+  612|  6.66k|        }
+  613|       |        /* copy out data */
+  614|  83.3k|        wr = U_MIN(io->rcount, size); 
+  ------------------
+  |  |   50|  83.3k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 83.3k]
+  |  |  ------------------
+  ------------------
+  615|  83.3k|        memcpy(out, io->rbuf + io->roff, wr);
+  616|  83.3k|        io->rcount -= wr;
+  617|  83.3k|        io->roff += wr;
+  618|  83.3k|        io->rtot += wr;
+  619|  83.3k|        out += wr;
+  620|  83.3k|        size -= wr;
+  621|  83.3k|    }
+  622|       |
+  623|  86.6k|    return out - buf;
+  624|      0|err:
+  625|      0|    return -1;
+  626|  86.6k|}
+io_vprintf:
+  643|  39.1k|{
+  644|  39.1k|    enum { BUFSZ = 2048 };
+  645|  39.1k|    char *bbuf = NULL; 
+  646|  39.1k|    int sz;
+  647|  39.1k|    char buf[BUFSZ];
+  648|  39.1k|    va_list apcpy;
+  649|       |
+  650|       |    /* not dbg_err_if: 'err' ends apcpy, which is not started yet */
+  651|  39.1k|    dbg_return_if (io == NULL, -1);
+  ------------------
+  |  |  619|  39.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 39.1k]
+  |  |  |  Branch (619:79): [Folded, False: 39.1k]
+  |  |  ------------------
+  ------------------
+  652|  39.1k|    dbg_return_if (fmt == NULL, -1);
+  ------------------
+  |  |  619|  39.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 39.1k]
+  |  |  |  Branch (619:79): [Folded, False: 39.1k]
+  |  |  ------------------
+  ------------------
+  653|       |
+  654|       |#ifdef VA_COPY_UNAVAIL
+  655|       |    u_unused_args(apcpy);
+  656|       |#elif defined(VA_LIST_BY_VALUE)
+  657|       |    /* we're sure about vnsprintf not consuming its 'ap' argument, so just do
+  658|       |     * simple aliasing here: remember not to va_end() the alias */
+  659|       |    apcpy = ap;
+  660|       |#else
+  661|       |    /* vnsprintf modifies the va_list so make a copy before using it */
+  662|  39.1k|    kl_va_copy(apcpy, ap);
+  ------------------
+  |  |   20|  39.1k|    #define kl_va_copy(a, b)  va_copy(a, b)
+  ------------------
+  663|  39.1k|#endif
+  664|       |
+  665|       |    /* build the message to print */
+  666|  39.1k|    sz = vsnprintf(buf, BUFSZ, fmt, ap);
+  667|       |
+  668|  39.1k|    if(sz >= BUFSZ)
+  ------------------
+  |  Branch (668:8): [True: 0, False: 39.1k]
+  ------------------
+  669|      0|    {   
+  670|      0|#ifndef VA_COPY_UNAVAIL
+  671|       |        /* stack buffer too small, alloc a bigger one on the heap */
+  672|      0|        bbuf = (char*)u_malloc(++sz);
+  673|      0|        dbg_err_if(bbuf == NULL);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  674|       |
+  675|       |        /* use apcpy in case ap has been consumed by previous vsnprintf */
+  676|      0|        if((sz = vsnprintf(bbuf, sz, fmt, apcpy)) > 0)
+  ------------------
+  |  Branch (676:12): [True: 0, False: 0]
+  ------------------
+  677|      0|            dbg_err_if(io_write(io, bbuf, sz) < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  678|       |
+  679|      0|        U_FREE(bbuf);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  680|       |#else
+  681|       |        /* push out all we can (sz-BUFSZ+1 bytes will be lost) */
+  682|       |        warn("last %d byte(s) could not be written out", sz - BUFSZ + 1);
+  683|       |        dbg_err_if(io_write(io, buf, BUFSZ) < 0);
+  684|       |#endif
+  685|  39.1k|    } else if(sz > 0) {
+  ------------------
+  |  Branch (685:15): [True: 39.1k, False: 0]
+  ------------------
+  686|  39.1k|        dbg_err_if(io_write(io, buf, sz) < 0);
+  ------------------
+  |  |  626|  39.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 39.1k]
+  |  |  |  Branch (626:77): [Folded, False: 39.1k]
+  |  |  ------------------
+  ------------------
+  687|  39.1k|    }
+  688|       |
+  689|  39.1k|#if !defined(VA_LIST_BY_VALUE) && !defined(VA_COPY_UNAVAIL)
+  690|  39.1k|    va_end(apcpy);
+  691|  39.1k|#endif
+  692|  39.1k|    return 0;
+  693|      0|err:
+  694|      0|#if !defined(VA_LIST_BY_VALUE) && !defined(VA_COPY_UNAVAIL)
+  695|       |    va_end(apcpy);
+  696|      0|#endif
+  697|      0|    return -1;
+  698|  39.1k|}
+io_printf:
+  715|  39.1k|{
+  716|  39.1k|    va_list ap;
+  717|  39.1k|    ssize_t ret;
+  718|       |
+  719|  39.1k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  39.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 39.1k]
+  |  |  |  Branch (626:77): [Folded, False: 39.1k]
+  |  |  ------------------
+  ------------------
+  720|  39.1k|    dbg_err_if (fmt == NULL);
+  ------------------
+  |  |  626|  39.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 39.1k]
+  |  |  |  Branch (626:77): [Folded, False: 39.1k]
+  |  |  ------------------
+  ------------------
+  721|       |
+  722|       |    /* build the message to print */
+  723|  39.1k|    va_start(ap, fmt); /* init variable list arguments */
+  724|       |
+  725|  39.1k|    ret = io_vprintf(io, fmt, ap);
+  726|       |
+  727|  39.1k|    va_end(ap);
+  728|       |
+  729|  39.1k|    return ret;
+  730|      0|err:
+  731|      0|    return -1;
+  732|  39.1k|}
+io_flush:
+  745|  3.61k|{
+  746|  3.61k|    ssize_t c;
+  747|  3.61k|    size_t off = 0;
+  748|       |
+  749|  3.61k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  3.61k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.61k]
+  |  |  |  Branch (626:77): [Folded, False: 3.61k]
+  |  |  ------------------
+  ------------------
+  750|       | 
+  751|  3.90k|    while(io->wcount)
+  ------------------
+  |  Branch (751:11): [True: 285, False: 3.61k]
+  ------------------
+  752|    285|    {
+  753|    285|        c = io->write(io, io->wbuf + off, io->wcount);
+  754|    285|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|    285|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 285]
+  |  |  |  Branch (626:77): [Folded, False: 285]
+  |  |  ------------------
+  ------------------
+  755|    285|        if(c == 0)
+  ------------------
+  |  Branch (755:12): [True: 0, False: 285]
+  ------------------
+  756|      0|            break;
+  757|       |    
+  758|    285|        io->wcount -= c;
+  759|    285|        off += c;
+  760|    285|    }
+  761|       |
+  762|  3.61k|    return 0;
+  763|      0|err:
+  764|      0|    return -1;
+  765|  3.61k|}
+io_write:
+  811|  47.8k|{
+  812|  47.8k|    size_t sz = 0, rem = size;
+  813|  47.8k|    ssize_t c = 0;
+  814|       |
+  815|  47.8k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  47.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.8k]
+  |  |  |  Branch (626:77): [Folded, False: 47.8k]
+  |  |  ------------------
+  ------------------
+  816|  47.8k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  47.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.8k]
+  |  |  |  Branch (626:77): [Folded, False: 47.8k]
+  |  |  ------------------
+  ------------------
+  817|       |    
+  818|  47.8k|    if(io->wbuf == NULL)
+  ------------------
+  |  Branch (818:8): [True: 167, False: 47.6k]
+  ------------------
+  819|    167|        dbg_err_if(io_wbuf_alloc(io)); /* alloc the write buffer */
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  820|       |
+  821|  95.7k|    while(rem)
+  ------------------
+  |  Branch (821:11): [True: 47.9k, False: 47.8k]
+  ------------------
+  822|  47.9k|    {
+  823|       |        /* a large block the codec leaves unchanged: skip the copy */
+  824|  47.9k|        if(rem >= io->wbsz && (c = io_write_passthru(io, buf, rem)) != 0)
+  ------------------
+  |  Branch (824:12): [True: 0, False: 47.9k]
+  |  Branch (824:31): [True: 0, False: 0]
+  ------------------
+  825|      0|        {
+  826|      0|            dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  827|      0|            buf += c;
+  828|      0|            rem -= (size_t) c;
+  829|      0|            continue;
+  830|      0|        }
+  831|       |
+  832|  47.9k|        if(IO_WBUF_FULL(io)) /* if there's no more free space */
+  ------------------
+  |  |   26|  47.9k|#define IO_WBUF_FULL(io) (io->wbsz == io->wcount)
+  |  |  ------------------
+  |  |  |  Branch (26:26): [True: 118, False: 47.8k]
+  |  |  ------------------
+  ------------------
+  833|    118|            dbg_err_if(io_flush(io));
+  ------------------
+  |  |  626|    118|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 118]
+  |  |  |  Branch (626:77): [Folded, False: 118]
+  |  |  ------------------
+  ------------------
+  834|       |
+  835|  47.9k|        sz = IO_WBUF_AVAIL(io);
+  ------------------
+  |  |   25|  47.9k|#define IO_WBUF_AVAIL(io) (io->wbsz - io->wcount)
+  ------------------
+  836|  47.9k|        c = io_transfer(io, io->wbuf + io->wcount, &sz, buf, rem);
+  837|  47.9k|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  838|  47.9k|        dbg_err_if(c == 0 && sz == 0); /* some bytes MUST be read or written */
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  839|       |
+  840|  47.9k|        io->wcount += sz;
+  841|  47.9k|        buf += c;
+  842|  47.9k|        rem -= c;
+  843|  47.9k|    }
+  844|       |
+  845|  47.8k|    return size;
+  846|      0|err:
+  847|      0|    return -1;
+  848|  47.8k|}
+io_getc:
+  878|  86.6k|{
+  879|  86.6k|    return io_read(io, pc, 1);
+  880|  86.6k|}
+io_codecs_remove:
+ 1052|  3.50k|{
+ 1053|  3.50k|    codec_t *codec;
+ 1054|  3.50k|    int rc = 0;
+ 1055|       |
+ 1056|  3.50k|    dbg_return_if (io == NULL, ~0);
+  ------------------
+  |  |  619|  3.50k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (619:79): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+ 1057|       |
+ 1058|  3.50k|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|  3.50k|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|  3.50k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|  3.50k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (1058:8): [True: 0, False: 3.50k]
+  ------------------
+ 1059|      0|    {
+ 1060|      0|        if(io->wbuf)
+  ------------------
+  |  Branch (1060:12): [True: 0, False: 0]
+  ------------------
+ 1061|      0|            dbg_ifb(io_chain_flush(io))
+  ------------------
+  |  |  616|      0|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+ 1062|      0|                rc++;
+ 1063|       |
+ 1064|      0|        while((codec = TAILQ_FIRST(&io->codec_chain)) != NULL)
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  |  Branch (1064:15): [True: 0, False: 0]
+  ------------------
+ 1065|      0|        {
+ 1066|      0|            TAILQ_REMOVE(&io->codec_chain, codec, np);
+  ------------------
+  |  |  184|      0|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|      0|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 0]
+  |  |  ------------------
+  |  |  186|      0|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|      0|        else                                                                \
+  |  |  189|      0|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|      0|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|      0|}
+  ------------------
+ 1067|      0|            codec_free(codec);
+ 1068|      0|        }
+ 1069|      0|    }
+ 1070|       |
+ 1071|  3.50k|    return rc;
+ 1072|  3.50k|}
+io_name_get:
+ 1249|     25|{
+ 1250|     25|    size_t min = 0;
+ 1251|       |
+ 1252|     25|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|     25|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 25]
+  |  |  |  Branch (626:77): [Folded, False: 25]
+  |  |  ------------------
+  ------------------
+ 1253|     25|    dbg_err_if (io->name == NULL);
+  ------------------
+  |  |  626|     25|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 25, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1254|      0|    dbg_err_if (name == NULL);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1255|      0|    dbg_err_if (sz < 2);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1256|       |
+ 1257|      0|    min = U_MIN(sz-1, strlen(io->name));
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+ 1258|       |
+ 1259|      0|    memcpy(name, io->name, min);
+ 1260|      0|    name[min] = 0;
+ 1261|       |    
+ 1262|      0|    return 0;
+ 1263|     25|err:
+ 1264|     25|    return ~0;
+ 1265|      0|}
+io_prv_create:
+ 1345|  3.50k|{
+ 1346|  3.50k|    io_t *io = NULL;
+ 1347|       |
+ 1348|  3.50k|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+ 1349|       |
+ 1350|  3.50k|    io = u_zalloc(dev_sz);
+ 1351|  3.50k|    dbg_err_if(io == NULL);
+  ------------------
+  |  |  626|  3.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.50k]
+  |  |  |  Branch (626:77): [Folded, False: 3.50k]
+  |  |  ------------------
+  ------------------
+ 1352|       |
+ 1353|  3.50k|    TAILQ_INIT(&io->codec_chain);
+  ------------------
+  |  |  135|  3.50k|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|  3.50k|        (head)->tqh_first = NULL;                                           \
+  |  |  137|  3.50k|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|  3.50k|}
+  ------------------
+ 1354|       |
+ 1355|       |    /* set refcnt to 1 */
+ 1356|  3.50k|    io->refcnt++;
+ 1357|       |
+ 1358|       |    /* size of the io device struct (that's also a 'castable' io_t) */
+ 1359|  3.50k|    io->size = dev_sz;
+ 1360|       |
+ 1361|  3.50k|    *pio = io;
+ 1362|       |
+ 1363|  3.50k|    return 0;
+ 1364|      0|err:
+ 1365|       |    U_FREE(io);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1366|      0|    return -1;
+ 1367|  3.50k|}
+io.c:io_underflow:
+  502|  6.66k|{
+  503|  6.66k|    ssize_t c;
+  504|  6.66k|    size_t sz;
+  505|       |
+  506|  6.66k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  6.66k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.66k]
+  |  |  |  Branch (626:77): [Folded, False: 6.66k]
+  |  |  ------------------
+  ------------------
+  507|       |
+  508|  6.66k|    if(io->rbuf == NULL)
+  ------------------
+  |  Branch (508:8): [True: 3.33k, False: 3.32k]
+  ------------------
+  509|  3.33k|        dbg_err_if(io_rbuf_alloc(io)); /* alloc the read buffer */
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  510|       |
+  511|  6.66k|    while(io->rcount == 0)
+  ------------------
+  |  Branch (511:11): [True: 6.66k, False: 0]
+  ------------------
+  512|  6.66k|    {
+  513|  6.66k|        int read_codecs = !TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs;
+  ------------------
+  |  |  334|  13.3k|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|  6.66k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|  6.66k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (513:27): [True: 0, False: 6.66k]
+  |  Branch (513:61): [True: 0, False: 0]
+  ------------------
+  514|       |
+  515|  6.66k|        if(io->ucount == 0)
+  ------------------
+  |  Branch (515:12): [True: 6.66k, False: 0]
+  ------------------
+  516|  6.66k|        {
+  517|  6.66k|            if(!read_codecs)
+  ------------------
+  |  Branch (517:16): [True: 6.66k, False: 0]
+  ------------------
+  518|  6.66k|            {
+  519|  6.66k|                dbg_err_if((c = io->read(io, io->rbuf, io->rbsz)) < 0);
+  ------------------
+  |  |  626|  6.66k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.66k]
+  |  |  |  Branch (626:77): [Folded, False: 6.66k]
+  |  |  ------------------
+  ------------------
+  520|  6.66k|                io->rcount = c;
+  521|  6.66k|                io->roff = 0;
+  522|  6.66k|                break;
+  523|  6.66k|            }
+  524|       |
+  525|      0|            if(io->ubuf == NULL)
+  ------------------
+  |  Branch (525:16): [True: 0, False: 0]
+  ------------------
+  526|      0|            {
+  527|      0|                io->ubuf = (char*)u_malloc(io->rbsz);
+  528|      0|                dbg_err_if(io->ubuf == NULL);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  529|      0|            }
+  530|       |
+  531|      0|            dbg_err_if((c = io->read(io, io->ubuf, io->rbsz)) < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  532|      0|            if(c == 0)
+  ------------------
+  |  Branch (532:16): [True: 0, False: 0]
+  ------------------
+  533|      0|            {   /* eof, try to get some buffered (already transformed) bytes
+  534|       |                   from the codec */
+  535|      0|                sz = io->rbsz;
+  536|      0|                c = io_chain_flush_chunk(io, io->rbuf, &sz);
+  537|      0|                dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  538|      0|                io->rcount = sz;
+  539|      0|                io->roff = 0;
+  540|      0|                if(c == 0)
+  ------------------
+  |  Branch (540:20): [True: 0, False: 0]
+  ------------------
+  541|      0|                    io->eof++;
+  542|      0|                break;
+  543|      0|            }
+  544|      0|            io->ucount = c;
+  545|      0|        }
+  546|       |
+  547|       |        /* Drain any raw bytes left by read codecs before refilling, even
+  548|       |           if the chain has since been removed or made write-only. */
+  549|      0|        sz = io->rbsz;
+  550|      0|        if(!read_codecs)
+  ------------------
+  |  Branch (550:12): [True: 0, False: 0]
+  ------------------
+  551|      0|        {
+  552|      0|            c = U_MIN(sz, io->ucount);
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  553|      0|            memcpy(io->rbuf, io->ubuf + io->uoff, c);
+  554|      0|            sz = c;
+  555|      0|        } else
+  556|      0|            dbg_err_if((c = io_transfer(io, io->rbuf, &sz,
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  557|      0|                io->ubuf + io->uoff, io->ucount)) < 0);
+  558|      0|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  559|      0|        dbg_err_if(c == 0 && sz == 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  560|      0|        io->ucount -= c;
+  561|      0|        if(io->ucount == 0)
+  ------------------
+  |  Branch (561:12): [True: 0, False: 0]
+  ------------------
+  562|      0|            io->uoff = 0;
+  563|      0|        else
+  564|      0|            io->uoff += c;
+  565|       |
+  566|      0|        io->rcount = sz;
+  567|      0|        io->roff = 0;
+  568|      0|    }
+  569|       |
+  570|  6.66k|    return io->rcount;
+  571|      0|err:
+  572|      0|    return -1;
+  573|  6.66k|}
+io.c:io_rbuf_alloc:
+  210|  3.33k|{
+  211|  3.33k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  212|       |    
+  213|  3.33k|    io->rbsz = IO_RD_BUFSZ; /* set the buffer size */
+  214|       |
+  215|  3.33k|    io->rbuf = (char*)u_malloc(io->rbsz);
+  216|  3.33k|    dbg_err_if(io->rbuf == NULL);
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  217|  3.33k|    io->roff = 0;
+  218|       |
+  219|  3.33k|    return 0;
+  220|      0|err:
+  221|      0|    return ~0;
+  222|  3.33k|}
+io.c:io_wbuf_alloc:
+  226|    167|{
+  227|    167|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  228|       |
+  229|       |    /* set the buffer size (unless chosen with io_set_write_buffer_size) */
+  230|    167|    if(io->wbsz == 0)
+  ------------------
+  |  Branch (230:8): [True: 167, False: 0]
+  ------------------
+  231|    167|        io->wbsz = IO_WR_BUFSZ;
+  232|       |
+  233|       |    /* if a dup'd io_t already alloc'd a buffer then use it */
+  234|    167|    io->wbuf = (char*)u_malloc(io->wbsz);
+  235|    167|    dbg_err_if(io->wbuf == NULL);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  236|       |
+  237|    167|    return 0;
+  238|      0|err:
+  239|      0|    return ~0;
+  240|    167|}
+io.c:io_transfer:
+  320|  47.9k|{
+  321|  47.9k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  322|  47.9k|    dbg_err_if (src == NULL);
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  323|  47.9k|    dbg_err_if (dst == NULL);
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  324|  47.9k|    dbg_err_if (dcount == NULL);
+  ------------------
+  |  |  626|  47.9k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 47.9k]
+  |  |  |  Branch (626:77): [Folded, False: 47.9k]
+  |  |  ------------------
+  ------------------
+  325|       |
+  326|  47.9k|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|  47.9k|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|  47.9k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|  47.9k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (326:8): [True: 0, False: 47.9k]
+  ------------------
+  327|      0|    {
+  328|      0|        return io_transform(io, TAILQ_FIRST(&io->codec_chain), 
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  329|      0|            dst, dcount, src, sz); 
+  330|  47.9k|    } else {
+  331|  47.9k|        ssize_t wr = U_MIN(sz, *dcount); 
+  ------------------
+  |  |   50|  47.9k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 47.8k, False: 118]
+  |  |  ------------------
+  ------------------
+  332|  47.9k|        memcpy(dst, src, wr);
+  333|  47.9k|        *dcount = wr;
+  334|  47.9k|        return wr;
+  335|  47.9k|    }
+  336|      0|err:
+  337|      0|    return -1;
+  338|  47.9k|}
+io.c:io_read_room:
+ 1198|  86.6k|{
+ 1199|  86.6k|    if(!io->rlimited)
+  ------------------
+  |  Branch (1199:8): [True: 86.6k, False: 0]
+  ------------------
+ 1200|  86.6k|        return size;
+ 1201|       |
+ 1202|      0|    return io->rtot >= io->rlimit ? 0 : U_MIN(size, io->rlimit - io->rtot);
+  ------------------
+  |  |   50|      0|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  |  Branch (1202:12): [True: 0, False: 0]
+  ------------------
+ 1203|  86.6k|}
+
+io_fd_create:
+  150|    167|{
+  151|    167|    io_fd_t *ifd = NULL;
+  152|    167|    io_t *io = NULL;
+  153|       |
+  154|    167|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  155|       |
+  156|       |    /* create through an io_t pointer: storing one in 'ifd' via a cast
+  157|       |       (io_t**)&ifd breaks strict aliasing (LTO then miscompiled it) */
+  158|    167|    dbg_err_if(io_create(io_fd_t, &io));
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  159|    167|    ifd = (io_fd_t *) io;
+  160|       |
+  161|    167|    ifd->io.type = IO_TYPE_FD;
+  162|       |
+  163|    167|    ifd->fd = fd;
+  164|    167|    ifd->flags = flags;
+  165|    167|    ifd->io.read = io_fd_read;
+  166|    167|    ifd->io.write = io_fd_write;
+  167|    167|    ifd->io.seek = io_fd_seek;
+  168|    167|    ifd->io.tell = io_fd_tell;
+  169|    167|    ifd->io.close = io_fd_close; 
+  170|    167|    ifd->io.free = io_fd_free; 
+  171|       |    
+  172|       |#ifdef OS_WIN
+  173|       |    u_long ret;
+  174|       |    if(ioctlsocket(fd, FIONREAD, &ret) == 0)
+  175|       |        ifd->issock++; /* is a socket, use recv/send instead of read/write  */
+  176|       |    _setmode(fd, _O_BINARY); /* we never want Windows CR/LF translation */
+  177|       |#endif
+  178|       |
+  179|    167|    *pio = (io_t*)ifd;
+  180|       |
+  181|    167|    return 0;
+  182|      0|err:
+  183|      0|    if(ifd)
+  ------------------
+  |  Branch (183:8): [True: 0, False: 0]
+  ------------------
+  184|      0|        io_free((io_t*)ifd);
+  185|      0|    return ~0;
+  186|    167|}
+iofd.c:io_fd_write:
+   65|    285|{
+   66|    285|    io_fd_t *ifd = (io_fd_t *) io_;
+   67|    285|    ssize_t c;
+   68|       |
+   69|    285|    dbg_return_if (ifd == NULL, ~0);
+  ------------------
+  |  |  619|    285|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 285]
+  |  |  |  Branch (619:79): [Folded, False: 285]
+  |  |  ------------------
+  ------------------
+   70|    285|    dbg_return_if (buf == NULL, ~0);
+  ------------------
+  |  |  619|    285|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 285]
+  |  |  |  Branch (619:79): [Folded, False: 285]
+  |  |  ------------------
+  ------------------
+   71|       | 
+   72|    285|again:
+   73|    285|    if(timerm_armed())
+  ------------------
+  |  Branch (73:8): [True: 0, False: 285]
+  ------------------
+   74|      0|        nop_err_if(timerm_wait(&ifd->fd, TIMERM_WAIT_WRITE));
+  ------------------
+  |  |  382|      0|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 0]
+  |  |  |  Branch (382:74): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+   75|       |
+   76|    285|    if(!ifd->issock)
+  ------------------
+  |  Branch (76:8): [True: 285, False: 0]
+  ------------------
+   77|    285|        c = write(ifd->fd, buf, size);
+   78|      0|    else
+   79|      0|        c = send(ifd->fd, buf, size, 0);
+   80|       |    /* if(c < 0 && (errno == EINTR || errno == EAGAIN)) */
+   81|    285|    if(c < 0 && errno == EINTR)
+  ------------------
+  |  Branch (81:8): [True: 0, False: 285]
+  |  Branch (81:17): [True: 0, False: 0]
+  ------------------
+   82|      0|        goto again; 
+   83|       |
+   84|    285|    dbg_err_sif(c == -1); 
+  ------------------
+  |  |  627|    285|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 0, False: 285]
+  |  |  |  Branch (627:77): [Folded, False: 285]
+  |  |  ------------------
+  ------------------
+   85|       |
+   86|    285|    return c;
+   87|      0|err:
+   88|      0|    return -1;
+   89|    285|}
+iofd.c:io_fd_close:
+  109|    334|{
+  110|    334|    io_fd_t *ifd = (io_fd_t *) io_;
+  111|    334|    dbg_return_if (ifd == NULL, ~0);
+  ------------------
+  |  |  619|    334|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 334]
+  |  |  |  Branch (619:79): [Folded, False: 334]
+  |  |  ------------------
+  ------------------
+  112|       |    
+  113|    334|    if(ifd->flags & IO_FD_CLOSE && ifd->fd != -1)
+  ------------------
+  |  Branch (113:8): [True: 334, False: 0]
+  |  Branch (113:36): [True: 167, False: 167]
+  ------------------
+  114|    167|    {
+  115|       |#ifdef OS_WIN
+  116|       |        if(ifd->issock)
+  117|       |        {
+  118|       |            closesocket(ifd->fd);
+  119|       |        } else
+  120|       |            close(ifd->fd);
+  121|       |#else
+  122|    167|            close(ifd->fd);
+  123|    167|#endif
+  124|    167|        ifd->fd = -1;
+  125|    167|    }
+  126|       |
+  127|    334|    return 0;
+  128|    334|}
+iofd.c:io_fd_free:
+  131|    167|{
+  132|    167|    io_fd_t *ifd = (io_fd_t *) io_;
+  133|    167|    dbg_if(io_fd_close(io_));
+  ------------------
+  |  |  615|    167|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 167]
+  |  |  |  Branch (615:73): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  134|       |
+  135|    167|    return 0;
+  136|    167|}
+
+io_mem_create:
+  142|  3.33k|{
+  143|  3.33k|    io_mem_t *im = NULL;
+  144|  3.33k|    io_t *io = NULL;
+  145|       |
+  146|  3.33k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  147|  3.33k|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  148|       |
+  149|  3.33k|    dbg_err_if(io_create(io_mem_t, &io));   /* not (io_t**)&im: aliasing */
+  ------------------
+  |  |  626|  3.33k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (626:77): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  150|  3.33k|    im = (io_mem_t *) io;
+  151|       |
+  152|  3.33k|    im->io.type = IO_TYPE_MEM;
+  153|       |
+  154|  3.33k|    im->buf = buf;
+  155|  3.33k|    im->size = size;
+  156|  3.33k|    im->flags = flags;
+  157|  3.33k|    im->off = 0;
+  158|  3.33k|    im->io.read = io_mem_read;
+  159|  3.33k|    im->io.write = io_mem_write;
+  160|  3.33k|    im->io.seek = io_mem_seek;
+  161|  3.33k|    im->io.tell = io_mem_tell;
+  162|  3.33k|    im->io.close = io_mem_close; 
+  163|  3.33k|    im->io.free = io_mem_free; 
+  164|       |
+  165|  3.33k|    *pio = (io_t*)im;
+  166|       |
+  167|  3.33k|    return 0;
+  168|      0|err:
+  169|      0|    if(im)
+  ------------------
+  |  Branch (169:8): [True: 0, False: 0]
+  ------------------
+  170|      0|        io_free((io_t *)im);
+  171|      0|    return ~0;
+  172|  3.33k|}
+iomem.c:io_mem_read:
+   56|  6.66k|{
+   57|  6.66k|    io_mem_t *im = (io_mem_t *) io_;
+   58|  6.66k|    char *ptr;
+   59|  6.66k|    size_t sz;
+   60|       |
+   61|  6.66k|    dbg_return_if (im == NULL, -1);
+  ------------------
+  |  |  619|  6.66k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 6.66k]
+  |  |  |  Branch (619:79): [Folded, False: 6.66k]
+  |  |  ------------------
+  ------------------
+   62|  6.66k|    dbg_return_if (buf == NULL, -1);
+  ------------------
+  |  |  619|  6.66k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 6.66k]
+  |  |  |  Branch (619:79): [Folded, False: 6.66k]
+  |  |  ------------------
+  ------------------
+   63|       |
+   64|  6.66k|    sz = U_MIN(size, im->size - im->off);
+  ------------------
+  |  |   50|  6.66k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 0, False: 6.66k]
+  |  |  ------------------
+  ------------------
+   65|  6.66k|    if(sz)
+  ------------------
+  |  Branch (65:8): [True: 3.33k, False: 3.32k]
+  ------------------
+   66|  3.33k|    {
+   67|  3.33k|        ptr = im->buf + im->off; 
+   68|  3.33k|        memcpy(buf, ptr, sz);
+   69|  3.33k|        im->off += sz;
+   70|  3.33k|    }
+   71|       |
+   72|  6.66k|    return sz;
+   73|  6.66k|}
+iomem.c:io_mem_close:
+   96|  3.33k|{
+   97|  3.33k|    io_mem_t *im = (io_mem_t *) io_;
+   98|       |    u_unused_args(im);
+  ------------------
+  |  |   54|  3.33k|#define u_unused_args(...) u_use_unused_args(NULL, __VA_ARGS__)
+  ------------------
+   99|  3.33k|    return 0;
+  100|  3.33k|}
+iomem.c:io_mem_free:
+  103|  3.33k|{
+  104|  3.33k|    io_mem_t *im = (io_mem_t *) io_;
+  105|  3.33k|    dbg_return_if (im == NULL, ~0);
+  ------------------
+  |  |  619|  3.33k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 3.33k]
+  |  |  |  Branch (619:79): [Folded, False: 3.33k]
+  |  |  ------------------
+  ------------------
+  106|       |
+  107|  3.33k|    if(im->flags & IO_MEM_FREE_BUF)
+  ------------------
+  |  Branch (107:8): [True: 0, False: 3.33k]
+  ------------------
+  108|      0|    {
+  109|      0|        U_FREE(im->buf);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  110|      0|        im->buf = NULL;
+  111|      0|        im->size = im->off = 0;
+  112|      0|    }
+  113|       |
+  114|  3.33k|    return 0;
+  115|  3.33k|}
+
+parser_run:
+   64|    167|{
+   65|    167|    enum { BUFSZ = 262144 }; /* a big buffer is good to better zip *.kl1 */
+   66|    167|    #define set_state( s ) \
+   67|    167|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+   68|    167|    #define fetch_next_char()                                           \
+   69|    167|        do { prev = c;                                                  \
+   70|    167|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+   71|    167|            if(rc == 0) break;                                          \
+   72|    167|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+   73|    167|                p->line++;                                              \
+   74|    167|        } while(0)
+   75|    167|    int tmp;
+   76|    167|    char c = 0, prev;
+   77|    167|    char buf[BUFSZ];
+   78|    167|    size_t idx = 0;
+   79|    167|    ssize_t rc;
+   80|       |
+   81|    167|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+   82|       |    
+   83|    167|    buf[0] = 0;
+   84|    167|    prev = 0;
+   85|       |
+   86|    167|    dbg_err_if(p->line > 1);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+   87|       |
+   88|    167|    fetch_next_char();
+  ------------------
+  |  |   69|    167|        do { prev = c;                                                  \
+  |  |   70|    167|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|    167|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 0, False: 167]
+  |  |  ------------------
+  |  |   72|    167|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 2, False: 165]
+  |  |  |  Branch (72:29): [True: 10, False: 155]
+  |  |  |  Branch (72:41): [True: 12, False: 0]
+  |  |  |  Branch (72:50): [True: 2, False: 10]
+  |  |  ------------------
+  |  |   73|    167|                p->line++;                                              \
+  |  |   74|    167|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+   89|       |
+   90|  70.3k|    while(rc > 0)
+  ------------------
+  |  Branch (90:11): [True: 70.1k, False: 163]
+  ------------------
+   91|  70.1k|    {
+   92|  70.1k|        prev = c;
+   93|  70.1k|        switch(p->state)
+   94|  70.1k|        {
+   95|    167|        case S_START:
+  ------------------
+  |  Branch (95:9): [True: 167, False: 69.9k]
+  ------------------
+   96|    167|            set_state(S_HTML);
+  ------------------
+  |  |   67|    167|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+   97|    167|            continue;
+   98|  22.3k|        case S_HTML:
+  ------------------
+  |  Branch (98:9): [True: 22.3k, False: 47.7k]
+  ------------------
+   99|  22.3k|            if(c == '<')
+  ------------------
+  |  Branch (99:16): [True: 6.65k, False: 15.7k]
+  ------------------
+  100|  6.65k|                set_state(S_WAIT_PERC);
+  ------------------
+  |  |   67|  6.65k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 6.65k]
+  |  |  ------------------
+  ------------------
+  101|  22.3k|            break;
+  102|  6.64k|        case S_WAIT_PERC:
+  ------------------
+  |  Branch (102:9): [True: 6.64k, False: 63.4k]
+  ------------------
+  103|  6.64k|            if(c == '%')
+  ------------------
+  |  Branch (103:16): [True: 4.13k, False: 2.50k]
+  ------------------
+  104|  4.13k|            {
+  105|  4.13k|                if(idx && --idx) /* erase < */
+  ------------------
+  |  Branch (105:20): [True: 4.13k, False: 0]
+  |  Branch (105:27): [True: 3.09k, False: 1.03k]
+  ------------------
+  106|  3.09k|                {
+  107|  3.09k|                    buf[idx] = 0;
+  108|  3.09k|                    dbg_err_if(parser_on_block(p, buf, idx));
+  ------------------
+  |  |  626|  3.09k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.09k]
+  |  |  |  Branch (626:77): [Folded, False: 3.09k]
+  |  |  ------------------
+  ------------------
+  109|  3.09k|                    buf[0] = 0; idx = 0;
+  110|  3.09k|                }
+  111|  4.13k|                set_state(S_START_CODE);
+  ------------------
+  |  |   67|  4.13k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 4.13k]
+  |  |  ------------------
+  ------------------
+  112|  4.13k|                p->code_line = p->line; /* save start code line number  */
+  113|  4.13k|                fetch_next_char();      /* get cmd char (!,@,etc.)      */
+  ------------------
+  |  |   69|  4.13k|        do { prev = c;                                                  \
+  |  |   70|  4.13k|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|  4.13k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 4.13k]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 4.13k]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|  4.13k|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 6, False: 4.13k]
+  |  |  ------------------
+  |  |   72|  4.13k|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 607, False: 3.52k]
+  |  |  |  Branch (72:29): [True: 364, False: 3.15k]
+  |  |  |  Branch (72:41): [True: 971, False: 0]
+  |  |  |  Branch (72:50): [True: 607, False: 364]
+  |  |  ------------------
+  |  |   73|  4.13k|                p->line++;                                              \
+  |  |   74|  4.13k|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 4.13k]
+  |  |  ------------------
+  ------------------
+  114|  4.13k|                continue;
+  115|  4.13k|            } else {
+  116|  2.50k|                set_state(S_HTML);
+  ------------------
+  |  |   67|  2.50k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 2.50k]
+  |  |  ------------------
+  ------------------
+  117|  2.50k|                continue;
+  118|  2.50k|            }
+  119|      0|            break;
+  120|  4.13k|        case S_START_CODE:
+  ------------------
+  |  Branch (120:9): [True: 4.13k, False: 66.0k]
+  ------------------
+  121|  4.13k|            if(isspace((unsigned char) c))
+  ------------------
+  |  Branch (121:16): [True: 1.24k, False: 2.88k]
+  ------------------
+  122|  1.24k|                p->cmd_code = 0;
+  123|  2.88k|            else {
+  124|  2.88k|                p->cmd_code = c;
+  125|  2.88k|                fetch_next_char();
+  ------------------
+  |  |   69|  2.88k|        do { prev = c;                                                  \
+  |  |   70|  2.88k|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|  2.88k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 2.88k]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 2.88k]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|  2.88k|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 3, False: 2.88k]
+  |  |  ------------------
+  |  |   72|  2.88k|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 930, False: 1.95k]
+  |  |  |  Branch (72:29): [True: 446, False: 1.50k]
+  |  |  |  Branch (72:41): [True: 1.37k, False: 0]
+  |  |  |  Branch (72:50): [True: 930, False: 446]
+  |  |  ------------------
+  |  |   73|  2.88k|                p->line++;                                              \
+  |  |   74|  2.88k|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 2.88k]
+  |  |  ------------------
+  ------------------
+  126|  2.88k|            }
+  127|  4.13k|            set_state(S_CODE);
+  ------------------
+  |  |   67|  4.13k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 4.13k]
+  |  |  ------------------
+  ------------------
+  128|  4.13k|            continue;
+  129|  31.6k|        case S_CODE:
+  ------------------
+  |  Branch (129:9): [True: 31.6k, False: 38.5k]
+  ------------------
+  130|  31.6k|            if(c == '%') 
+  ------------------
+  |  Branch (130:16): [True: 5.18k, False: 26.4k]
+  ------------------
+  131|  5.18k|                set_state(S_WAIT_GT);
+  ------------------
+  |  |   67|  5.18k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 5.18k]
+  |  |  ------------------
+  ------------------
+  132|  31.6k|            break;
+  133|  5.17k|        case S_WAIT_GT:
+  ------------------
+  |  Branch (133:9): [True: 5.17k, False: 64.9k]
+  ------------------
+  134|  5.17k|            if(c == '>')
+  ------------------
+  |  Branch (134:16): [True: 4.04k, False: 1.12k]
+  ------------------
+  135|  4.04k|            {
+  136|  4.04k|                if(idx && --idx) /* erase % */
+  ------------------
+  |  Branch (136:20): [True: 4.04k, False: 0]
+  |  Branch (136:27): [True: 3.83k, False: 213]
+  ------------------
+  137|  3.83k|                {
+  138|  3.83k|                    buf[idx] = 0;
+  139|  3.83k|                    dbg_err_if(parser_on_block(p, buf, idx));
+  ------------------
+  |  |  626|  3.83k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 4, False: 3.83k]
+  |  |  |  Branch (626:77): [Folded, False: 3.83k]
+  |  |  ------------------
+  ------------------
+  140|  3.83k|                    buf[0] = 0; idx = 0;
+  141|  3.83k|                }
+  142|  4.04k|                fetch_next_char();
+  ------------------
+  |  |   69|  4.04k|        do { prev = c;                                                  \
+  |  |   70|  4.04k|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|  4.04k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 4.04k]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 4.04k]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|  4.04k|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 5, False: 4.03k]
+  |  |  ------------------
+  |  |   72|  4.04k|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 351, False: 3.68k]
+  |  |  |  Branch (72:29): [True: 528, False: 3.15k]
+  |  |  |  Branch (72:41): [True: 879, False: 0]
+  |  |  |  Branch (72:50): [True: 351, False: 528]
+  |  |  ------------------
+  |  |   73|  4.03k|                p->line++;                                              \
+  |  |   74|  4.03k|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 4.03k]
+  |  |  ------------------
+  ------------------
+  143|  4.04k|                p->cmd_code = 0;
+  144|  4.04k|                set_state(S_HTML);
+  ------------------
+  |  |   67|  4.04k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 4.04k]
+  |  |  ------------------
+  ------------------
+  145|  4.04k|                continue;
+  146|  4.04k|            } else {
+  147|  1.12k|                set_state(S_CODE);
+  ------------------
+  |  |   67|  1.12k|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 1.12k]
+  |  |  ------------------
+  ------------------
+  148|  1.12k|                continue;
+  149|  1.12k|            }
+  150|      0|            break;
+  151|      0|        case S_EAT_NEWLINE:
+  ------------------
+  |  Branch (151:9): [True: 0, False: 70.1k]
+  ------------------
+  152|      0|            if(c == CR || c == LF)
+  ------------------
+  |  Branch (152:16): [True: 0, False: 0]
+  |  Branch (152:27): [True: 0, False: 0]
+  ------------------
+  153|      0|            {
+  154|      0|                fetch_next_char();
+  ------------------
+  |  |   69|      0|        do { prev = c;                                                  \
+  |  |   70|      0|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|      0|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 0, False: 0]
+  |  |  ------------------
+  |  |   72|      0|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 0, False: 0]
+  |  |  |  Branch (72:29): [True: 0, False: 0]
+  |  |  |  Branch (72:41): [True: 0, False: 0]
+  |  |  |  Branch (72:50): [True: 0, False: 0]
+  |  |  ------------------
+  |  |   73|      0|                p->line++;                                              \
+  |  |   74|      0|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  155|      0|                continue; /* eat it */
+  156|      0|            }
+  157|      0|            set_state(S_HTML);
+  ------------------
+  |  |   67|      0|        do { tmp = p->state; p->state = s; p->prev_state = tmp; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (67:73): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  158|      0|            continue;
+  159|      0|        default:
+  ------------------
+  |  Branch (159:9): [True: 0, False: 70.1k]
+  ------------------
+  160|      0|            dbg_err_if("unknown parser state");
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  161|  70.1k|        }
+  162|  54.0k|        buf[idx++] = c;
+  163|  54.0k|        if(idx == BUFSZ - 1)
+  ------------------
+  |  Branch (163:12): [True: 0, False: 54.0k]
+  ------------------
+  164|      0|        {
+  165|      0|            buf[idx] = 0;
+  166|      0|            dbg_err_if(parser_on_block(p, buf, idx));
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  167|      0|            buf[0] = 0; idx = 0;
+  168|      0|        }
+  169|       |
+  170|  54.0k|        fetch_next_char();
+  ------------------
+  |  |   69|  54.0k|        do { prev = c;                                                  \
+  |  |   70|  54.0k|            dbg_err_if((rc = io_getc(p->in, &c)) < 0);                  \
+  |  |  ------------------
+  |  |  |  |  626|  54.0k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (626:50): [True: 0, False: 54.0k]
+  |  |  |  |  |  Branch (626:77): [Folded, False: 54.0k]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  |  |   71|  54.0k|            if(rc == 0) break;                                          \
+  |  |  ------------------
+  |  |  |  Branch (71:16): [True: 149, False: 53.8k]
+  |  |  ------------------
+  |  |   72|  54.0k|            if( (c == CR || c == LF) && prev != (c == CR ? LF : CR))    \
+  |  |  ------------------
+  |  |  |  Branch (72:18): [True: 5.88k, False: 47.9k]
+  |  |  |  Branch (72:29): [True: 985, False: 47.0k]
+  |  |  |  Branch (72:41): [True: 6.49k, False: 377]
+  |  |  |  Branch (72:50): [True: 5.88k, False: 985]
+  |  |  ------------------
+  |  |   73|  53.8k|                p->line++;                                              \
+  |  |   74|  53.8k|        } while(0)
+  |  |  ------------------
+  |  |  |  Branch (74:17): [Folded, False: 53.8k]
+  |  |  ------------------
+  ------------------
+  171|  54.0k|    }
+  172|       |
+  173|    163|    if(idx)
+  ------------------
+  |  Branch (173:8): [True: 149, False: 14]
+  ------------------
+  174|    149|    {
+  175|    149|        buf[idx] = 0;
+  176|    149|        dbg_err_if(parser_on_block(p, buf, idx));
+  ------------------
+  |  |  626|    149|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 24, False: 125]
+  |  |  |  Branch (626:77): [Folded, False: 125]
+  |  |  ------------------
+  ------------------
+  177|    125|        buf[0] = 0; idx = 0;
+  178|    125|    }
+  179|       |
+  180|    139|    return 0;
+  181|     28|err:
+  182|     28|    return ~0;
+  183|    163|}
+parser_set_cb_code:
+  186|    167|{
+  187|    167|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  188|    167|    p->cb_code = cb;
+  189|    167|}
+parser_set_cb_html:
+  192|    167|{
+  193|    167|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  194|    167|    p->cb_html = cb;
+  195|    167|}
+parser_set_cb_arg:
+  204|    167|{
+  205|    167|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  206|    167|    p->cb_arg = opaque;
+  207|    167|}
+parser_set_io:
+  210|    167|{
+  211|    167|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  212|    167|    p->in = in;
+  213|    167|    p->out = out;
+  214|    167|}
+parser_free:
+  217|    167|{
+  218|       |    U_FREE(t);
+  ------------------
+  |  |   47|    167|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  219|    167|    return 0;
+  220|    167|}
+parser_reset:
+  223|    167|{
+  224|    167|    dbg_return_if (p == NULL, ~0);
+  ------------------
+  |  |  619|    167|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 167]
+  |  |  |  Branch (619:79): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  225|       |
+  226|    167|    p->line = 1;
+  227|    167|    p->state = p->prev_state = S_START;
+  228|    167|    p->cmd_code = 0;
+  229|       |
+  230|    167|    return 0;
+  231|    167|}
+parser_create:
+  234|    167|{
+  235|    167|    parser_t *p = NULL;
+  236|       |
+  237|    167|    dbg_return_if (pt == NULL, ~0);
+  ------------------
+  |  |  619|    167|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 167]
+  |  |  |  Branch (619:79): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  238|       |    
+  239|    167|    p = (parser_t*)u_zalloc(sizeof(parser_t));
+  240|    167|    dbg_err_if(p == NULL);
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  241|       |
+  242|    167|    (void) parser_reset(p);
+  243|       |
+  244|    167|    *pt = p;
+  245|       |
+  246|    167|    return 0;
+  247|      0|err:
+  248|      0|    if(p)
+  ------------------
+  |  Branch (248:8): [True: 0, False: 0]
+  ------------------
+  249|      0|        parser_free(p);
+  250|      0|    return ~0;
+  251|    167|}
+parser.c:parser_on_block:
+   33|  7.08k|{
+   34|  7.08k|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|  7.08k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 7.08k]
+  |  |  |  Branch (626:77): [Folded, False: 7.08k]
+  |  |  ------------------
+  ------------------
+   35|  7.08k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  7.08k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 7.08k]
+  |  |  |  Branch (626:77): [Folded, False: 7.08k]
+  |  |  ------------------
+  ------------------
+   36|       |
+   37|  7.08k|    for(;;)
+   38|  7.08k|    {
+   39|  7.08k|        switch(p->state)
+  ------------------
+  |  Branch (39:16): [True: 7.08k, False: 0]
+  ------------------
+   40|  7.08k|        {
+   41|      0|        case S_START:
+  ------------------
+  |  Branch (41:9): [True: 0, False: 7.08k]
+  ------------------
+   42|       |            /* empty file */
+   43|      0|            return 0;
+   44|     60|        case S_HTML:
+  ------------------
+  |  Branch (44:9): [True: 60, False: 7.02k]
+  ------------------
+   45|  3.16k|        case S_WAIT_PERC:
+  ------------------
+  |  Branch (45:9): [True: 3.10k, False: 3.97k]
+  ------------------
+   46|  3.16k|            if(sz && p->cb_html)
+  ------------------
+  |  Branch (46:16): [True: 3.16k, False: 0]
+  |  Branch (46:22): [True: 3.16k, False: 0]
+  ------------------
+   47|  3.16k|                dbg_err_if(p->cb_html(p, p->cb_arg, buf, sz));
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+   48|  3.16k|            return 0;
+   49|      0|        case S_START_CODE:
+  ------------------
+  |  Branch (49:9): [True: 0, False: 7.08k]
+  ------------------
+   50|     75|        case S_CODE:
+  ------------------
+  |  Branch (50:9): [True: 75, False: 7.00k]
+  ------------------
+   51|  3.91k|        case S_WAIT_GT:
+  ------------------
+  |  Branch (51:9): [True: 3.83k, False: 3.24k]
+  ------------------
+   52|  3.91k|            if(sz && p->cb_code)
+  ------------------
+  |  Branch (52:16): [True: 3.91k, False: 0]
+  |  Branch (52:22): [True: 3.91k, False: 0]
+  ------------------
+   53|  3.91k|                dbg_err_if(p->cb_code(p, p->cmd_code, p->cb_arg, buf, sz));
+  ------------------
+  |  |  626|  3.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 28, False: 3.88k]
+  |  |  |  Branch (626:77): [Folded, False: 3.88k]
+  |  |  ------------------
+  ------------------
+   54|  3.88k|            return 0;
+   55|  7.08k|        }
+   56|  7.08k|    }
+   57|       |
+   58|      0|    return 0;
+   59|     28|err:
+   60|     28|    return ~0;
+   61|  7.08k|}
+
+translate_script_to_c:
+  544|    167|{
+  545|    167|    parser_t *p = NULL;
+  546|    167|    lang_c_ctx_t ctx;
+  547|       |
+  548|    167|    dbg_return_if (in == NULL, ~0);
+  ------------------
+  |  |  619|    167|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 167]
+  |  |  |  Branch (619:79): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  549|    167|    dbg_return_if (out == NULL, ~0);
+  ------------------
+  |  |  619|    167|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 167]
+  |  |  |  Branch (619:79): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  550|    167|    dbg_return_if (ti == NULL, ~0);
+  ------------------
+  |  |  619|    167|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 167]
+  |  |  |  Branch (619:79): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  551|       |    
+  552|       |    /* init the context obj */
+  553|    167|    memset(&ctx, 0, sizeof(lang_c_ctx_t));
+  554|    167|    TAILQ_INIT(&ctx.code_blocks);
+  ------------------
+  |  |  135|    167|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|    167|        (head)->tqh_first = NULL;                                           \
+  |  |  137|    167|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|    167|}
+  ------------------
+  555|    167|    ctx.ti = ti;
+  556|       |
+  557|       |    /* create a parse that reads from in and writes to out */
+  558|    167|    dbg_err_if(parser_create(&p));
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 167]
+  |  |  |  Branch (626:77): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  559|       |
+  560|    167|    parser_set_io(p, in, out);
+  561|       |
+  562|    167|    parser_set_cb_arg(p, &ctx);
+  563|    167|    parser_set_cb_code(p, cb_code_block);
+  564|    167|    parser_set_cb_html(p, cb_html_block);
+  565|       |
+  566|    167|    print_header(p, &ctx);
+  567|       |
+  568|    167|    dbg_err_if(parser_run(p));
+  ------------------
+  |  |  626|    167|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 28, False: 139]
+  |  |  |  Branch (626:77): [Folded, False: 139]
+  |  |  ------------------
+  ------------------
+  569|       |
+  570|    139|    print_code_blocks(p, &ctx);
+  571|       |
+  572|    139|    print_dynamic_page_block(p->out, &ctx);
+  573|       |
+  574|    139|    print_register_block(p->out, &ctx);
+  575|       |
+  576|    139|    free_code_blocks(&ctx);
+  577|       |
+  578|    139|    parser_free(p);
+  579|       |
+  580|    139|    return 0;
+  581|     28|err:
+  582|     28|    free_code_blocks(&ctx);
+  583|     28|    if(p)
+  ------------------
+  |  Branch (583:8): [True: 28, False: 0]
+  ------------------
+  584|     28|        parser_free(p);
+  585|     28|    return ~0;
+  586|    167|}
+trans_c.c:print_c_string:
+  115|    306|{
+  116|    306|    const unsigned char *c;
+  117|       |
+  118|    306|    io_printf(out, "\"");
+  119|  2.89k|    for(c = (const unsigned char *) s; *c; ++c)
+  ------------------
+  |  Branch (119:40): [True: 2.58k, False: 306]
+  ------------------
+  120|  2.58k|    {
+  121|  2.58k|        if(*c == '"' || *c == '\\' || *c == '?')    /* '?': no trigraphs */
+  ------------------
+  |  Branch (121:12): [True: 0, False: 2.58k]
+  |  Branch (121:25): [True: 0, False: 2.58k]
+  |  Branch (121:39): [True: 0, False: 2.58k]
+  ------------------
+  122|      0|            io_printf(out, "\\%c", *c);
+  123|  2.58k|        else if(*c < 0x20 || *c >= 0x7f)
+  ------------------
+  |  Branch (123:17): [True: 0, False: 2.58k]
+  |  Branch (123:30): [True: 0, False: 2.58k]
+  ------------------
+  124|      0|            io_printf(out, "\\%03o", *c);           /* always 3 digits */
+  125|  2.58k|        else
+  126|  2.58k|            io_printf(out, "%c", *c);
+  127|  2.58k|    }
+  128|    306|    io_printf(out, "\"");
+  129|    306|}
+trans_c.c:print_register_block:
+  322|    139|{
+  323|    139|    char md5[MD5_DIGEST_BUFSZ];
+  324|       |
+  325|    139|    dbg_ifb (out == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  326|    139|    dbg_ifb (ctx == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  327|    139|    dbg_ifb (ctx->ti == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  328|       |
+  329|    139|    u_md5(ctx->ti->uri, strlen(ctx->ti->uri), md5);
+  330|       |
+  331|    139|    io_printf(out, 
+  332|    139|        "#ifdef __cplusplus                 \n"
+  333|    139|        "extern \"C\" {                     \n"
+  334|    139|        "#endif                             \n"
+  335|    139|        "void module_init_%s(void);         \n" /* avoids a warning */
+  336|    139|        "void module_init_%s(void)          \n"
+  337|    139|        "{                                  \n"
+  338|    139|        "    res_ctor();                    \n"
+  339|    139|        "    emb_register((embres_t*)&e);   \n"
+  340|    139|        "}                                  \n"
+  341|    139|        "void module_term_%s(void);         \n" /* avoids a warning */
+  342|    139|        "void module_term_%s(void)          \n"
+  343|    139|        "{                                  \n"
+  344|    139|        "    emb_unregister((embres_t*)&e); \n"
+  345|    139|        "}                                  \n"
+  346|    139|        "#ifdef __cplusplus                 \n"
+  347|    139|        "}                                  \n"
+  348|    139|        "#endif                             \n",
+  349|    139|        md5, md5, md5, md5);
+  350|    139|}
+trans_c.c:cb_code_block:
+  473|  3.91k|{
+  474|  3.91k|    lang_c_ctx_t *ctx;
+  475|       |
+  476|  3.91k|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|  3.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.91k]
+  |  |  |  Branch (626:77): [Folded, False: 3.91k]
+  |  |  ------------------
+  ------------------
+  477|  3.91k|    dbg_err_if (arg == NULL);
+  ------------------
+  |  |  626|  3.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.91k]
+  |  |  |  Branch (626:77): [Folded, False: 3.91k]
+  |  |  ------------------
+  ------------------
+  478|       |
+  479|  3.91k|    ctx = (lang_c_ctx_t *)arg;
+  480|       |
+  481|  3.91k|    switch(cmd)
+  482|  3.91k|    {
+  483|  1.25k|    case 0: /* plain code block <% ... %> */
+  ------------------
+  |  Branch (483:5): [True: 1.25k, False: 2.66k]
+  ------------------
+  484|  1.25k|        process_code(p, arg, buf, sz);
+  485|  1.25k|        break;
+  486|      3|    case '@': /* <%@ ... %> */
+  ------------------
+  |  Branch (486:5): [True: 3, False: 3.91k]
+  ------------------
+  487|      3|        dbg_err_if("the file should have already been preprocessed");
+  ------------------
+  |  |  626|      3|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 3, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  488|      0|        break;
+  489|    827|    case '!': /* <%! ... %> */
+  ------------------
+  |  Branch (489:5): [True: 827, False: 3.08k]
+  ------------------
+  490|    827|        process_declaration(p, arg, buf, sz);
+  491|    827|        break;
+  492|  1.80k|    case '=': /* <%= ... %> */
+  ------------------
+  |  Branch (492:5): [True: 1.80k, False: 2.10k]
+  ------------------
+  493|  1.80k|        process_expression(p, arg, buf, sz);
+  494|  1.80k|        break;
+  495|     25|    default:
+  ------------------
+  |  Branch (495:5): [True: 25, False: 3.88k]
+  ------------------
+  496|     25|        translate_set_error(ctx->ti, p, "bad command char after <%");
+  497|     25|        warn_err("unknown code type");
+  ------------------
+  |  |  502|     25|#define warn_err(...)                   msg_err(warn_, __VA_ARGS__)
+  |  |  ------------------
+  |  |  |  |  115|     25|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  |   23|     25|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  502|     25|#define warn_err(...)                   msg_err(warn_, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  264|     25|#define warn_( err, ...) u_log_warning(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  207|     25|    u_log_write(facility, LOG_WARNING, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     25|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     25|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (115:56): [Folded, False: 0]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  ------------------
+  498|  3.91k|    }
+  499|  3.88k|    return 0;
+  500|     28|err:
+  501|     28|    return ~0;
+  502|  3.91k|}
+trans_c.c:process_code:
+  391|  1.25k|{
+  392|  1.25k|    lang_c_ctx_t *ctx;
+  393|       |
+  394|  1.25k|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|  1.25k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.25k]
+  |  |  |  Branch (626:77): [Folded, False: 1.25k]
+  |  |  ------------------
+  ------------------
+  395|  1.25k|    dbg_err_if (arg == NULL);
+  ------------------
+  |  |  626|  1.25k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.25k]
+  |  |  |  Branch (626:77): [Folded, False: 1.25k]
+  |  |  ------------------
+  ------------------
+  396|       |
+  397|  1.25k|    ctx = (lang_c_ctx_t*)arg;
+  398|       | 
+  399|  1.25k|    dbg_err_if(push_code_block(ctx, p, buf, sz));
+  ------------------
+  |  |  626|  1.25k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.25k]
+  |  |  |  Branch (626:77): [Folded, False: 1.25k]
+  |  |  ------------------
+  ------------------
+  400|       |
+  401|  1.25k|    return 0;
+  402|      0|err:
+  403|      0|    return ~0;
+  404|  1.25k|}
+trans_c.c:push_code_block:
+   85|  9.84k|{
+   86|  9.84k|    code_block_t *node;
+   87|       |    
+   88|  9.84k|    dbg_return_if (p == NULL, ~0);
+  ------------------
+  |  |  619|  9.84k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 9.84k]
+  |  |  |  Branch (619:79): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   89|  9.84k|    dbg_return_if (ctx == NULL, ~0);
+  ------------------
+  |  |  619|  9.84k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 9.84k]
+  |  |  |  Branch (619:79): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   90|       | 
+   91|  9.84k|    node = (code_block_t*)u_zalloc(sizeof(code_block_t));
+   92|  9.84k|    dbg_err_if(node == NULL);
+  ------------------
+  |  |  626|  9.84k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 9.84k]
+  |  |  |  Branch (626:77): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   93|       |
+   94|  9.84k|    node->sz = sz;
+   95|  9.84k|    node->buf = (char*)u_malloc(sz);
+   96|  9.84k|    dbg_err_if(node->buf == NULL);
+  ------------------
+  |  |  626|  9.84k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 9.84k]
+  |  |  |  Branch (626:77): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   97|       |
+   98|  9.84k|    node->code_line = p->code_line;
+   99|  9.84k|    node->file_in = ctx->ti->file_in;
+  100|       |
+  101|  9.84k|    memcpy(node->buf, buf, sz);
+  102|       |
+  103|  9.84k|    TAILQ_INSERT_TAIL(&ctx->code_blocks, node, np);
+  ------------------
+  |  |  154|  9.84k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
+  |  |  155|  9.84k|        (elm)->field.tqe_next = NULL;                                       \
+  |  |  156|  9.84k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
+  |  |  157|  9.84k|        *(head)->tqh_last = (elm);                                          \
+  |  |  158|  9.84k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
+  |  |  159|  9.84k|}
+  ------------------
+  104|       |
+  105|  9.84k|    return 0;
+  106|      0|err:
+  107|      0|    if(node)
+  ------------------
+  |  Branch (107:8): [True: 0, False: 0]
+  ------------------
+  108|      0|        free_code_block(node);
+  109|      0|    return ~0;
+  110|  9.84k|}
+trans_c.c:free_code_block:
+   59|  9.84k|{
+   60|  9.84k|    if(node)
+  ------------------
+  |  Branch (60:8): [True: 9.84k, False: 0]
+  ------------------
+   61|  9.84k|    {
+   62|  9.84k|        U_FREE(node->buf);
+  ------------------
+  |  |   47|  9.84k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   63|       |        U_FREE(node);
+  ------------------
+  |  |   47|  9.84k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 9.84k]
+  |  |  ------------------
+  ------------------
+   64|  9.84k|    }
+   65|  9.84k|}
+trans_c.c:process_declaration:
+  354|    827|{
+  355|    827|    u_unused_args(arg);
+  ------------------
+  |  |   54|    827|#define u_unused_args(...) u_use_unused_args(NULL, __VA_ARGS__)
+  ------------------
+  356|       |
+  357|    827|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|    827|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 827]
+  |  |  |  Branch (626:77): [Folded, False: 827]
+  |  |  ------------------
+  ------------------
+  358|       |
+  359|    827|    dbg_err_if(io_write(p->out, buf, sz) < 0);
+  ------------------
+  |  |  626|    827|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 827]
+  |  |  |  Branch (626:77): [Folded, False: 827]
+  |  |  ------------------
+  ------------------
+  360|       |
+  361|       |    /* a newline is required after #includes or #defines */
+  362|    827|    dbg_err_if(io_printf(p->out, "\n") < 0);
+  ------------------
+  |  |  626|    827|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 827]
+  |  |  |  Branch (626:77): [Folded, False: 827]
+  |  |  ------------------
+  ------------------
+  363|       |
+  364|    827|    return 0;
+  365|      0|err:
+  366|      0|    return ~0;
+  367|    827|}
+trans_c.c:process_expression:
+  371|  1.80k|{
+  372|  1.80k|    lang_c_ctx_t *ctx;
+  373|  1.80k|    const char before[] = "io_printf(out, \"%s\",";
+  374|  1.80k|    const char after[] = ");\n";
+  375|       |
+  376|  1.80k|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|  1.80k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.80k]
+  |  |  |  Branch (626:77): [Folded, False: 1.80k]
+  |  |  ------------------
+  ------------------
+  377|  1.80k|    dbg_err_if (arg == NULL);
+  ------------------
+  |  |  626|  1.80k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.80k]
+  |  |  |  Branch (626:77): [Folded, False: 1.80k]
+  |  |  ------------------
+  ------------------
+  378|       |
+  379|  1.80k|    ctx = (lang_c_ctx_t*)arg;
+  380|       |    
+  381|  1.80k|    dbg_err_if(push_code_block(ctx, p, before, strlen(before)));
+  ------------------
+  |  |  626|  1.80k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.80k]
+  |  |  |  Branch (626:77): [Folded, False: 1.80k]
+  |  |  ------------------
+  ------------------
+  382|  1.80k|    dbg_err_if(push_code_block(ctx, p, buf, sz));
+  ------------------
+  |  |  626|  1.80k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.80k]
+  |  |  |  Branch (626:77): [Folded, False: 1.80k]
+  |  |  ------------------
+  ------------------
+  383|  1.80k|    dbg_err_if(push_code_block(ctx, p, after, strlen(after)));
+  ------------------
+  |  |  626|  1.80k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.80k]
+  |  |  |  Branch (626:77): [Folded, False: 1.80k]
+  |  |  ------------------
+  ------------------
+  384|       |
+  385|  1.80k|    return 0;
+  386|      0|err:
+  387|      0|    return ~0;
+  388|  1.80k|}
+trans_c.c:translate_set_error:
+  407|     25|{
+  408|     25|    char file[U_FILENAME_MAX];
+  409|       |
+  410|     25|    dbg_err_if (ti == NULL);
+  ------------------
+  |  |  626|     25|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 25]
+  |  |  |  Branch (626:77): [Folded, False: 25]
+  |  |  ------------------
+  ------------------
+  411|     25|    dbg_err_if (p == NULL || p->in == NULL);
+  ------------------
+  |  |  626|     50|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 25]
+  |  |  |  Branch (626:51): [True: 0, False: 25]
+  |  |  |  Branch (626:77): [Folded, False: 25]
+  |  |  ------------------
+  ------------------
+  412|       | 
+  413|     25|    dbg_err_if(io_name_get(p->in, file, U_FILENAME_MAX));
+  ------------------
+  |  |  626|     25|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 25, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  414|       |
+  415|      0|    dbg_err_if(u_snprintf(ti->emsg, EMSG_BUFSZ, "[%s:%d] %s", 
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  416|      0|        file, p->line, msg));
+  417|       |
+  418|      0|    return 0;
+  419|     25|err:
+  420|     25|    return ~0;
+  421|      0|}
+trans_c.c:cb_html_block:
+  424|  3.16k|{
+  425|  3.16k|    enum { CODESZ = 128, VARNSZ = 32 };
+  426|  3.16k|    lang_c_ctx_t *ctx;
+  427|  3.16k|    char code[CODESZ];
+  428|  3.16k|    char varname[VARNSZ];
+  429|       |
+  430|  3.16k|    dbg_err_if (p == NULL);
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  431|  3.16k|    dbg_err_if (arg == NULL);
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  432|       |
+  433|  3.16k|    ctx = (lang_c_ctx_t*)arg;
+  434|       |
+  435|  3.16k|    if(ctx->ti->comp)
+  ------------------
+  |  Branch (435:8): [True: 0, False: 3.16k]
+  ------------------
+  436|      0|    {   /* zip embedded HTML blocks */
+  437|      0|        dbg_err_if(u_snprintf(varname, VARNSZ, "klin_html_zblock_%lu", 
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  438|      0|            (unsigned long) ctx->html_block_cnt));
+  439|       |
+  440|      0|        dbg_err_if(print_var_definition(p, 1 /* zip it */, varname, buf, sz));
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  441|       |
+  442|      0|        dbg_err_if(u_snprintf(code, CODESZ, 
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  443|      0|            "\ndbg_if(u_io_unzip_copy(out, klin_html_zblock_%lu, "
+  444|      0|            "   sizeof(klin_html_zblock_%lu)));\n", 
+  445|      0|            (unsigned long) ctx->html_block_cnt, 
+  446|      0|            (unsigned long) ctx->html_block_cnt));
+  447|       |
+  448|  3.16k|    } else {
+  449|       |        /* embedded HTML blocks will not be zipped */
+  450|  3.16k|        dbg_err_if(u_snprintf(varname, VARNSZ, "klin_html_%lu", 
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  451|  3.16k|            (unsigned long) ctx->html_block_cnt));
+  452|       |
+  453|  3.16k|        dbg_err_if(print_var_definition(p, 0, varname, buf, sz));
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  454|       |
+  455|  3.16k|        dbg_err_if(u_snprintf(code, CODESZ, 
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  456|  3.16k|            "\ndbg_if(io_write(out, klin_html_%lu, "
+  457|  3.16k|            "   sizeof(klin_html_%lu)) < 0);\n", 
+  458|  3.16k|            (unsigned long) ctx->html_block_cnt, 
+  459|  3.16k|            (unsigned long) ctx->html_block_cnt));
+  460|  3.16k|    }
+  461|       |
+  462|  3.16k|    dbg_err_if(push_code_block(ctx, p, code, strlen(code)));
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  463|       |
+  464|  3.16k|    ctx->html_block_cnt++;
+  465|       |
+  466|  3.16k|    return 0;
+  467|      0|err:
+  468|      0|    return ~0;
+  469|  3.16k|}
+trans_c.c:print_var_definition:
+  184|  3.16k|{
+  185|  3.16k|    codec_t *zip = NULL;
+  186|  3.16k|    io_t *ios = NULL;
+  187|  3.16k|    int rc, i;
+  188|  3.16k|    unsigned char c;
+  189|       |
+  190|  3.16k|    dbg_err_if(p == NULL);
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  191|  3.16k|    dbg_err_if(varname == NULL);
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  192|  3.16k|    dbg_err_if(buf == NULL);
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  193|       |
+  194|       |    /* create an io_t around the HTML block */
+  195|  3.16k|    dbg_err_if(io_mem_create(KLIN_UNCONST(buf), bufsz, 0, &ios));
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  196|       |
+  197|  3.16k|#ifdef HAVE_LIBZ
+  198|       |    /* if compression is enabled zip the data block */
+  199|  3.16k|    if(comp)
+  ------------------
+  |  Branch (199:8): [True: 0, False: 3.16k]
+  ------------------
+  200|      0|    {
+  201|       |        /* apply a gzip codec */
+  202|      0|        dbg_err_if(codec_gzip_create(GZIP_COMPRESS, &zip));
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  203|      0|        dbg_err_if(io_codec_add_tail(ios, zip));
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  204|      0|        zip = NULL; /* io_free() will free the codec */
+  205|      0|    }
+  206|       |#else
+  207|       |    u_unused_args(comp);
+  208|       |#endif
+  209|       |
+  210|  3.16k|    io_printf(p->out, "static const char %s[] = {\n", varname);
+  211|       |
+  212|  21.4k|    for(i = 1; (rc = io_getc(ios, (char*)&c)) > 0; ++i)
+  ------------------
+  |  Branch (212:16): [True: 18.2k, False: 3.16k]
+  ------------------
+  213|  18.2k|    {
+  214|  18.2k|        io_printf(p->out, "0x%02X, ", c);
+  215|  18.2k|        if(i % 12 == 0)
+  ------------------
+  |  Branch (215:12): [True: 778, False: 17.4k]
+  ------------------
+  216|    778|            io_printf(p->out, "\n");
+  217|  18.2k|    }
+  218|  3.16k|    dbg_err_if(rc < 0); /* input stream error */
+  ------------------
+  |  |  626|  3.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.16k]
+  |  |  |  Branch (626:77): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  219|       |
+  220|  3.16k|    io_printf(p->out, "};\n");
+  221|       |
+  222|  3.16k|    io_free(ios);
+  223|       |
+  224|  3.16k|    return 0;
+  225|      0|err:
+  226|      0|    if(zip)
+  ------------------
+  |  Branch (226:8): [True: 0, False: 0]
+  ------------------
+  227|      0|        codec_free(zip);
+  228|      0|    if(ios)
+  ------------------
+  |  Branch (228:8): [True: 0, False: 0]
+  ------------------
+  229|      0|        io_free(ios);
+  230|      0|    return ~0;
+  231|  3.16k|}
+trans_c.c:print_header:
+  132|    167|{
+  133|    167|    static const char dfun_prefix[] = "page_";
+  134|    167|    const char *file;
+  135|    167|    char *dfun;
+  136|    167|    int i;
+  137|       |
+  138|    167|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  139|    167|    dbg_ifb (ctx == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+  140|       |
+  141|    167|    io_printf(p->out, "%s", copyright_hdr);
+  142|    167|    io_printf(p->out, "#include <klin/emb.h>\n");
+  143|    167|    io_printf(p->out, "#include <klin/dypage.h>\n");
+  144|       |
+  145|       |    /* the file name part of the uri */
+  146|    167|    file = strrchr(ctx->ti->uri, '/');
+  147|    167|    file = file ? file + 1 : ctx->ti->uri;
+  ------------------
+  |  Branch (147:12): [True: 167, False: 0]
+  ------------------
+  148|       |
+  149|    167|    io_printf(p->out, "static const char *SCRIPT_NAME = ");
+  150|    167|    print_c_string(p->out, file);
+  151|    167|    io_printf(p->out, ";\n");
+  152|       |
+  153|    167|    dfun = ctx->ti->dfun; /* shortcut */
+  154|       |
+  155|       |    /* we need a prefix to avoid errors with pages whose filename starts with
+  156|       |       a number (404-handler.kl1) or any other char not allowed by C as the
+  157|       |       first char of function names */
+  158|    167|    (void) u_strlcpy(dfun, dfun_prefix, URI_BUFSZ);
+  159|    167|    dbg_if (u_strlcat(dfun, file, URI_BUFSZ));
+  ------------------
+  |  |  615|    167|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 167]
+  |  |  |  Branch (615:73): [Folded, False: 167]
+  |  |  ------------------
+  ------------------
+  160|       |
+  161|  2.33k|    for(i = 0; i < (int) strlen(dfun); ++i)
+  ------------------
+  |  Branch (161:16): [True: 2.17k, False: 167]
+  ------------------
+  162|  2.17k|        if(!isalnum((unsigned char) dfun[i]))
+  ------------------
+  |  Branch (162:12): [True: 334, False: 1.83k]
+  ------------------
+  163|    334|            dfun[i] = '_'; /* just a-zA-Z0-9 allowed */
+  164|       |
+  165|       |    /* add a dummy function that the user can use to set a breakpoint when
+  166|       |       entering the page code. the "static volatile" variable is used to avoid
+  167|       |       the compiler to optimize-out (inlining) the function call */
+  168|    167|    io_printf(p->out, 
+  169|    167|            "static int %s (void) { "
+  170|    167|            "static volatile int dummy; return dummy; }\n", dfun);
+  171|       |
+  172|    167|    io_printf(p->out, 
+  173|    167|        "static request_t *request = NULL;\n"
+  174|    167|        "static response_t *response = NULL;\n"
+  175|    167|        "static session_t *session = NULL;\n"
+  176|    167|        "static io_t *in = NULL;\n"
+  177|    167|        "static io_t *out = NULL;\n");
+  178|       | 
+  179|    167|    return;
+  180|    167|}
+trans_c.c:print_code_blocks:
+  234|    139|{
+  235|    139|    code_block_t *node;
+  236|    139|    code_block_list_t *head;
+  237|       |
+  238|    139|    dbg_ifb (p == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  239|    139|    dbg_ifb (ctx == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  240|       |
+  241|    139|    io_printf(p->out, 
+  242|    139|        "\n\n"
+  243|    139|        "static void exec_page(dypage_args_t *_dyp_args)                    \n"
+  244|    139|        "{                                                                  \n"
+  245|    139|        "   request = _dyp_args->rq;                                        \n"
+  246|    139|        "   response = _dyp_args->rs;                                       \n"
+  247|    139|        "   session = _dyp_args->ss;                                        \n"
+  248|    139|        "   in = request_io(request);                                       \n"
+  249|    139|        "   out = response_io(response);                                    \n"
+  250|    139|        "   u_unused_args(SCRIPT_NAME, request, response, session, in, out);\n"
+  251|    139|        "   %s () ; \n ", ctx->ti->dfun
+  252|    139|        );
+  253|       |
+  254|    139|    head = &ctx->code_blocks;
+  255|  8.01k|    for(node = head->tqh_first; node != NULL; node = node->np.tqe_next)
+  ------------------
+  |  Branch (255:33): [True: 7.87k, False: 139]
+  ------------------
+  256|  7.87k|    {
+  257|  7.87k|        io_printf(p->out, "\n");
+  258|  7.87k|        io_write(p->out, node->buf, node->sz);
+  259|  7.87k|    }
+  260|       |
+  261|    139|    io_printf(p->out, 
+  262|    139|            "goto klin_script_exit;\n" /* just to avoid a warning */
+  263|    139|            "klin_script_exit:     \n"
+  264|    139|            "   return;             \n"
+  265|    139|            "}                      \n"
+  266|    139|            );
+  267|    139|}
+trans_c.c:print_dynamic_page_block:
+  304|    139|{
+  305|    139|    dbg_ifb (out == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  306|    139|    dbg_ifb (ctx == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  307|    139|    dbg_ifb (ctx->ti == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+  308|       |
+  309|    139|    io_printf(out,
+  310|    139|        "static embpage_t e;                \n"
+  311|    139|        "static void res_ctor(void)         \n"
+  312|    139|        "{                                  \n"
+  313|    139|        "   e.res.type = ET_PAGE;           \n"
+  314|    139|        "   e.res.filename = ");
+  315|    139|    print_c_string(out, ctx->ti->uri);
+  316|    139|    io_printf(out, ";\n"
+  317|    139|        "   e.fun = exec_page;              \n"
+  318|    139|        "}                                  \n");
+  319|    139|}
+trans_c.c:free_code_blocks:
+   68|    167|{
+   69|    167|    code_block_t *node;
+   70|    167|    code_block_list_t *head;
+   71|       |
+   72|    167|    dbg_ifb (ctx == NULL) return;
+  ------------------
+  |  |  616|    167|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 167]
+  |  |  ------------------
+  ------------------
+   73|       |
+   74|    167|    head = &ctx->code_blocks;
+   75|       |    
+   76|  10.0k|    while((node = head->tqh_first) != NULL)
+  ------------------
+  |  Branch (76:11): [True: 9.84k, False: 167]
+  ------------------
+   77|  9.84k|    {
+   78|       |        TAILQ_REMOVE(head, node, np);
+  ------------------
+  |  |  184|  9.84k|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|  9.84k|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 9.69k, False: 148]
+  |  |  ------------------
+  |  |  186|  9.84k|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|  9.69k|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|  9.84k|        else                                                                \
+  |  |  189|  9.84k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|  9.84k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|  9.84k|}
+  ------------------
+   79|  9.84k|        free_code_block(node);
+   80|  9.84k|    }
+   81|    167|}
+
+md5_init:
+  273|    139|{
+  274|    139|    pms->count[0] = pms->count[1] = 0;
+  275|    139|    pms->abcd[0] = 0x67452301;
+  276|    139|    pms->abcd[1] = /*0xefcdab89*/ T_MASK ^ 0x10325476;
+  ------------------
+  |  |   72|    139|#define T_MASK ((md5_word_t)~0)
+  ------------------
+  277|    139|    pms->abcd[2] = /*0x98badcfe*/ T_MASK ^ 0x67452301;
+  ------------------
+  |  |   72|    139|#define T_MASK ((md5_word_t)~0)
+  ------------------
+  278|    139|    pms->abcd[3] = 0x10325476;
+  279|    139|}
+md5_append:
+  283|    417|{
+  284|    417|    const md5_byte_t *p = data;
+  285|    417|    int left = nbytes;
+  286|    417|    int offset = (pms->count[0] >> 3) & 63;
+  287|    417|    md5_word_t nbits = (md5_word_t)(nbytes << 3);
+  288|       |
+  289|    417|    if (nbytes <= 0)
+  ------------------
+  |  Branch (289:9): [True: 0, False: 417]
+  ------------------
+  290|      0|        return;
+  291|       |
+  292|       |    /* Update the message length. */
+  293|    417|    pms->count[1] += nbytes >> 29;
+  294|    417|    pms->count[0] += nbits;
+  295|    417|    if (pms->count[0] < nbits)
+  ------------------
+  |  Branch (295:9): [True: 0, False: 417]
+  ------------------
+  296|      0|        pms->count[1]++;
+  297|       |
+  298|       |    /* Process an initial partial block. */
+  299|    417|    if (offset) {
+  ------------------
+  |  Branch (299:9): [True: 278, False: 139]
+  ------------------
+  300|    278|        int copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
+  ------------------
+  |  Branch (300:21): [True: 0, False: 278]
+  ------------------
+  301|       |
+  302|    278|        memcpy(pms->buf + offset, p, copy);
+  303|    278|        if (offset + copy < 64)
+  ------------------
+  |  Branch (303:13): [True: 139, False: 139]
+  ------------------
+  304|    139|            return;
+  305|    139|        p += copy;
+  306|    139|        left -= copy;
+  307|    139|        md5_process(pms, pms->buf);
+  308|    139|    }
+  309|       |
+  310|       |    /* Process full blocks. */
+  311|    278|    for (; left >= 64; p += 64, left -= 64)
+  ------------------
+  |  Branch (311:12): [True: 0, False: 278]
+  ------------------
+  312|      0|        md5_process(pms, p);
+  313|       |
+  314|       |    /* Process a final partial block. */
+  315|    278|    if (left)
+  ------------------
+  |  Branch (315:9): [True: 139, False: 139]
+  ------------------
+  316|    139|        memcpy(pms->buf, p, left);
+  317|    278|}
+md5_finish:
+  321|    139|{
+  322|    139|    static const md5_byte_t pad[64] = {
+  323|    139|        0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  324|    139|        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  325|    139|        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  326|    139|        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  327|    139|    };
+  328|    139|    md5_byte_t data[8];
+  329|    139|    int i;
+  330|       |
+  331|       |    /* Save the length before padding. */
+  332|  1.25k|    for (i = 0; i < 8; ++i)
+  ------------------
+  |  Branch (332:17): [True: 1.11k, False: 139]
+  ------------------
+  333|  1.11k|        data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+  334|       |    /* Pad to 56 bytes mod 64. */
+  335|    139|    md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
+  336|       |    /* Append the length. */
+  337|    139|    md5_append(pms, data, 8);
+  338|  2.36k|    for (i = 0; i < 16; ++i)
+  ------------------
+  |  Branch (338:17): [True: 2.22k, False: 139]
+  ------------------
+  339|  2.22k|        digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
+  340|    139|}
+md5.c:md5_process:
+  141|    139|{
+  142|    139|    md5_word_t
+  143|    139|        a = pms->abcd[0], b = pms->abcd[1],
+  144|    139|        c = pms->abcd[2], d = pms->abcd[3];
+  145|    139|    md5_word_t t;
+  146|       |    /* Modified from the original: decode bytes without alignment, aliasing,
+  147|       |     * null-pointer arithmetic or signed-shift assumptions. */
+  148|    139|    md5_word_t xbuf[16];
+  149|    139|    const md5_word_t *X = xbuf;
+  150|    139|    int i;
+  151|       |
+  152|  2.36k|    for (i = 0; i < 16; ++i, data += 4)
+  ------------------
+  |  Branch (152:17): [True: 2.22k, False: 139]
+  ------------------
+  153|  2.22k|        xbuf[i] = (md5_word_t)data[0] | ((md5_word_t)data[1] << 8) |
+  154|  2.22k|            ((md5_word_t)data[2] << 16) | ((md5_word_t)data[3] << 24);
+  155|       |
+  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  157|       |
+  158|       |    /* Round 1. */
+  159|       |    /* Let [abcd k s i] denote the operation
+  160|       |       a = b + ((a + F(b,c,d) + X[k] + T[i]) <<< s). */
+  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  162|    139|#define SET(a, b, c, d, k, s, Ti)\
+  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  164|    139|  a = ROTATE_LEFT(t, s) + b
+  165|       |    /* Do the following 16 operations. */
+  166|    139|    SET(a, b, c, d,  0,  7,  T1);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  167|    139|    SET(d, a, b, c,  1, 12,  T2);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  168|    139|    SET(c, d, a, b,  2, 17,  T3);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  169|    139|    SET(b, c, d, a,  3, 22,  T4);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  170|    139|    SET(a, b, c, d,  4,  7,  T5);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  171|    139|    SET(d, a, b, c,  5, 12,  T6);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  172|    139|    SET(c, d, a, b,  6, 17,  T7);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  173|    139|    SET(b, c, d, a,  7, 22,  T8);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  174|    139|    SET(a, b, c, d,  8,  7,  T9);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  175|    139|    SET(d, a, b, c,  9, 12, T10);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  176|    139|    SET(c, d, a, b, 10, 17, T11);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  177|    139|    SET(b, c, d, a, 11, 22, T12);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  178|    139|    SET(a, b, c, d, 12,  7, T13);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  179|    139|    SET(d, a, b, c, 13, 12, T14);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  180|    139|    SET(c, d, a, b, 14, 17, T15);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  181|    139|    SET(b, c, d, a, 15, 22, T16);
+  ------------------
+  |  |  163|    139|  t = a + F(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  161|    139|#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+  |  |  ------------------
+  |  |  164|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  182|    139|#undef SET
+  183|       |
+  184|       |     /* Round 2. */
+  185|       |     /* Let [abcd k s i] denote the operation
+  186|       |          a = b + ((a + G(b,c,d) + X[k] + T[i]) <<< s). */
+  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  188|    139|#define SET(a, b, c, d, k, s, Ti)\
+  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  190|    139|  a = ROTATE_LEFT(t, s) + b
+  191|       |     /* Do the following 16 operations. */
+  192|    139|    SET(a, b, c, d,  1,  5, T17);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  193|    139|    SET(d, a, b, c,  6,  9, T18);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  194|    139|    SET(c, d, a, b, 11, 14, T19);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  195|    139|    SET(b, c, d, a,  0, 20, T20);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  196|    139|    SET(a, b, c, d,  5,  5, T21);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  197|    139|    SET(d, a, b, c, 10,  9, T22);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  198|    139|    SET(c, d, a, b, 15, 14, T23);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  199|    139|    SET(b, c, d, a,  4, 20, T24);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  200|    139|    SET(a, b, c, d,  9,  5, T25);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  201|    139|    SET(d, a, b, c, 14,  9, T26);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  202|    139|    SET(c, d, a, b,  3, 14, T27);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  203|    139|    SET(b, c, d, a,  8, 20, T28);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  204|    139|    SET(a, b, c, d, 13,  5, T29);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  205|    139|    SET(d, a, b, c,  2,  9, T30);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  206|    139|    SET(c, d, a, b,  7, 14, T31);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  207|    139|    SET(b, c, d, a, 12, 20, T32);
+  ------------------
+  |  |  189|    139|  t = a + G(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  187|    139|#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+  |  |  ------------------
+  |  |  190|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  208|    139|#undef SET
+  209|       |
+  210|       |     /* Round 3. */
+  211|       |     /* Let [abcd k s t] denote the operation
+  212|       |          a = b + ((a + H(b,c,d) + X[k] + T[i]) <<< s). */
+  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  214|    139|#define SET(a, b, c, d, k, s, Ti)\
+  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  216|    139|  a = ROTATE_LEFT(t, s) + b
+  217|       |     /* Do the following 16 operations. */
+  218|    139|    SET(a, b, c, d,  5,  4, T33);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  219|    139|    SET(d, a, b, c,  8, 11, T34);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  220|    139|    SET(c, d, a, b, 11, 16, T35);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  221|    139|    SET(b, c, d, a, 14, 23, T36);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  222|    139|    SET(a, b, c, d,  1,  4, T37);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  223|    139|    SET(d, a, b, c,  4, 11, T38);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  224|    139|    SET(c, d, a, b,  7, 16, T39);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  225|    139|    SET(b, c, d, a, 10, 23, T40);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  226|    139|    SET(a, b, c, d, 13,  4, T41);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  227|    139|    SET(d, a, b, c,  0, 11, T42);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  228|    139|    SET(c, d, a, b,  3, 16, T43);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  229|    139|    SET(b, c, d, a,  6, 23, T44);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  230|    139|    SET(a, b, c, d,  9,  4, T45);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  231|    139|    SET(d, a, b, c, 12, 11, T46);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  232|    139|    SET(c, d, a, b, 15, 16, T47);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  233|    139|    SET(b, c, d, a,  2, 23, T48);
+  ------------------
+  |  |  215|    139|  t = a + H(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  213|    139|#define H(x, y, z) ((x) ^ (y) ^ (z))
+  |  |  ------------------
+  |  |  216|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  234|    139|#undef SET
+  235|       |
+  236|       |     /* Round 4. */
+  237|       |     /* Let [abcd k s t] denote the operation
+  238|       |          a = b + ((a + I(b,c,d) + X[k] + T[i]) <<< s). */
+  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  240|    139|#define SET(a, b, c, d, k, s, Ti)\
+  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  242|    139|  a = ROTATE_LEFT(t, s) + b
+  243|       |     /* Do the following 16 operations. */
+  244|    139|    SET(a, b, c, d,  0,  6, T49);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  245|    139|    SET(d, a, b, c,  7, 10, T50);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  246|    139|    SET(c, d, a, b, 14, 15, T51);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  247|    139|    SET(b, c, d, a,  5, 21, T52);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  248|    139|    SET(a, b, c, d, 12,  6, T53);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  249|    139|    SET(d, a, b, c,  3, 10, T54);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  250|    139|    SET(c, d, a, b, 10, 15, T55);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  251|    139|    SET(b, c, d, a,  1, 21, T56);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  252|    139|    SET(a, b, c, d,  8,  6, T57);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  253|    139|    SET(d, a, b, c, 15, 10, T58);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  254|    139|    SET(c, d, a, b,  6, 15, T59);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  255|    139|    SET(b, c, d, a, 13, 21, T60);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  256|    139|    SET(a, b, c, d,  4,  6, T61);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  257|    139|    SET(d, a, b, c, 11, 10, T62);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  258|    139|    SET(c, d, a, b,  2, 15, T63);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  259|    139|    SET(b, c, d, a,  9, 21, T64);
+  ------------------
+  |  |  241|    139|  t = a + I(b,c,d) + X[k] + Ti;\
+  |  |  ------------------
+  |  |  |  |  239|    139|#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+  |  |  ------------------
+  |  |  242|    139|  a = ROTATE_LEFT(t, s) + b
+  |  |  ------------------
+  |  |  |  |  156|    139|#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+  |  |  ------------------
+  ------------------
+  260|    139|#undef SET
+  261|       |
+  262|       |     /* Then perform the following additions. (That is increment each
+  263|       |        of the four registers by the value it had before this block
+  264|       |        was started.) */
+  265|    139|    pms->abcd[0] += a;
+  266|    139|    pms->abcd[1] += b;
+  267|    139|    pms->abcd[2] += c;
+  268|    139|    pms->abcd[3] += d;
+  269|    139|}
+
+timerm_armed:
+  167|    285|{
+  168|    285|    if(timer == NULL || TAILQ_EMPTY(&timer->alist))
+  ------------------
+  |  |  334|      0|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|      0|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  |  |  |  Branch (334:9): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+  |  Branch (168:8): [True: 285, False: 0]
+  ------------------
+  169|    285|        return 0;
+  170|       |
+  171|      0|    timerm_adopt();     /* the alarms may be the parent's */
+  172|       |
+  173|       |    return !TAILQ_EMPTY(&timer->alist);
+  ------------------
+  |  |  334|      0|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|      0|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  174|    285|}
+
+u_tochex:
+  654|  4.44k|{
+  655|  4.44k|	if(n > 15)
+  ------------------
+  |  Branch (655:5): [True: 0, False: 4.44k]
+  ------------------
+  656|      0|		return '?';
+  657|  4.44k|	return ( n < 10 ? n + '0' : n-10 + 'a');
+  ------------------
+  |  Branch (657:11): [True: 2.50k, False: 1.94k]
+  ------------------
+  658|  4.44k|}
+u_tohex:
+ 1211|    139|{
+ 1212|    139|    size_t c, i, t;
+ 1213|       |
+ 1214|    139|    dbg_ifb (hex == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+ 1215|    139|    dbg_ifb (src == NULL) return;
+  ------------------
+  |  |  616|    139|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 139]
+  |  |  ------------------
+  ------------------
+ 1216|       |    
+ 1217|  2.36k|    for(i = 0, t = 0; i < sz; ++i, t += 2)
+  ------------------
+  |  Branch (1217:23): [True: 2.22k, False: 139]
+  ------------------
+ 1218|  2.22k|    {
+ 1219|  2.22k|        c = (unsigned char) src[i];
+ 1220|  2.22k|        hex[t]   = u_tochex((c >> 4) & 0x0F);
+ 1221|  2.22k|        hex[t+1] = u_tochex(c & 0x0F);
+ 1222|  2.22k|    }
+ 1223|       |
+ 1224|    139|    hex[t] = 0; /* zero-term */
+ 1225|    139|}
+u_md5:
+ 1242|    139|{
+ 1243|    139|    md5_state_t md5ctx;
+ 1244|    139|    md5_byte_t md5_digest[16]; /* binary digest */
+ 1245|       |
+ 1246|    139|    dbg_return_if (buf == NULL, ~0);
+  ------------------
+  |  |  619|    139|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 139]
+  |  |  |  Branch (619:79): [Folded, False: 139]
+  |  |  ------------------
+  ------------------
+ 1247|    139|    dbg_return_if (out == NULL, ~0);
+  ------------------
+  |  |  619|    139|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 139]
+  |  |  |  Branch (619:79): [Folded, False: 139]
+  |  |  ------------------
+  ------------------
+ 1248|       |    
+ 1249|    139|    md5_init(&md5ctx);
+ 1250|    139|    md5_append(&md5ctx, (const md5_byte_t*)buf, sz);
+ 1251|    139|    md5_finish(&md5ctx, md5_digest);
+ 1252|       |
+ 1253|    139|    u_tohex(out, (const char*)md5_digest, 16);
+ 1254|       |
+ 1255|    139|    out[MD5_DIGEST_LEN] = 0;
+  ------------------
+  |  |   74|    139|#define MD5_DIGEST_LEN   32
+  ------------------
+ 1256|       |
+ 1257|    139|    return 0;
+ 1258|    139|}
+

@@ -1,0 +1,2125 @@
+fuzz_json.c:fuzz_string:
+   30|    613|{
+   31|    613|    char *s = malloc(size + 1);
+   32|       |
+   33|    613|    if(s == NULL)
+  ------------------
+  |  Branch (33:8): [True: 0, False: 613]
+  ------------------
+   34|      0|        abort();
+   35|    613|    memcpy(s, data, size);
+   36|    613|    s[size] = '\0';
+   37|    613|    return s;
+   38|    613|}
+
+LLVMFuzzerTestOneInput:
+   40|    613|{
+   41|    613|    json_t *a = NULL, *b = NULL;
+   42|    613|    size_t cap = 8 * size + 64, n1, n2;
+   43|    613|    char *input, *first, *second;
+   44|       |
+   45|    613|    if (size > FUZZ_MAX)
+  ------------------
+  |  Branch (45:9): [True: 0, False: 613]
+  ------------------
+   46|      0|        return 0;
+   47|    613|    input = fuzz_string(data, size);
+   48|    613|    if (json_parse(input, size, &a, NULL, 0))
+  ------------------
+  |  Branch (48:9): [True: 421, False: 192]
+  ------------------
+   49|    421|    {
+   50|    421|        free(input);
+   51|    421|        return 0;
+   52|    421|    }
+   53|    192|    first = malloc(cap);
+   54|    192|    second = malloc(cap);
+   55|    192|    if (!first || !second)
+  ------------------
+  |  Branch (55:9): [True: 0, False: 192]
+  |  Branch (55:19): [True: 0, False: 192]
+  ------------------
+   56|      0|        abort();
+   57|    192|    n1 = fuzz_json_write(a, first, cap);
+   58|    192|    if (n1 == 0 || json_parse(first, n1, &b, NULL, 0))
+  ------------------
+  |  Branch (58:9): [True: 0, False: 192]
+  |  Branch (58:20): [True: 0, False: 192]
+  ------------------
+   59|      0|        abort();    /* the writer's output must be valid JSON */
+   60|    192|    n2 = fuzz_json_write(b, second, cap);
+   61|    192|    if (n1 != n2 || memcmp(first, second, n1))
+  ------------------
+  |  Branch (61:9): [True: 0, False: 192]
+  |  Branch (61:21): [True: 0, False: 192]
+  ------------------
+   62|      0|        abort();
+   63|    192|    json_free(a);
+   64|    192|    json_free(b);
+   65|    192|    free(first);
+   66|    192|    free(second);
+   67|    192|    free(input);
+   68|    192|    return 0;
+   69|    192|}
+fuzz_json.c:fuzz_json_write:
+   18|    384|{
+   19|    384|    json_writer_t *w = NULL;
+   20|    384|    io_t *io = NULL;
+   21|    384|    size_t n = 0;
+   22|       |
+   23|    384|    memset(buf, 0, size);
+   24|    384|    if (io_mem_create(buf, size - 1, 0, &io) == 0 &&
+  ------------------
+  |  Branch (24:9): [True: 384, False: 0]
+  ------------------
+   25|    384|            json_writer_create(io, &w) == 0 && json_value(w, j) == 0 &&
+  ------------------
+  |  Branch (25:13): [True: 384, False: 0]
+  |  Branch (25:48): [True: 384, False: 0]
+  ------------------
+   26|    384|            json_writer_free(w) == 0)
+  ------------------
+  |  Branch (26:13): [True: 384, False: 0]
+  ------------------
+   27|    384|    {
+   28|    384|        w = NULL;
+   29|    384|        io_flush(io);
+   30|    384|        n = strlen(buf);    /* the writer escapes NUL: no NUL in its output */
+   31|    384|    }
+   32|    384|    if (w)
+  ------------------
+  |  Branch (32:9): [True: 0, False: 384]
+  ------------------
+   33|      0|        json_writer_free(w);
+   34|    384|    if (io)
+  ------------------
+  |  Branch (34:9): [True: 384, False: 0]
+  ------------------
+   35|    384|        io_free(io);
+   36|    384|    return n;
+   37|    384|}
+
+u_malloc:
+   62|  1.78k|{
+   63|  1.78k|    return u_memory_fns.f_malloc(sz);
+   64|  1.78k|}
+u_zalloc:
+   74|  7.58k|{
+   75|  7.58k|    return u_memory_fns.f_calloc(1, sz);
+   76|  7.58k|}
+u_realloc:
+   80|  1.78k|{
+   81|  1.78k|    return u_memory_fns.f_realloc(ptr, sz);
+   82|  1.78k|}
+u_free:
+   86|  37.5k|{
+   87|  37.5k|    if (ptr)
+  ------------------
+  |  Branch (87:9): [True: 10.7k, False: 26.7k]
+  ------------------
+   88|  10.7k|        u_memory_fns.f_free(ptr);
+   89|  37.5k|}
+
+u_use_unused_args:
+  481|    384|{
+  482|    384|    dummy = 0;
+  483|    384|    return;
+  484|    384|}
+
+io_close:
+  441|    384|{
+  442|    384|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  443|       |
+  444|    384|    if(io->close)
+  ------------------
+  |  Branch (444:8): [True: 384, False: 0]
+  ------------------
+  445|    384|        dbg_err_if(io->close(io));
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  446|       |
+  447|    384|    return 0;
+  448|      0|err:
+  449|      0|    return ~0;
+  450|    384|}
+io_free:
+  468|    384|{
+  469|    384|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  470|    384|    dbg_err_if (io->refcnt == 0);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  471|       |
+  472|       |    /* skip if this io_t has been dup'd and there are still one or more 
+  473|       |       references in use */
+  474|    384|    if(--io->refcnt)
+  ------------------
+  |  Branch (474:8): [True: 0, False: 384]
+  ------------------
+  475|      0|        return 0;
+  476|       |
+  477|       |    /* flush, remove and free all codecs */
+  478|    384|    dbg_if(io_codecs_remove(io));
+  ------------------
+  |  |  615|    384|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 384]
+  |  |  |  Branch (615:73): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  479|       |
+  480|    384|    dbg_if(io_flush(io));
+  ------------------
+  |  |  615|    384|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 384]
+  |  |  |  Branch (615:73): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  481|       |
+  482|       |    /* flush and close the stream (but don't free it) */
+  483|    384|    dbg_if(io_close(io));
+  ------------------
+  |  |  615|    384|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 384]
+  |  |  |  Branch (615:73): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  484|       |
+  485|       |    /* free per-type alloc'ed data */
+  486|    384|    if(io->free)
+  ------------------
+  |  Branch (486:8): [True: 384, False: 0]
+  ------------------
+  487|    384|        dbg_if(io->free(io));
+  ------------------
+  |  |  615|    384|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  ------------------
+  |  |  |  Branch (615:50): [True: 0, False: 384]
+  |  |  |  Branch (615:73): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  488|       |
+  489|    384|    U_FREE(io->rbuf);
+  ------------------
+  |  |   47|    384|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  490|    384|    U_FREE(io->ubuf);
+  ------------------
+  |  |   47|    384|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  491|    384|    U_FREE(io->wbuf);
+  ------------------
+  |  |   47|    384|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  492|    384|    U_FREE(io->name);
+  ------------------
+  |  |   47|    384|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  493|    384|    U_FREE(io);
+  ------------------
+  |  |   47|    384|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  494|       |
+  495|    384|    return 0;
+  496|      0|err:
+  497|      0|    return ~0;
+  498|    384|}
+io_flush:
+  745|    782|{
+  746|    782|    ssize_t c;
+  747|    782|    size_t off = 0;
+  748|       |
+  749|    782|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    782|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 782]
+  |  |  |  Branch (626:77): [Folded, False: 782]
+  |  |  ------------------
+  ------------------
+  750|       | 
+  751|  1.18k|    while(io->wcount)
+  ------------------
+  |  Branch (751:11): [True: 398, False: 782]
+  ------------------
+  752|    398|    {
+  753|    398|        c = io->write(io, io->wbuf + off, io->wcount);
+  754|    398|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|    398|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 398]
+  |  |  |  Branch (626:77): [Folded, False: 398]
+  |  |  ------------------
+  ------------------
+  755|    398|        if(c == 0)
+  ------------------
+  |  Branch (755:12): [True: 0, False: 398]
+  ------------------
+  756|      0|            break;
+  757|       |    
+  758|    398|        io->wcount -= c;
+  759|    398|        off += c;
+  760|    398|    }
+  761|       |
+  762|    782|    return 0;
+  763|      0|err:
+  764|      0|    return -1;
+  765|    782|}
+io_write:
+  811|  23.6k|{
+  812|  23.6k|    size_t sz = 0, rem = size;
+  813|  23.6k|    ssize_t c = 0;
+  814|       |
+  815|  23.6k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  816|  23.6k|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  817|       |    
+  818|  23.6k|    if(io->wbuf == NULL)
+  ------------------
+  |  Branch (818:8): [True: 384, False: 23.2k]
+  ------------------
+  819|    384|        dbg_err_if(io_wbuf_alloc(io)); /* alloc the write buffer */
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  820|       |
+  821|  47.2k|    while(rem)
+  ------------------
+  |  Branch (821:11): [True: 23.6k, False: 23.6k]
+  ------------------
+  822|  23.6k|    {
+  823|       |        /* a large block the codec leaves unchanged: skip the copy */
+  824|  23.6k|        if(rem >= io->wbsz && (c = io_write_passthru(io, buf, rem)) != 0)
+  ------------------
+  |  Branch (824:12): [True: 0, False: 23.6k]
+  |  Branch (824:31): [True: 0, False: 0]
+  ------------------
+  825|      0|        {
+  826|      0|            dbg_err_if(c < 0);
+  ------------------
+  |  |  626|      0|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  827|      0|            buf += c;
+  828|      0|            rem -= (size_t) c;
+  829|      0|            continue;
+  830|      0|        }
+  831|       |
+  832|  23.6k|        if(IO_WBUF_FULL(io)) /* if there's no more free space */
+  ------------------
+  |  |   26|  23.6k|#define IO_WBUF_FULL(io) (io->wbsz == io->wcount)
+  |  |  ------------------
+  |  |  |  Branch (26:26): [True: 14, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  833|     14|            dbg_err_if(io_flush(io));
+  ------------------
+  |  |  626|     14|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 14]
+  |  |  |  Branch (626:77): [Folded, False: 14]
+  |  |  ------------------
+  ------------------
+  834|       |
+  835|  23.6k|        sz = IO_WBUF_AVAIL(io);
+  ------------------
+  |  |   25|  23.6k|#define IO_WBUF_AVAIL(io) (io->wbsz - io->wcount)
+  ------------------
+  836|  23.6k|        c = io_transfer(io, io->wbuf + io->wcount, &sz, buf, rem);
+  837|  23.6k|        dbg_err_if(c < 0);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  838|  23.6k|        dbg_err_if(c == 0 && sz == 0); /* some bytes MUST be read or written */
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:51): [True: 0, False: 0]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  839|       |
+  840|  23.6k|        io->wcount += sz;
+  841|  23.6k|        buf += c;
+  842|  23.6k|        rem -= c;
+  843|  23.6k|    }
+  844|       |
+  845|  23.6k|    return size;
+  846|      0|err:
+  847|      0|    return -1;
+  848|  23.6k|}
+io_codecs_remove:
+ 1052|    384|{
+ 1053|    384|    codec_t *codec;
+ 1054|    384|    int rc = 0;
+ 1055|       |
+ 1056|    384|    dbg_return_if (io == NULL, ~0);
+  ------------------
+  |  |  619|    384|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 384]
+  |  |  |  Branch (619:79): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+ 1057|       |
+ 1058|    384|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|    384|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|    384|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|    384|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (1058:8): [True: 0, False: 384]
+  ------------------
+ 1059|      0|    {
+ 1060|      0|        if(io->wbuf)
+  ------------------
+  |  Branch (1060:12): [True: 0, False: 0]
+  ------------------
+ 1061|      0|            dbg_ifb(io_chain_flush(io))
+  ------------------
+  |  |  616|      0|    #define dbg_ifb(expr)               if( (expr) )
+  |  |  ------------------
+  |  |  |  Branch (616:45): [True: 0, False: 0]
+  |  |  ------------------
+  ------------------
+ 1062|      0|                rc++;
+ 1063|       |
+ 1064|      0|        while((codec = TAILQ_FIRST(&io->codec_chain)) != NULL)
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  |  Branch (1064:15): [True: 0, False: 0]
+  ------------------
+ 1065|      0|        {
+ 1066|      0|            TAILQ_REMOVE(&io->codec_chain, codec, np);
+  ------------------
+  |  |  184|      0|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|      0|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  ------------------
+  |  |  |  Branch (185:13): [True: 0, False: 0]
+  |  |  ------------------
+  |  |  186|      0|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|      0|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|      0|        else                                                                \
+  |  |  189|      0|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|      0|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|      0|}
+  ------------------
+ 1067|      0|            codec_free(codec);
+ 1068|      0|        }
+ 1069|      0|    }
+ 1070|       |
+ 1071|    384|    return rc;
+ 1072|    384|}
+io_prv_create:
+ 1345|    384|{
+ 1346|    384|    io_t *io = NULL;
+ 1347|       |
+ 1348|    384|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+ 1349|       |
+ 1350|    384|    io = u_zalloc(dev_sz);
+ 1351|    384|    dbg_err_if(io == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+ 1352|       |
+ 1353|    384|    TAILQ_INIT(&io->codec_chain);
+  ------------------
+  |  |  135|    384|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|    384|        (head)->tqh_first = NULL;                                           \
+  |  |  137|    384|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|    384|}
+  ------------------
+ 1354|       |
+ 1355|       |    /* set refcnt to 1 */
+ 1356|    384|    io->refcnt++;
+ 1357|       |
+ 1358|       |    /* size of the io device struct (that's also a 'castable' io_t) */
+ 1359|    384|    io->size = dev_sz;
+ 1360|       |
+ 1361|    384|    *pio = io;
+ 1362|       |
+ 1363|    384|    return 0;
+ 1364|      0|err:
+ 1365|       |    U_FREE(io);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+ 1366|      0|    return -1;
+ 1367|    384|}
+io.c:io_wbuf_alloc:
+  226|    384|{
+  227|    384|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  228|       |
+  229|       |    /* set the buffer size (unless chosen with io_set_write_buffer_size) */
+  230|    384|    if(io->wbsz == 0)
+  ------------------
+  |  Branch (230:8): [True: 384, False: 0]
+  ------------------
+  231|    384|        io->wbsz = IO_WR_BUFSZ;
+  232|       |
+  233|       |    /* if a dup'd io_t already alloc'd a buffer then use it */
+  234|    384|    io->wbuf = (char*)u_malloc(io->wbsz);
+  235|    384|    dbg_err_if(io->wbuf == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  236|       |
+  237|    384|    return 0;
+  238|      0|err:
+  239|      0|    return ~0;
+  240|    384|}
+io.c:io_transfer:
+  320|  23.6k|{
+  321|  23.6k|    dbg_err_if (io == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  322|  23.6k|    dbg_err_if (src == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  323|  23.6k|    dbg_err_if (dst == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  324|  23.6k|    dbg_err_if (dcount == NULL);
+  ------------------
+  |  |  626|  23.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 23.6k]
+  |  |  |  Branch (626:77): [Folded, False: 23.6k]
+  |  |  ------------------
+  ------------------
+  325|       |
+  326|  23.6k|    if(!TAILQ_EMPTY(&io->codec_chain))
+  ------------------
+  |  |  334|  23.6k|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  311|  23.6k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  ------------------
+  |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  ------------------
+  |  |  |  |  315|  23.6k|#define TAILQ_END(head)     NULL
+  |  |  ------------------
+  ------------------
+  |  Branch (326:8): [True: 0, False: 23.6k]
+  ------------------
+  327|      0|    {
+  328|      0|        return io_transform(io, TAILQ_FIRST(&io->codec_chain), 
+  ------------------
+  |  |  311|      0|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  ------------------
+  329|      0|            dst, dcount, src, sz); 
+  330|  23.6k|    } else {
+  331|  23.6k|        ssize_t wr = U_MIN(sz, *dcount); 
+  ------------------
+  |  |   50|  23.6k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 23.6k, False: 14]
+  |  |  ------------------
+  ------------------
+  332|  23.6k|        memcpy(dst, src, wr);
+  333|  23.6k|        *dcount = wr;
+  334|  23.6k|        return wr;
+  335|  23.6k|    }
+  336|      0|err:
+  337|      0|    return -1;
+  338|  23.6k|}
+
+io_mem_create:
+  142|    384|{
+  143|    384|    io_mem_t *im = NULL;
+  144|    384|    io_t *io = NULL;
+  145|       |
+  146|    384|    dbg_err_if (buf == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  147|    384|    dbg_err_if (pio == NULL);
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  148|       |
+  149|    384|    dbg_err_if(io_create(io_mem_t, &io));   /* not (io_t**)&im: aliasing */
+  ------------------
+  |  |  626|    384|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 384]
+  |  |  |  Branch (626:77): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  150|    384|    im = (io_mem_t *) io;
+  151|       |
+  152|    384|    im->io.type = IO_TYPE_MEM;
+  153|       |
+  154|    384|    im->buf = buf;
+  155|    384|    im->size = size;
+  156|    384|    im->flags = flags;
+  157|    384|    im->off = 0;
+  158|    384|    im->io.read = io_mem_read;
+  159|    384|    im->io.write = io_mem_write;
+  160|    384|    im->io.seek = io_mem_seek;
+  161|    384|    im->io.tell = io_mem_tell;
+  162|    384|    im->io.close = io_mem_close; 
+  163|    384|    im->io.free = io_mem_free; 
+  164|       |
+  165|    384|    *pio = (io_t*)im;
+  166|       |
+  167|    384|    return 0;
+  168|      0|err:
+  169|      0|    if(im)
+  ------------------
+  |  Branch (169:8): [True: 0, False: 0]
+  ------------------
+  170|      0|        io_free((io_t *)im);
+  171|      0|    return ~0;
+  172|    384|}
+iomem.c:io_mem_write:
+   76|    398|{
+   77|    398|    io_mem_t *im = (io_mem_t *) io_;
+   78|    398|    char *ptr;
+   79|    398|    size_t sz;
+   80|       |
+   81|    398|    dbg_return_if (im == NULL, -1);
+  ------------------
+  |  |  619|    398|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 398]
+  |  |  |  Branch (619:79): [Folded, False: 398]
+  |  |  ------------------
+  ------------------
+   82|    398|    dbg_return_if (buf == NULL, -1);
+  ------------------
+  |  |  619|    398|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 398]
+  |  |  |  Branch (619:79): [Folded, False: 398]
+  |  |  ------------------
+  ------------------
+   83|       |
+   84|    398|    sz = U_MIN(size, im->size - im->off);
+  ------------------
+  |  |   50|    398|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (50:22): [True: 398, False: 0]
+  |  |  ------------------
+  ------------------
+   85|    398|    if(sz)
+  ------------------
+  |  Branch (85:8): [True: 398, False: 0]
+  ------------------
+   86|    398|    {
+   87|    398|        ptr = im->buf + im->off; 
+   88|    398|        memcpy(ptr, buf, sz);
+   89|    398|        im->off += sz;
+   90|    398|    }
+   91|       |
+   92|    398|    return sz;
+   93|    398|}
+iomem.c:io_mem_close:
+   96|    384|{
+   97|    384|    io_mem_t *im = (io_mem_t *) io_;
+   98|       |    u_unused_args(im);
+  ------------------
+  |  |   54|    384|#define u_unused_args(...) u_use_unused_args(NULL, __VA_ARGS__)
+  ------------------
+   99|    384|    return 0;
+  100|    384|}
+iomem.c:io_mem_free:
+  103|    384|{
+  104|    384|    io_mem_t *im = (io_mem_t *) io_;
+  105|    384|    dbg_return_if (im == NULL, ~0);
+  ------------------
+  |  |  619|    384|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 384]
+  |  |  |  Branch (619:79): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  106|       |
+  107|    384|    if(im->flags & IO_MEM_FREE_BUF)
+  ------------------
+  |  Branch (107:8): [True: 0, False: 384]
+  ------------------
+  108|      0|    {
+  109|      0|        U_FREE(im->buf);
+  ------------------
+  |  |   47|      0|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 0]
+  |  |  ------------------
+  ------------------
+  110|      0|        im->buf = NULL;
+  111|      0|        im->size = im->off = 0;
+  112|      0|    }
+  113|       |
+  114|    384|    return 0;
+  115|    384|}
+
+json_parse:
+  529|    805|{
+  530|    805|    json_parser_t ps;
+  531|    805|    json_t *j;
+  532|       |
+  533|    805|    dbg_return_if (text == NULL || pj == NULL, ~0);
+  ------------------
+  |  |  619|  1.61k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:51): [True: 0, False: 805]
+  |  |  |  Branch (619:51): [True: 0, False: 805]
+  |  |  |  Branch (619:79): [Folded, False: 805]
+  |  |  ------------------
+  ------------------
+  534|       |
+  535|    805|    memset(&ps, 0, sizeof ps);
+  536|    805|    ps.p = ps.start = (const unsigned char *) text;
+  537|    805|    ps.end = ps.p + len;
+  538|    805|    ps.err = err;
+  539|    805|    ps.errsz = errsz;
+  540|    805|    if(err && errsz)
+  ------------------
+  |  Branch (540:8): [True: 0, False: 805]
+  |  Branch (540:15): [True: 0, False: 0]
+  ------------------
+  541|      0|        err[0] = '\0';
+  542|       |
+  543|    805|    if((j = json_parse_value(&ps, 1)) == NULL)
+  ------------------
+  |  Branch (543:8): [True: 410, False: 395]
+  ------------------
+  544|    410|        return ~0;
+  545|       |
+  546|    395|    json_ws(&ps);
+  547|    395|    if(ps.p != ps.end)
+  ------------------
+  |  Branch (547:8): [True: 11, False: 384]
+  ------------------
+  548|     11|    {
+  549|     11|        json_fail(&ps, "text after the value");
+  550|     11|        json_free(j);
+  551|     11|        return ~0;
+  552|     11|    }
+  553|       |
+  554|    384|    *pj = j;
+  555|    384|    return 0;
+  556|    395|}
+json_free:
+  559|  6.82k|{
+  560|  6.82k|    size_t i;
+  561|       |
+  562|  6.82k|    if(j == NULL)
+  ------------------
+  |  Branch (562:8): [True: 0, False: 6.82k]
+  ------------------
+  563|      0|        return;
+  564|  11.5k|    for(i = 0; i < j->n; ++i)
+  ------------------
+  |  Branch (564:16): [True: 4.75k, False: 6.82k]
+  ------------------
+  565|  4.75k|    {
+  566|  4.75k|        json_free(j->items[i]);
+  567|  4.75k|        if(j->keys)
+  ------------------
+  |  Branch (567:12): [True: 461, False: 4.29k]
+  ------------------
+  568|    461|            U_FREE(j->keys[i]);
+  ------------------
+  |  |   47|    461|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 461]
+  |  |  ------------------
+  ------------------
+  569|  4.75k|    }
+  570|  6.82k|    U_FREE(j->items);
+  ------------------
+  |  |   47|  6.82k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 6.82k]
+  |  |  ------------------
+  ------------------
+  571|  6.82k|    U_FREE(j->keys);
+  ------------------
+  |  |   47|  6.82k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 6.82k]
+  |  |  ------------------
+  ------------------
+  572|  6.82k|    U_FREE(j->klens);
+  ------------------
+  |  |   47|  6.82k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 6.82k]
+  |  |  ------------------
+  ------------------
+  573|       |    U_FREE(j->str);
+  ------------------
+  |  |   47|  6.82k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 6.82k]
+  |  |  ------------------
+  ------------------
+  574|  6.82k|    u_free(j);
+  575|  6.82k|}
+json_type:
+  582|  2.37k|{
+  583|  2.37k|    return j ? j->type : JSON_NULL;
+  ------------------
+  |  Branch (583:12): [True: 2.37k, False: 0]
+  ------------------
+  584|  2.37k|}
+json_writer_create:
+  671|    384|{
+  672|    384|    json_writer_t *w;
+  673|       |
+  674|    384|    dbg_return_if (out == NULL || pw == NULL, ~0);
+  ------------------
+  |  |  619|    768|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:51): [True: 0, False: 384]
+  |  |  |  Branch (619:51): [True: 0, False: 384]
+  |  |  |  Branch (619:79): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  675|    384|    dbg_return_if ((w = u_zalloc(sizeof *w)) == NULL, ~0);
+  ------------------
+  |  |  619|    384|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 384]
+  |  |  |  Branch (619:79): [Folded, False: 384]
+  |  |  ------------------
+  ------------------
+  676|       |
+  677|    384|    w->out = out;
+  678|    384|    *pw = w;
+  679|       |
+  680|    384|    return 0;
+  681|    384|}
+json_writer_free:
+  685|    384|{
+  686|    384|    int rc;
+  687|       |
+  688|    384|    if(w == NULL)
+  ------------------
+  |  Branch (688:8): [True: 0, False: 384]
+  ------------------
+  689|      0|        return ~0;
+  690|    384|    rc = (w->failed || w->depth || !w->done) ? ~0 : 0;
+  ------------------
+  |  Branch (690:11): [True: 0, False: 384]
+  |  Branch (690:24): [True: 0, False: 384]
+  |  Branch (690:36): [True: 0, False: 384]
+  ------------------
+  691|    384|    u_free(w);
+  692|       |
+  693|    384|    return rc;
+  694|    384|}
+json_begin_object:
+  798|     58|int json_begin_object(json_writer_t *w) { return json_begin(w, 'o'); }
+json_end_object:
+  799|     58|int json_end_object(json_writer_t *w)   { return json_end(w, 'o'); }
+json_begin_array:
+  800|    364|int json_begin_array(json_writer_t *w)  { return json_begin(w, 'a'); }
+json_end_array:
+  801|    364|int json_end_array(json_writer_t *w)    { return json_end(w, 'a'); }
+json_keyn:
+  806|     76|{
+  807|     76|    dbg_return_if (w == NULL || key == NULL, ~0);
+  ------------------
+  |  |  619|    152|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:51): [True: 0, False: 76]
+  |  |  |  Branch (619:51): [True: 0, False: 76]
+  |  |  |  Branch (619:79): [Folded, False: 76]
+  |  |  ------------------
+  ------------------
+  808|       |
+  809|     76|    if(w->failed || w->depth == 0 || w->kind[w->depth] != 'o' || w->after_key)
+  ------------------
+  |  Branch (809:8): [True: 0, False: 76]
+  |  Branch (809:21): [True: 0, False: 76]
+  |  Branch (809:38): [True: 0, False: 76]
+  |  Branch (809:66): [True: 0, False: 76]
+  ------------------
+  810|      0|        return w->failed = 1, ~0;
+  811|     76|    if(w->count[w->depth]++)
+  ------------------
+  |  Branch (811:8): [True: 30, False: 46]
+  ------------------
+  812|     30|        json_put(w, ",", 1);
+  813|     76|    json_put_string(w, key, len);
+  814|     76|    w->after_key = 1;
+  815|     76|    return json_put(w, ":", 1);
+  816|     76|}
+json_strn:
+  824|    226|{
+  825|    226|    dbg_return_if (w == NULL, ~0);
+  ------------------
+  |  |  619|    226|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 226]
+  |  |  |  Branch (619:79): [Folded, False: 226]
+  |  |  ------------------
+  ------------------
+  826|       |
+  827|    226|    if(s == NULL)
+  ------------------
+  |  Branch (827:8): [True: 0, False: 226]
+  ------------------
+  828|      0|        return json_null(w);
+  829|    226|    if(json_pre_value(w) || json_put_string(w, s, len))
+  ------------------
+  |  Branch (829:8): [True: 0, False: 226]
+  |  Branch (829:29): [True: 0, False: 226]
+  ------------------
+  830|      0|        return ~0;
+  831|    226|    json_post_value(w);
+  832|    226|    return 0;
+  833|    226|}
+json_int:
+  851|    684|{
+  852|    684|    char buf[32];
+  853|       |
+  854|    684|    (void) snprintf(buf, sizeof buf, "%lld", (long long) v);
+  855|    684|    return json_raw_value(w, buf);
+  856|    684|}
+json_double:
+  860|  1.01k|{
+  861|  1.01k|    char buf[40];
+  862|       |
+  863|  1.01k|    if(!isfinite(v))
+  ------------------
+  |  Branch (863:8): [True: 0, False: 1.01k]
+  ------------------
+  864|      0|        return w ? (w->failed = 1, ~0) : ~0;
+  ------------------
+  |  Branch (864:16): [True: 0, False: 0]
+  ------------------
+  865|  1.01k|    (void) snprintf(buf, sizeof buf, "%.17g", v);
+  866|  1.01k|    return json_raw_value(w, buf);
+  867|  1.01k|}
+json_boolean:
+  870|     10|{
+  871|     10|    return json_raw_value(w, b ? "true" : "false");
+  ------------------
+  |  Branch (871:30): [True: 8, False: 2]
+  ------------------
+  872|     10|}
+json_null:
+  875|     16|{
+  876|     16|    return json_raw_value(w, "null");
+  877|     16|}
+json_value:
+  881|  2.37k|{
+  882|  2.37k|    size_t i;
+  883|       |
+  884|  2.37k|    dbg_return_if (w == NULL, ~0);
+  ------------------
+  |  |  619|  2.37k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 2.37k]
+  |  |  |  Branch (619:79): [Folded, False: 2.37k]
+  |  |  ------------------
+  ------------------
+  885|       |
+  886|  2.37k|    switch(json_type(j))
+  ------------------
+  |  Branch (886:12): [True: 2.37k, False: 0]
+  ------------------
+  887|  2.37k|    {
+  888|     16|    case JSON_NULL:   return json_null(w);
+  ------------------
+  |  Branch (888:5): [True: 16, False: 2.35k]
+  ------------------
+  889|      8|    case JSON_TRUE:   return json_boolean(w, 1);
+  ------------------
+  |  Branch (889:5): [True: 8, False: 2.36k]
+  ------------------
+  890|      2|    case JSON_FALSE:  return json_boolean(w, 0);
+  ------------------
+  |  Branch (890:5): [True: 2, False: 2.37k]
+  ------------------
+  891|    226|    case JSON_STRING: return json_strn(w, j->str, j->slen);
+  ------------------
+  |  Branch (891:5): [True: 226, False: 2.14k]
+  ------------------
+  892|  1.70k|    case JSON_NUMBER:
+  ------------------
+  |  Branch (892:5): [True: 1.70k, False: 674]
+  ------------------
+  893|  1.70k|        return j->is_int ? json_int(w, j->ival) : json_double(w, j->num);
+  ------------------
+  |  Branch (893:16): [True: 684, False: 1.01k]
+  ------------------
+  894|    364|    case JSON_ARRAY:
+  ------------------
+  |  Branch (894:5): [True: 364, False: 2.01k]
+  ------------------
+  895|    364|        if(json_begin_array(w))
+  ------------------
+  |  Branch (895:12): [True: 0, False: 364]
+  ------------------
+  896|      0|            return ~0;
+  897|  2.27k|        for(i = 0; i < j->n; ++i)
+  ------------------
+  |  Branch (897:20): [True: 1.91k, False: 364]
+  ------------------
+  898|  1.91k|            if(json_value(w, j->items[i]))
+  ------------------
+  |  Branch (898:16): [True: 0, False: 1.91k]
+  ------------------
+  899|      0|                return ~0;
+  900|    364|        return json_end_array(w);
+  901|     58|    case JSON_OBJECT:
+  ------------------
+  |  Branch (901:5): [True: 58, False: 2.31k]
+  ------------------
+  902|     58|        if(json_begin_object(w))
+  ------------------
+  |  Branch (902:12): [True: 0, False: 58]
+  ------------------
+  903|      0|            return ~0;
+  904|    134|        for(i = 0; i < j->n; ++i)
+  ------------------
+  |  Branch (904:20): [True: 76, False: 58]
+  ------------------
+  905|     76|            if(json_keyn(w, j->keys[i], j->klens[i]) ||
+  ------------------
+  |  Branch (905:16): [True: 0, False: 76]
+  ------------------
+  906|     76|                    json_value(w, j->items[i]))
+  ------------------
+  |  Branch (906:21): [True: 0, False: 76]
+  ------------------
+  907|      0|                return ~0;
+  908|     58|        return json_end_object(w);
+  909|  2.37k|    }
+  910|      0|    return ~0;
+  911|  2.37k|}
+json.c:json_parse_value:
+  480|  6.93k|{
+  481|  6.93k|    json_t *j;
+  482|       |
+  483|  6.93k|    if(depth > JSON_MAX_DEPTH)
+  ------------------
+  |  Branch (483:8): [True: 2, False: 6.93k]
+  ------------------
+  484|      2|        return json_fail(ps, "nested too deep"), NULL;
+  485|       |
+  486|  6.93k|    json_ws(ps);
+  487|  6.93k|    if(ps->p >= ps->end)
+  ------------------
+  |  Branch (487:8): [True: 75, False: 6.86k]
+  ------------------
+  488|     75|        return json_fail(ps, "unexpected end"), NULL;
+  489|       |
+  490|  6.86k|    switch(*ps->p)
+  491|  6.86k|    {
+  492|    612|    case '{':
+  ------------------
+  |  Branch (492:5): [True: 612, False: 6.24k]
+  ------------------
+  493|    612|        return json_parse_object(ps, depth);
+  494|  1.42k|    case '[':
+  ------------------
+  |  Branch (494:5): [True: 1.42k, False: 5.43k]
+  ------------------
+  495|  1.42k|        return json_parse_array(ps, depth);
+  496|    494|    case '"':
+  ------------------
+  |  Branch (496:5): [True: 494, False: 6.36k]
+  ------------------
+  497|    494|        if((j = json_new(JSON_STRING)) == NULL)
+  ------------------
+  |  Branch (497:12): [True: 0, False: 494]
+  ------------------
+  498|      0|            return json_fail(ps, "out of memory"), NULL;
+  499|    494|        if(json_parse_string(ps, &j->str, &j->slen))
+  ------------------
+  |  Branch (499:12): [True: 101, False: 393]
+  ------------------
+  500|    101|        {
+  501|    101|            json_free(j);
+  502|    101|            return NULL;
+  503|    101|        }
+  504|    393|        return j;
+  505|    150|    case 't':
+  ------------------
+  |  Branch (505:5): [True: 150, False: 6.71k]
+  ------------------
+  506|    150|        return json_parse_literal(ps, "true", JSON_TRUE);
+  507|      3|    case 'f':
+  ------------------
+  |  Branch (507:5): [True: 3, False: 6.85k]
+  ------------------
+  508|      3|        return json_parse_literal(ps, "false", JSON_FALSE);
+  509|     24|    case 'n':
+  ------------------
+  |  Branch (509:5): [True: 24, False: 6.83k]
+  ------------------
+  510|     24|        return json_parse_literal(ps, "null", JSON_NULL);
+  511|  4.15k|    default:
+  ------------------
+  |  Branch (511:5): [True: 4.15k, False: 2.70k]
+  ------------------
+  512|  4.15k|        return json_parse_number(ps);
+  513|  6.86k|    }
+  514|  6.86k|}
+json.c:json_parse_object:
+  412|    612|{
+  413|    612|    json_t *j, *item;
+  414|    612|    char *key = NULL;
+  415|    612|    size_t klen, i;
+  416|       |
+  417|    612|    ps->p++;    /* '{' */
+  418|    612|    if((j = json_new(JSON_OBJECT)) == NULL)
+  ------------------
+  |  Branch (418:8): [True: 0, False: 612]
+  ------------------
+  419|      0|        return json_fail(ps, "out of memory"), NULL;
+  420|       |
+  421|    612|    json_ws(ps);
+  422|    612|    if(ps->p < ps->end && *ps->p == '}')
+  ------------------
+  |  Branch (422:8): [True: 592, False: 20]
+  |  Branch (422:27): [True: 15, False: 577]
+  ------------------
+  423|     15|    {
+  424|     15|        ps->p++;
+  425|     15|        return j;
+  426|     15|    }
+  427|    597|    for(;;)
+  428|    965|    {
+  429|    965|        json_ws(ps);
+  430|    965|        if(ps->p >= ps->end || *ps->p != '"')
+  ------------------
+  |  Branch (430:12): [True: 42, False: 923]
+  |  Branch (430:32): [True: 12, False: 911]
+  ------------------
+  431|     54|        {
+  432|     54|            json_fail(ps, "expected a key");
+  433|     54|            goto err;
+  434|     54|        }
+  435|    911|        if(json_parse_string(ps, &key, &klen))
+  ------------------
+  |  Branch (435:12): [True: 7, False: 904]
+  ------------------
+  436|      7|            goto err;
+  437|  1.69k|        for(i = 0; i < j->n; ++i)
+  ------------------
+  |  Branch (437:20): [True: 796, False: 898]
+  ------------------
+  438|    796|            if(j->klens[i] == klen && !memcmp(j->keys[i], key, klen))
+  ------------------
+  |  Branch (438:16): [True: 201, False: 595]
+  |  Branch (438:39): [True: 6, False: 195]
+  ------------------
+  439|      6|            {
+  440|      6|                json_fail(ps, "duplicate key");
+  441|      6|                goto err;
+  442|      6|            }
+  443|    898|        json_ws(ps);
+  444|    898|        if(ps->p >= ps->end || *ps->p != ':')
+  ------------------
+  |  Branch (444:12): [True: 32, False: 866]
+  |  Branch (444:32): [True: 14, False: 852]
+  ------------------
+  445|     46|        {
+  446|     46|            json_fail(ps, "expected ':'");
+  447|     46|            goto err;
+  448|     46|        }
+  449|    852|        ps->p++;
+  450|    852|        if((item = json_parse_value(ps, depth + 1)) == NULL)
+  ------------------
+  |  Branch (450:12): [True: 391, False: 461]
+  ------------------
+  451|    391|            goto err;
+  452|    461|        if(json_push(j, item, key, klen))
+  ------------------
+  |  Branch (452:12): [True: 0, False: 461]
+  ------------------
+  453|      0|        {
+  454|      0|            json_free(item);
+  455|      0|            json_fail(ps, "out of memory");
+  456|      0|            goto err;
+  457|      0|        }
+  458|    461|        key = NULL;
+  459|    461|        json_ws(ps);
+  460|    461|        if(ps->p < ps->end && *ps->p == ',')
+  ------------------
+  |  Branch (460:12): [True: 439, False: 22]
+  |  Branch (460:31): [True: 368, False: 71]
+  ------------------
+  461|    368|        {
+  462|    368|            ps->p++;
+  463|    368|            continue;
+  464|    368|        }
+  465|     93|        if(ps->p < ps->end && *ps->p == '}')
+  ------------------
+  |  Branch (465:12): [True: 71, False: 22]
+  |  Branch (465:31): [True: 66, False: 5]
+  ------------------
+  466|     66|        {
+  467|     66|            ps->p++;
+  468|     66|            return j;
+  469|     66|        }
+  470|     27|        json_fail(ps, "expected ',' or '}'");
+  471|     27|        goto err;
+  472|     93|    }
+  473|    531|err:
+  474|    531|    U_FREE(key);
+  ------------------
+  |  |   47|    531|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 531]
+  |  |  ------------------
+  ------------------
+  475|    531|    json_free(j);
+  476|       |    return NULL;
+  477|    597|}
+json.c:json_push:
+  113|  4.75k|{
+  114|  4.75k|    size_t cap;
+  115|  4.75k|    void *m;
+  116|       |
+  117|  4.75k|    if(j->n == j->cap)
+  ------------------
+  |  Branch (117:8): [True: 1.15k, False: 3.60k]
+  ------------------
+  118|  1.15k|    {
+  119|  1.15k|        cap = j->cap ? j->cap * 2 : 4;
+  ------------------
+  |  Branch (119:15): [True: 375, False: 784]
+  ------------------
+  120|  1.15k|        dbg_err_if((m = u_realloc(j->items, cap * sizeof *j->items)) == NULL);
+  ------------------
+  |  |  626|  1.15k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.15k]
+  |  |  |  Branch (626:77): [Folded, False: 1.15k]
+  |  |  ------------------
+  ------------------
+  121|  1.15k|        j->items = m;
+  122|  1.15k|        if(j->type == JSON_OBJECT)
+  ------------------
+  |  Branch (122:12): [True: 314, False: 845]
+  ------------------
+  123|    314|        {
+  124|    314|            dbg_err_if((m = u_realloc(j->keys, cap * sizeof *j->keys)) == NULL);
+  ------------------
+  |  |  626|    314|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 314]
+  |  |  |  Branch (626:77): [Folded, False: 314]
+  |  |  ------------------
+  ------------------
+  125|    314|            j->keys = m;
+  126|    314|            dbg_err_if((m = u_realloc(j->klens, cap * sizeof *j->klens))
+  ------------------
+  |  |  626|    314|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 314]
+  |  |  |  Branch (626:77): [Folded, False: 314]
+  |  |  ------------------
+  ------------------
+  127|    314|                    == NULL);
+  128|    314|            j->klens = m;
+  129|    314|        }
+  130|  1.15k|        j->cap = cap;
+  131|  1.15k|    }
+  132|  4.75k|    j->items[j->n] = item;
+  133|  4.75k|    if(j->type == JSON_OBJECT)
+  ------------------
+  |  Branch (133:8): [True: 461, False: 4.29k]
+  ------------------
+  134|    461|    {
+  135|    461|        j->keys[j->n] = key;
+  136|    461|        j->klens[j->n] = klen;
+  137|    461|    }
+  138|  4.75k|    j->n++;
+  139|       |
+  140|  4.75k|    return 0;
+  141|      0|err:
+  142|      0|    return ~0;
+  143|  4.75k|}
+json.c:json_parse_array:
+  369|  1.42k|{
+  370|  1.42k|    json_t *j, *item;
+  371|       |
+  372|  1.42k|    ps->p++;    /* '[' */
+  373|  1.42k|    if((j = json_new(JSON_ARRAY)) == NULL)
+  ------------------
+  |  Branch (373:8): [True: 0, False: 1.42k]
+  ------------------
+  374|      0|        return json_fail(ps, "out of memory"), NULL;
+  375|       |
+  376|  1.42k|    json_ws(ps);
+  377|  1.42k|    if(ps->p < ps->end && *ps->p == ']')
+  ------------------
+  |  Branch (377:8): [True: 1.38k, False: 41]
+  |  Branch (377:27): [True: 157, False: 1.22k]
+  ------------------
+  378|    157|    {
+  379|    157|        ps->p++;
+  380|    157|        return j;
+  381|    157|    }
+  382|  1.26k|    for(;;)
+  383|  5.28k|    {
+  384|  5.28k|        if((item = json_parse_value(ps, depth + 1)) == NULL)
+  ------------------
+  |  Branch (384:12): [True: 983, False: 4.29k]
+  ------------------
+  385|    983|            goto err;
+  386|  4.29k|        if(json_push(j, item, NULL, 0))
+  ------------------
+  |  Branch (386:12): [True: 0, False: 4.29k]
+  ------------------
+  387|      0|        {
+  388|      0|            json_free(item);
+  389|      0|            json_fail(ps, "out of memory");
+  390|      0|            goto err;
+  391|      0|        }
+  392|  4.29k|        json_ws(ps);
+  393|  4.29k|        if(ps->p < ps->end && *ps->p == ',')
+  ------------------
+  |  Branch (393:12): [True: 4.26k, False: 34]
+  |  Branch (393:31): [True: 4.01k, False: 250]
+  ------------------
+  394|  4.01k|        {
+  395|  4.01k|            ps->p++;
+  396|  4.01k|            continue;
+  397|  4.01k|        }
+  398|    284|        if(ps->p < ps->end && *ps->p == ']')
+  ------------------
+  |  Branch (398:12): [True: 250, False: 34]
+  |  Branch (398:31): [True: 235, False: 15]
+  ------------------
+  399|    235|        {
+  400|    235|            ps->p++;
+  401|    235|            return j;
+  402|    235|        }
+  403|     49|        json_fail(ps, "expected ',' or ']'");
+  404|     49|        goto err;
+  405|    284|    }
+  406|  1.03k|err:
+  407|  1.03k|    json_free(j);
+  408|       |    return NULL;
+  409|  1.26k|}
+json.c:json_new:
+  104|  6.82k|{
+  105|  6.82k|    json_t *j = u_zalloc(sizeof *j);
+  106|       |
+  107|  6.82k|    if(j)
+  ------------------
+  |  Branch (107:8): [True: 6.82k, False: 0]
+  ------------------
+  108|  6.82k|        j->type = type;
+  109|  6.82k|    return j;
+  110|  6.82k|}
+json.c:json_parse_string:
+  187|  1.40k|{
+  188|  1.40k|    const unsigned char *q;
+  189|  1.40k|    unsigned long cp, lo;
+  190|  1.40k|    size_t n, cap;
+  191|  1.40k|    char *out = NULL;
+  192|       |
+  193|  1.40k|    ps->p++;    /* '"' */
+  194|       |
+  195|       |    /* the decoded string is never longer than the source */
+  196|  51.0k|    for(q = ps->p; q < ps->end && *q != '"'; ++q)
+  ------------------
+  |  Branch (196:20): [True: 50.9k, False: 104]
+  |  Branch (196:35): [True: 49.6k, False: 1.30k]
+  ------------------
+  197|  49.6k|        if(*q == '\\' && q + 1 < ps->end)
+  ------------------
+  |  Branch (197:12): [True: 8.65k, False: 40.9k]
+  |  Branch (197:26): [True: 8.65k, False: 1]
+  ------------------
+  198|  8.65k|            ++q;
+  199|  1.40k|    cap = (size_t) (q - ps->p) + 1;
+  200|  1.40k|    if((out = u_malloc(cap)) == NULL)
+  ------------------
+  |  Branch (200:8): [True: 0, False: 1.40k]
+  ------------------
+  201|      0|        return json_fail(ps, "out of memory"), ~0;
+  202|       |
+  203|  1.40k|    for(n = 0;;)
+  204|  22.5k|    {
+  205|  22.5k|        if(ps->p >= ps->end)
+  ------------------
+  |  Branch (205:12): [True: 57, False: 22.4k]
+  ------------------
+  206|     57|        {
+  207|     57|            json_fail(ps, "unterminated string");
+  208|     57|            goto err;
+  209|     57|        }
+  210|  22.4k|        if(*ps->p == '"')
+  ------------------
+  |  Branch (210:12): [True: 1.29k, False: 21.1k]
+  ------------------
+  211|  1.29k|        {
+  212|  1.29k|            ps->p++;
+  213|  1.29k|            break;
+  214|  1.29k|        }
+  215|  21.1k|        if(*ps->p < 0x20)
+  ------------------
+  |  Branch (215:12): [True: 2, False: 21.1k]
+  ------------------
+  216|      2|        {
+  217|      2|            json_fail(ps, "control character in string");
+  218|      2|            goto err;
+  219|      2|        }
+  220|  21.1k|        if(*ps->p != '\\')
+  ------------------
+  |  Branch (220:12): [True: 12.7k, False: 8.47k]
+  ------------------
+  221|  12.7k|        {
+  222|  12.7k|            size_t k = json_utf8(ps->p, (size_t) (ps->end - ps->p), &cp);
+  223|       |
+  224|  12.7k|            if(k == 0)
+  ------------------
+  |  Branch (224:16): [True: 19, False: 12.7k]
+  ------------------
+  225|     19|            {
+  226|     19|                json_fail(ps, "invalid UTF-8");
+  227|     19|                goto err;
+  228|     19|            }
+  229|  12.7k|            memcpy(out + n, ps->p, k);
+  230|  12.7k|            n += k;
+  231|  12.7k|            ps->p += k;
+  232|  12.7k|            continue;
+  233|  12.7k|        }
+  234|       |
+  235|  8.47k|        ps->p++;    /* '\' */
+  236|  8.47k|        if(ps->p >= ps->end)
+  ------------------
+  |  Branch (236:12): [True: 1, False: 8.47k]
+  ------------------
+  237|      1|        {
+  238|      1|            json_fail(ps, "unterminated string");
+  239|      1|            goto err;
+  240|      1|        }
+  241|  8.47k|        switch(*ps->p++)
+  242|  8.47k|        {
+  243|    268|        case '"':  out[n++] = '"';  break;
+  ------------------
+  |  Branch (243:9): [True: 268, False: 8.20k]
+  ------------------
+  244|    280|        case '\\': out[n++] = '\\'; break;
+  ------------------
+  |  Branch (244:9): [True: 280, False: 8.19k]
+  ------------------
+  245|    194|        case '/':  out[n++] = '/';  break;
+  ------------------
+  |  Branch (245:9): [True: 194, False: 8.28k]
+  ------------------
+  246|     84|        case 'b':  out[n++] = '\b'; break;
+  ------------------
+  |  Branch (246:9): [True: 84, False: 8.39k]
+  ------------------
+  247|    274|        case 'f':  out[n++] = '\f'; break;
+  ------------------
+  |  Branch (247:9): [True: 274, False: 8.20k]
+  ------------------
+  248|    208|        case 'n':  out[n++] = '\n'; break;
+  ------------------
+  |  Branch (248:9): [True: 208, False: 8.26k]
+  ------------------
+  249|     66|        case 'r':  out[n++] = '\r'; break;
+  ------------------
+  |  Branch (249:9): [True: 66, False: 8.40k]
+  ------------------
+  250|    484|        case 't':  out[n++] = '\t'; break;
+  ------------------
+  |  Branch (250:9): [True: 484, False: 7.99k]
+  ------------------
+  251|  6.61k|        case 'u':
+  ------------------
+  |  Branch (251:9): [True: 6.61k, False: 1.86k]
+  ------------------
+  252|  6.61k|            if(json_hex4(ps, &cp))
+  ------------------
+  |  Branch (252:16): [True: 20, False: 6.59k]
+  ------------------
+  253|     20|            {
+  254|     20|                json_fail(ps, "bad \\u escape");
+  255|     20|                goto err;
+  256|     20|            }
+  257|  6.59k|            if(cp >= 0xD800 && cp <= 0xDBFF)
+  ------------------
+  |  Branch (257:16): [True: 484, False: 6.11k]
+  |  Branch (257:32): [True: 177, False: 307]
+  ------------------
+  258|    177|            {   /* a surrogate pair: "😀" */
+  259|    177|                if(ps->end - ps->p < 6 || ps->p[0] != '\\' || ps->p[1] != 'u')
+  ------------------
+  |  Branch (259:20): [True: 1, False: 176]
+  |  Branch (259:43): [True: 1, False: 175]
+  |  Branch (259:63): [True: 1, False: 174]
+  ------------------
+  260|      3|                {
+  261|      3|                    json_fail(ps, "unpaired surrogate");
+  262|      3|                    goto err;
+  263|      3|                }
+  264|    174|                ps->p += 2;
+  265|    174|                if(json_hex4(ps, &lo) || lo < 0xDC00 || lo > 0xDFFF)
+  ------------------
+  |  Branch (265:20): [True: 1, False: 173]
+  |  Branch (265:42): [True: 1, False: 172]
+  |  Branch (265:57): [True: 1, False: 171]
+  ------------------
+  266|      3|                {
+  267|      3|                    json_fail(ps, "unpaired surrogate");
+  268|      3|                    goto err;
+  269|      3|                }
+  270|    171|                cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
+  271|  6.41k|            } else if(cp >= 0xDC00 && cp <= 0xDFFF) {
+  ------------------
+  |  Branch (271:23): [True: 307, False: 6.11k]
+  |  Branch (271:39): [True: 1, False: 306]
+  ------------------
+  272|      1|                json_fail(ps, "unpaired surrogate");
+  273|      1|                goto err;
+  274|      1|            }
+  275|       |            /* a \u escape is 6 or 12 source bytes for at most 4 out */
+  276|  6.58k|            n += json_put_utf8(out + n, cp);
+  277|  6.58k|            break;
+  278|      2|        default:
+  ------------------
+  |  Branch (278:9): [True: 2, False: 8.47k]
+  ------------------
+  279|      2|            json_fail(ps, "bad escape");
+  280|      2|            goto err;
+  281|  8.47k|        }
+  282|  8.47k|    }
+  283|       |
+  284|  1.29k|    out[n] = '\0';
+  285|  1.29k|    *pout = out;
+  286|  1.29k|    *plen = n;
+  287|  1.29k|    return 0;
+  288|    108|err:
+  289|       |    U_FREE(out);
+  ------------------
+  |  |   47|    108|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 108]
+  |  |  ------------------
+  ------------------
+  290|    108|    return ~0;
+  291|  1.40k|}
+json.c:json_utf8:
+   42|  31.3k|{
+   43|  31.3k|    size_t n, k;
+   44|  31.3k|    unsigned long c;
+   45|       |
+   46|  31.3k|    if(avail == 0)
+  ------------------
+  |  Branch (46:8): [True: 0, False: 31.3k]
+  ------------------
+   47|      0|        return 0;
+   48|  31.3k|    if(s[0] < 0x80)
+  ------------------
+  |  Branch (48:8): [True: 29.9k, False: 1.40k]
+  ------------------
+   49|  29.9k|    {
+   50|  29.9k|        *cp = s[0];
+   51|  29.9k|        return 1;
+   52|  29.9k|    }
+   53|  1.40k|    if(s[0] >= 0xC2 && s[0] <= 0xDF)
+  ------------------
+  |  Branch (53:8): [True: 1.40k, False: 1]
+  |  Branch (53:24): [True: 132, False: 1.27k]
+  ------------------
+   54|    132|        n = 2, c = s[0] & 0x1F;
+   55|  1.27k|    else if(s[0] >= 0xE0 && s[0] <= 0xEF)
+  ------------------
+  |  Branch (55:13): [True: 1.27k, False: 1]
+  |  Branch (55:29): [True: 1.18k, False: 91]
+  ------------------
+   56|  1.18k|        n = 3, c = s[0] & 0x0F;
+   57|     92|    else if(s[0] >= 0xF0 && s[0] <= 0xF4)
+  ------------------
+  |  Branch (57:13): [True: 91, False: 1]
+  |  Branch (57:29): [True: 90, False: 1]
+  ------------------
+   58|     90|        n = 4, c = s[0] & 0x07;
+   59|      2|    else
+   60|      2|        return 0;
+   61|  1.40k|    if(avail < n)
+  ------------------
+  |  Branch (61:8): [True: 10, False: 1.39k]
+  ------------------
+   62|     10|        return 0;
+   63|  4.13k|    for(k = 1; k < n; ++k)
+  ------------------
+  |  Branch (63:16): [True: 2.74k, False: 1.39k]
+  ------------------
+   64|  2.74k|    {
+   65|  2.74k|        if((s[k] & 0xC0) != 0x80)
+  ------------------
+  |  Branch (65:12): [True: 3, False: 2.73k]
+  ------------------
+   66|      3|            return 0;
+   67|  2.73k|        c = (c << 6) | (s[k] & 0x3F);
+   68|  2.73k|    }
+   69|  1.39k|    if((n == 3 && (c < 0x800 || (c >= 0xD800 && c <= 0xDFFF))) ||
+  ------------------
+  |  Branch (69:9): [True: 1.17k, False: 214]
+  |  Branch (69:20): [True: 1, False: 1.17k]
+  |  Branch (69:34): [True: 786, False: 390]
+  |  Branch (69:49): [True: 1, False: 785]
+  ------------------
+   70|  1.38k|            (n == 4 && (c < 0x10000 || c > 0x10FFFF)))
+  ------------------
+  |  Branch (70:14): [True: 84, False: 1.30k]
+  |  Branch (70:25): [True: 1, False: 83]
+  |  Branch (70:40): [True: 1, False: 82]
+  ------------------
+   71|      4|        return 0;
+   72|  1.38k|    *cp = c;
+   73|  1.38k|    return n;
+   74|  1.39k|}
+json.c:json_hex4:
+  146|  6.78k|{
+  147|  6.78k|    int i, c;
+  148|       |
+  149|  6.78k|    if(ps->end - ps->p < 4)
+  ------------------
+  |  Branch (149:8): [True: 2, False: 6.78k]
+  ------------------
+  150|      2|        return ~0;
+  151|  33.8k|    for(*v = 0, i = 0; i < 4; ++i)
+  ------------------
+  |  Branch (151:24): [True: 27.1k, False: 6.76k]
+  ------------------
+  152|  27.1k|    {
+  153|  27.1k|        c = ps->p[i];
+  154|  27.1k|        *v <<= 4;
+  155|  27.1k|        if(c >= '0' && c <= '9')
+  ------------------
+  |  Branch (155:12): [True: 27.1k, False: 6]
+  |  Branch (155:24): [True: 19.7k, False: 7.31k]
+  ------------------
+  156|  19.7k|            *v |= (unsigned long) (c - '0');
+  157|  7.32k|        else if(c >= 'a' && c <= 'f')
+  ------------------
+  |  Branch (157:17): [True: 6.10k, False: 1.21k]
+  |  Branch (157:29): [True: 6.09k, False: 5]
+  ------------------
+  158|  6.09k|            *v |= (unsigned long) (c - 'a' + 10);
+  159|  1.22k|        else if(c >= 'A' && c <= 'F')
+  ------------------
+  |  Branch (159:17): [True: 1.21k, False: 10]
+  |  Branch (159:29): [True: 1.20k, False: 9]
+  ------------------
+  160|  1.20k|            *v |= (unsigned long) (c - 'A' + 10);
+  161|     19|        else
+  162|     19|            return ~0;
+  163|  27.1k|    }
+  164|  6.76k|    ps->p += 4;
+  165|  6.76k|    return 0;
+  166|  6.78k|}
+json.c:json_put_utf8:
+  169|  6.58k|{
+  170|  6.58k|    if(cp < 0x80)
+  ------------------
+  |  Branch (170:8): [True: 5.72k, False: 863]
+  ------------------
+  171|  5.72k|        return d[0] = (char) cp, 1;
+  172|    863|    if(cp < 0x800)
+  ------------------
+  |  Branch (172:8): [True: 117, False: 746]
+  ------------------
+  173|    117|        return d[0] = (char) (0xC0 | (cp >> 6)),
+  174|    117|               d[1] = (char) (0x80 | (cp & 0x3F)), 2;
+  175|    746|    if(cp < 0x10000)
+  ------------------
+  |  Branch (175:8): [True: 575, False: 171]
+  ------------------
+  176|    575|        return d[0] = (char) (0xE0 | (cp >> 12)),
+  177|    575|               d[1] = (char) (0x80 | ((cp >> 6) & 0x3F)),
+  178|    575|               d[2] = (char) (0x80 | (cp & 0x3F)), 3;
+  179|    171|    return d[0] = (char) (0xF0 | (cp >> 18)),
+  180|    171|           d[1] = (char) (0x80 | ((cp >> 12) & 0x3F)),
+  181|    171|           d[2] = (char) (0x80 | ((cp >> 6) & 0x3F)),
+  182|    171|           d[3] = (char) (0x80 | (cp & 0x3F)), 4;
+  183|    746|}
+json.c:json_parse_literal:
+  358|    177|{
+  359|    177|    size_t n = strlen(word);
+  360|       |
+  361|    177|    if((size_t) (ps->end - ps->p) < n || memcmp(ps->p, word, n))
+  ------------------
+  |  Branch (361:8): [True: 4, False: 173]
+  |  Branch (361:42): [True: 1, False: 172]
+  ------------------
+  362|      5|        return json_fail(ps, "unexpected character"), NULL;
+  363|    172|    ps->p += n;
+  364|       |
+  365|    172|    return json_new(type);
+  366|    177|}
+json.c:json_parse_number:
+  296|  4.15k|{
+  297|  4.15k|    const unsigned char *s = ps->p;
+  298|  4.15k|    char buf[512], *e;
+  299|  4.15k|    int frac = 0;
+  300|  4.15k|    size_t len;
+  301|  4.15k|    json_t *j;
+  302|       |
+  303|  4.15k|    if(ps->p < ps->end && *ps->p == '-')
+  ------------------
+  |  Branch (303:8): [True: 4.15k, False: 0]
+  |  Branch (303:27): [True: 935, False: 3.21k]
+  ------------------
+  304|    935|        ps->p++;
+  305|  4.15k|    if(ps->p < ps->end && *ps->p == '0')
+  ------------------
+  |  Branch (305:8): [True: 4.15k, False: 1]
+  |  Branch (305:27): [True: 1.01k, False: 3.13k]
+  ------------------
+  306|  1.01k|        ps->p++;
+  307|  3.13k|    else if(ps->p < ps->end && *ps->p >= '1' && *ps->p <= '9')
+  ------------------
+  |  Branch (307:13): [True: 3.13k, False: 1]
+  |  Branch (307:32): [True: 3.13k, False: 5]
+  |  Branch (307:49): [True: 3.11k, False: 15]
+  ------------------
+  308|  19.0k|        while(ps->p < ps->end && *ps->p >= '0' && *ps->p <= '9')
+  ------------------
+  |  Branch (308:15): [True: 19.0k, False: 33]
+  |  Branch (308:34): [True: 16.6k, False: 2.36k]
+  |  Branch (308:51): [True: 15.9k, False: 724]
+  ------------------
+  309|  15.9k|            ps->p++;
+  310|     21|    else
+  311|     21|        return json_fail(ps, "bad number"), NULL;
+  312|  4.13k|    if(ps->p < ps->end && *ps->p == '.')
+  ------------------
+  |  Branch (312:8): [True: 4.09k, False: 40]
+  |  Branch (312:27): [True: 407, False: 3.68k]
+  ------------------
+  313|    407|    {
+  314|    407|        frac = 1;
+  315|    407|        if(++ps->p >= ps->end || *ps->p < '0' || *ps->p > '9')
+  ------------------
+  |  Branch (315:12): [True: 1, False: 406]
+  |  Branch (315:34): [True: 1, False: 405]
+  |  Branch (315:50): [True: 1, False: 404]
+  ------------------
+  316|      3|            return json_fail(ps, "bad number"), NULL;
+  317|  5.35k|        while(ps->p < ps->end && *ps->p >= '0' && *ps->p <= '9')
+  ------------------
+  |  Branch (317:15): [True: 5.34k, False: 7]
+  |  Branch (317:34): [True: 5.22k, False: 123]
+  |  Branch (317:51): [True: 4.94k, False: 274]
+  ------------------
+  318|  4.94k|            ps->p++;
+  319|    404|    }
+  320|  4.13k|    if(ps->p < ps->end && (*ps->p == 'e' || *ps->p == 'E'))
+  ------------------
+  |  Branch (320:8): [True: 4.08k, False: 47]
+  |  Branch (320:28): [True: 1.25k, False: 2.82k]
+  |  Branch (320:45): [True: 101, False: 2.72k]
+  ------------------
+  321|  1.35k|    {
+  322|  1.35k|        frac = 1;
+  323|  1.35k|        if(++ps->p < ps->end && (*ps->p == '+' || *ps->p == '-'))
+  ------------------
+  |  Branch (323:12): [True: 1.35k, False: 5]
+  |  Branch (323:34): [True: 230, False: 1.12k]
+  |  Branch (323:51): [True: 11, False: 1.11k]
+  ------------------
+  324|    241|            ps->p++;
+  325|  1.35k|        if(ps->p >= ps->end || *ps->p < '0' || *ps->p > '9')
+  ------------------
+  |  Branch (325:12): [True: 6, False: 1.35k]
+  |  Branch (325:32): [True: 2, False: 1.34k]
+  |  Branch (325:48): [True: 3, False: 1.34k]
+  ------------------
+  326|     11|            return json_fail(ps, "bad number"), NULL;
+  327|  3.13k|        while(ps->p < ps->end && *ps->p >= '0' && *ps->p <= '9')
+  ------------------
+  |  Branch (327:15): [True: 3.12k, False: 9]
+  |  Branch (327:34): [True: 1.81k, False: 1.31k]
+  |  Branch (327:51): [True: 1.79k, False: 22]
+  ------------------
+  328|  1.79k|            ps->p++;
+  329|  1.34k|    }
+  330|       |
+  331|  4.11k|    if((len = (size_t) (ps->p - s)) >= sizeof buf)
+  ------------------
+  |  Branch (331:8): [True: 0, False: 4.11k]
+  ------------------
+  332|      0|        return json_fail(ps, "number too long"), NULL;
+  333|  4.11k|    memcpy(buf, s, len);
+  334|  4.11k|    buf[len] = '\0';
+  335|       |
+  336|  4.11k|    if((j = json_new(JSON_NUMBER)) == NULL)
+  ------------------
+  |  Branch (336:8): [True: 0, False: 4.11k]
+  ------------------
+  337|      0|        return json_fail(ps, "out of memory"), NULL;
+  338|  4.11k|    j->num = strtod(buf, &e);
+  339|  4.11k|    if(!frac)
+  ------------------
+  |  Branch (339:8): [True: 2.63k, False: 1.48k]
+  ------------------
+  340|  2.63k|    {
+  341|  2.63k|        errno = 0;
+  342|  2.63k|        j->ival = strtoll(buf, &e, 10);
+  343|       |        /* "-0" is the double -0.0 (as an integer it would lose its sign,
+  344|       |           and -0.0 written back would read differently) */
+  345|  2.63k|        j->is_int = (errno == 0) && !(j->ival == 0 && buf[0] == '-');
+  ------------------
+  |  Branch (345:21): [True: 2.28k, False: 349]
+  |  Branch (345:39): [True: 594, False: 1.68k]
+  |  Branch (345:55): [True: 388, False: 206]
+  ------------------
+  346|  2.63k|    }
+  347|  4.11k|    if(!isfinite(j->num))
+  ------------------
+  |  Branch (347:8): [True: 3, False: 4.11k]
+  ------------------
+  348|      3|    {
+  349|      3|        json_free(j);
+  350|      3|        return json_fail(ps, "number out of range"), NULL;
+  351|      3|    }
+  352|       |
+  353|  4.11k|    return j;
+  354|  4.11k|}
+json.c:json_ws:
+   97|  15.9k|{
+   98|  24.9k|    while(ps->p < ps->end && (*ps->p == ' ' || *ps->p == '\t' ||
+  ------------------
+  |  Branch (98:11): [True: 24.2k, False: 650]
+  |  Branch (98:31): [True: 3.90k, False: 20.3k]
+  |  Branch (98:48): [True: 2.40k, False: 17.9k]
+  ------------------
+   99|  17.9k|                *ps->p == '\n' || *ps->p == '\r'))
+  ------------------
+  |  Branch (99:17): [True: 1.76k, False: 16.1k]
+  |  Branch (99:35): [True: 847, False: 15.3k]
+  ------------------
+  100|  8.92k|        ps->p++;
+  101|  15.9k|}
+json.c:json_fail:
+   89|    421|{
+   90|    421|    if(!ps->failed && ps->err && ps->errsz)
+  ------------------
+  |  Branch (90:8): [True: 421, False: 0]
+  |  Branch (90:23): [True: 0, False: 421]
+  |  Branch (90:34): [True: 0, False: 0]
+  ------------------
+   91|      0|        (void) snprintf(ps->err, ps->errsz, "%s at offset %lu", what,
+   92|      0|                (unsigned long) (ps->p - ps->start));
+   93|    421|    ps->failed = 1;
+   94|    421|}
+json.c:json_begin:
+  775|    422|{
+  776|    422|    if(json_pre_value(w))
+  ------------------
+  |  Branch (776:8): [True: 0, False: 422]
+  ------------------
+  777|      0|        return ~0;
+  778|    422|    if(w->depth == JSON_MAX_DEPTH)
+  ------------------
+  |  Branch (778:8): [True: 0, False: 422]
+  ------------------
+  779|      0|        return w->failed = 1, ~0;
+  780|    422|    w->depth++;
+  781|    422|    w->kind[w->depth] = kind;
+  782|    422|    w->count[w->depth] = 0;
+  783|    422|    return json_put(w, kind == 'o' ? "{" : "[", 1);
+  ------------------
+  |  Branch (783:24): [True: 58, False: 364]
+  ------------------
+  784|    422|}
+json.c:json_end:
+  787|    422|{
+  788|    422|    if(w->failed || w->depth == 0 || w->kind[w->depth] != kind ||
+  ------------------
+  |  Branch (788:8): [True: 0, False: 422]
+  |  Branch (788:21): [True: 0, False: 422]
+  |  Branch (788:38): [True: 0, False: 422]
+  ------------------
+  789|    422|            w->after_key)
+  ------------------
+  |  Branch (789:13): [True: 0, False: 422]
+  ------------------
+  790|      0|        return w->failed = 1, ~0;
+  791|    422|    w->depth--;
+  792|    422|    if(json_put(w, kind == 'o' ? "}" : "]", 1))
+  ------------------
+  |  Branch (792:8): [True: 0, False: 422]
+  |  Branch (792:20): [True: 58, False: 364]
+  ------------------
+  793|      0|        return ~0;
+  794|    422|    json_post_value(w);
+  795|    422|    return 0;
+  796|    422|}
+json.c:json_put:
+  697|  23.6k|{
+  698|  23.6k|    if(!w->failed && n && io_write(w->out, s, n) < (ssize_t) n)
+  ------------------
+  |  Branch (698:8): [True: 23.6k, False: 0]
+  |  Branch (698:22): [True: 23.6k, False: 0]
+  |  Branch (698:27): [True: 0, False: 23.6k]
+  ------------------
+  699|      0|        w->failed = 1;
+  700|  23.6k|    return w->failed ? ~0 : 0;
+  ------------------
+  |  Branch (700:12): [True: 0, False: 23.6k]
+  ------------------
+  701|  23.6k|}
+json.c:json_put_string:
+  736|    302|{
+  737|    302|    const unsigned char *p = (const unsigned char *) s, *e = p + len;
+  738|    302|    char esc[8];
+  739|    302|    unsigned long cp;
+  740|    302|    size_t k;
+  741|       |
+  742|    302|    json_put(w, "\"", 1);
+  743|  18.9k|    while(p < e)
+  ------------------
+  |  Branch (743:11): [True: 18.6k, False: 302]
+  ------------------
+  744|  18.6k|    {
+  745|  18.6k|        if((k = json_utf8(p, (size_t) (e - p), &cp)) == 0)
+  ------------------
+  |  Branch (745:12): [True: 0, False: 18.6k]
+  ------------------
+  746|      0|        {
+  747|      0|            json_put(w, "\\ufffd", 6);
+  748|      0|            p++;
+  749|      0|            continue;
+  750|      0|        }
+  751|  18.6k|        if(cp == '"' || cp == '\\')
+  ------------------
+  |  Branch (751:12): [True: 264, False: 18.3k]
+  |  Branch (751:25): [True: 270, False: 18.1k]
+  ------------------
+  752|    534|        {
+  753|    534|            esc[0] = '\\';
+  754|    534|            esc[1] = (char) cp;
+  755|    534|            json_put(w, esc, 2);
+  756|  18.1k|        } else if(cp == '\n')
+  ------------------
+  |  Branch (756:19): [True: 204, False: 17.9k]
+  ------------------
+  757|    204|            json_put(w, "\\n", 2);
+  758|  17.9k|        else if(cp == '\r')
+  ------------------
+  |  Branch (758:17): [True: 62, False: 17.8k]
+  ------------------
+  759|     62|            json_put(w, "\\r", 2);
+  760|  17.8k|        else if(cp == '\t')
+  ------------------
+  |  Branch (760:17): [True: 480, False: 17.3k]
+  ------------------
+  761|    480|            json_put(w, "\\t", 2);
+  762|  17.3k|        else if(cp < 0x20 || cp == '<' || cp == '>' || cp == '&' ||
+  ------------------
+  |  Branch (762:17): [True: 194, False: 17.1k]
+  |  Branch (762:30): [True: 9.71k, False: 7.46k]
+  |  Branch (762:43): [True: 570, False: 6.89k]
+  |  Branch (762:56): [True: 960, False: 5.93k]
+  ------------------
+  763|  5.93k|                cp == 0x2028 || cp == 0x2029)
+  ------------------
+  |  Branch (763:17): [True: 0, False: 5.93k]
+  |  Branch (763:33): [True: 0, False: 5.93k]
+  ------------------
+  764|  11.4k|        {
+  765|  11.4k|            (void) snprintf(esc, sizeof esc, "\\u%04lx", cp);
+  766|  11.4k|            json_put(w, esc, 6);
+  767|  11.4k|        } else
+  768|  5.93k|            json_put(w, (const char *) p, k);
+  769|  18.6k|        p += k;
+  770|  18.6k|    }
+  771|    302|    return json_put(w, "\"", 1);
+  772|    302|}
+json.c:json_pre_value:
+  705|  2.37k|{
+  706|  2.37k|    if(w->failed)
+  ------------------
+  |  Branch (706:8): [True: 0, False: 2.37k]
+  ------------------
+  707|      0|        return ~0;
+  708|  2.37k|    if(w->depth == 0)
+  ------------------
+  |  Branch (708:8): [True: 384, False: 1.99k]
+  ------------------
+  709|    384|    {
+  710|    384|        if(w->done)
+  ------------------
+  |  Branch (710:12): [True: 0, False: 384]
+  ------------------
+  711|      0|            return w->failed = 1, ~0;   /* one document per writer */
+  712|    384|        return 0;
+  713|    384|    }
+  714|  1.99k|    if(w->kind[w->depth] == 'o')
+  ------------------
+  |  Branch (714:8): [True: 76, False: 1.91k]
+  ------------------
+  715|     76|    {
+  716|     76|        if(!w->after_key)
+  ------------------
+  |  Branch (716:12): [True: 0, False: 76]
+  ------------------
+  717|      0|            return w->failed = 1, ~0;   /* a value needs a key here */
+  718|     76|        w->after_key = 0;
+  719|     76|        return 0;
+  720|     76|    }
+  721|  1.91k|    if(w->count[w->depth]++)
+  ------------------
+  |  Branch (721:8): [True: 1.69k, False: 224]
+  ------------------
+  722|  1.69k|        return json_put(w, ",", 1);
+  723|    224|    return 0;
+  724|  1.91k|}
+json.c:json_post_value:
+  727|  2.37k|{
+  728|  2.37k|    if(w->depth == 0)
+  ------------------
+  |  Branch (728:8): [True: 384, False: 1.99k]
+  ------------------
+  729|    384|        w->done = 1;
+  730|  2.37k|}
+json.c:json_raw_value:
+  841|  1.72k|{
+  842|  1.72k|    dbg_return_if (w == NULL, ~0);
+  ------------------
+  |  |  619|  1.72k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 1.72k]
+  |  |  |  Branch (619:79): [Folded, False: 1.72k]
+  |  |  ------------------
+  ------------------
+  843|       |
+  844|  1.72k|    if(json_pre_value(w) || json_put(w, s, strlen(s)))
+  ------------------
+  |  Branch (844:8): [True: 0, False: 1.72k]
+  |  Branch (844:29): [True: 0, False: 1.72k]
+  ------------------
+  845|      0|        return ~0;
+  846|  1.72k|    json_post_value(w);
+  847|  1.72k|    return 0;
+  848|  1.72k|}
+
