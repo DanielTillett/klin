@@ -156,7 +156,7 @@ static int acl_list_add(const char *list, int allow, acl_rule_t *rule,
         en.allow = allow;
         if(rule)
             rule->entries[rule->nentries++] = en;
-        else
+        else if(n)
             ++*n;
     }
     return 0;
