@@ -442,10 +442,15 @@ static int load_conf(const char *text, u_config_t **pc)
 
 static int write_file(const char *path, const char *text)
 {
-    FILE *f = fopen(path, "w");
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    FILE *f = fd < 0 ? NULL : fdopen(fd, "w");
 
     if(f == NULL)
+    {
+        if(fd >= 0)
+            close(fd);
         return ~0;
+    }
     fputs(text, f);
     return fclose(f) ? ~0 : 0;
 }
