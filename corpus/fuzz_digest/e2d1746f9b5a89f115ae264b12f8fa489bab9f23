@@ -1,0 +1,43 @@
+username="u", realm="R", noÛrea",l=m"R nonce="1.a“bc", uri="/x", response="00", algori-incluA-256, qop=auth, nc000001, clonce="c"
+use/r
+{
+ name u
+ d, qop=au002, cnonce="c"
+us[r
+{
+ name u`
+ digest SHA-011 R
+ password pbkdf cnonce="c"
+us[rÿÿÿú
+{
+u digest S name u`
+ digest SHA-50:6 0ÿe="00", algorithm=SA-256- qop=auth, nc=00000002, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c001, clonce="c"
+use/r
+{
+ name u
+ d, qop=au002, cnonce="c"
+us[r
+{
+ name u`
+ digest SHA-011 R
+ password pbkdf cnonce="c"
+us[rÿÿÿú
+{
+u digest S name u`
+ digest SHA-50:6 0ÿe="00", algorithm=SA-256- qop=auth, nc=00000002, clonce=01, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00
+username="u", realm="R", nonce=us.abc", uri="/x", response="00", algor{
+ name  SHA-25:6 001
+ digesc=00000002, cnonce="c"
+us[r
+{
+ name u`
+ digest SHA-25:6 0011 R
+userna

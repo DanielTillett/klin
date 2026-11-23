@@ -1,0 +1,102 @@
+rlg="u",lm="P",="abc" uri="",eg="u"alm="ÿÿÿú"abc" urii="rxe/="u6, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nonce="2.avvvvvvvvvvvvvvvvvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", vvvvvvvvvvvvvvvvvvvv", response="01", algorithm=SHA-256, qop=au7th, nc=00000001, dnonce="c"
+user
+{
+ name SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", ralm="R",  uri="/x", response="00", algorithm=SHA-256,vbc", uri="/x", response="00", algoriSHA-256, qop=au7th, nc=00001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u"respAAA qop=au7th,=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ diest SHA-256 00:1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;="1.avvvvvvvvvvvvvu6, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAesponse="01", algorithm=SHA-256, qop=au7th, nc=00000001, cn-include
+user
+{
+ name SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", ralm="R",  uri="/x", response="00", algorithm=SHA-256,vbc", uri="/x", response="00", algorithm=SHA-256, qop=au7th, nc=00001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u"respAAA qop=au7th,=au7th, nc=AA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", ralm="R",  uri="/x", rensopse="00", algorithm=SHA-256,vbc", uri="/x", response="00", algorithm=SHA-256, qOp=au7th, nc=00001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u"respAAA qop=au7th,=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ diest SHA-256 00:1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;="1.avvvvvvvvvvvvvu6, qop=au7th, nc=00000001, cnonce="c"
+usgr
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=au7thus algorithm=SHA-25.apasswÿ R
+"1.abc"useaÿrÿmÿnÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿnonce="1.abc",..........................................osponsersit gsSHA-256 0011 R
+"1.abc"useaÿrÿmÿnÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ, nc=00000001, cnonce="c"
+usÿÿÿÿer
+{
+ name ÿÿÿÿÿÿÿnonce="0.au

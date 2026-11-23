@@ -1,0 +1,27 @@
+algum=SHA-256, qopth, nc=0nec,1co ="c"
+user
+{
+ name u
+ digÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp SHA-128 00ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAor=AAAA=
+}
+0000ec,nnco ="c"
+user
+{
+2nÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ dest SHA-256 00ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAIAAAAAAAAAA=
+}

@@ -1,0 +1,14 @@
+vvvövvvvbc", uri="/ "exc"
+user
+{
+ name e
+ord* pbkdf2-sha256AAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nvvvvvvvvvvvvvvvh, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ passÿrd pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AA, htnAA.AAAA=
+}
+;

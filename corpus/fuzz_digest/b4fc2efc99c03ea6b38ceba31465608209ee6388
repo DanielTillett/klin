@@ -1,0 +1,64 @@
+username="u", ="1.a“bc", uri="/x", response="00", algorithm=SHA-256, qop=auth, nc=00000001, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name u
+ diges=/x, nc=00000001, clonername="a\"b", ealm="Rnce""=c
+user
+{
+ ]ame u`
+ d¤igest SÂ¾-256 0011 R
+ ’še="nonce="user
+{
+ name u`ce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name u
+ digest SHAreal , algorithm=SHA-12A-256, qop=auth, nc=00$00001, clonce="c"
+user
+{ 
+ name u
+ digest SHAreal 3 algoritt SHAreal , algorithm=SHA-25A-256, qop=auth, nc=00$00001, clonce="c"
+user
+{ 
+ name u
+ digesSHAreal , algorme u
+ digest SHAreal , algorithm=SHA-25A-256, qop=auth, nc=0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ0$00001, clonce="c"
+user
+{ 
+ name u
+ digest SHAreal , algoritt00="c"
+user
+{
+ name u
+ digest SHAreal , algorithm=once="c"
+user
+{
+ name u
+ diges=/x", response="0x", respalgonse="00", algorithm=SHA-568ame="u", realm="R", nonce clonername="a",b\" ealm="Rnce""=c
+user
+{
+ ]ame u`
+ d¤igest SÂ¾-256 0011 R
+ ’še="nonce="user
+{
+] name u`ce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name\u
+ di?gest SHAreal , algorithm=SHA-11A-256, q001, clonce="c"
+user
+{ 
+ name u
+ diresponse="00", algorithm=SHA25r
