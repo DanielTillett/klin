@@ -1,23 +1,0 @@
-POST /f HTTP/1.1
-Cont:=yÿ;ÿo
-Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
-Content-Length: 2424
-
- 
-
---ÿqÿÿÿÿÿt
-Content-Disposition: form-data@ name=Ce$:Cons-itDposition: form-fata; filename=:Hÿ1212
-
- 
-
---ÿqÿContent-Disposition: form-data; Õname=@ name=$:Coÿÿÿÿÿta; =@ nsa; filename==ÿ;ÿ
-
- 
-
---ÿqÿContent-Disposition: form-data; name=@ name=Ce$:Conte-fatî; filename=2
-
- 
-GET 1%s-itDpo2e%2b1%2C:
-Co
- 
-lgCo

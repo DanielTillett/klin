@@ -1,18 +1,0 @@
-POST /f HTTP/1.1
-Host: x
-Content-Type:multipart/form-dataGETboundary=ÿ;ÿo%00n;ÿo
-Content-Length: 1212
-
- 
-POST /
-Host:;ÿo
-Contentgt
---ÿqÿÿÿÿÿt
-Content-Disposition: form-data; namee:multCt`/rpiont 2424
-
- 
-
---ÿqÿÿÿïÿt
-Co
-
- lgCo

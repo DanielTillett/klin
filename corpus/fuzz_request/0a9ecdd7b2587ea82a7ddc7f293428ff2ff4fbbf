@@ -1,30 +1,0 @@
-GET /a/b?x¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾0¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾¾=1&y=%20 HTTP/1.1
-Host: localhost
-Cookie:ÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑCookie:2e=T
-COokie: aÿmultipart/form-daÍta; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET /Áb/?x=1Co&ntent-Disposition: fo/Áb/?x=1&Content-Disposition: form-data; name=y=%21 HtGET /ab8Xx=TT/1%2e%2e=T
-COokie: aÿmultipart/form-,ata; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; name=y=%21 Ht
-COokie: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%21 HtGET /art/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; name=y=%21 Ht
-COokie: aÿmultipart/form-data; boundar=yÿ/ÿTrm-data; name=y=%21 Ht
-COoki: bCost
-Cookie:GET position: form-data; name=y=%21 Ht
-COokie: aÿmulatiprt/form-data; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%22 HtGET /ab8Xx=TT/1%2 aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; e: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Type; kntent-Disposition: form-data; name=y=%21 HtGETrm-data; name=y=%21 HtGET /ab8Xx=TT/1%2e%2eent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%21 HtGET /ab8Xx=TT/1%2e%2e=T
-COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; name=y=%21 Ht
-COokie: aÿmultipart/form-data; boundar=yÿ/ÿTrm-data; name=y=%21 Ht
-COoki: bCost
-Cookie:GET position: form-data; name=y=%21 Ht
-COokie: aÿmulatiprt/form-data; bmundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%22 HtGET /ab8Xx=TT/1%2 aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; e: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Tÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%22 HtGET /ab8Xx=TT/1%2 aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; e: aÿmultipart/form-data; boundar=y=ÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Type; kntent-Disposition:  HtGETrm-data; name=y=%21 HtGET /ab8Xx=TT/1%2e%2eent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%21 HtGET /ab8Xx=TT/1%2e%2e=T
-COokie: aÿmulata; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%22 HtGET /ab8Xx=TT/1%2 aÿmultipart/form-data; bound+ary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-data; e: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2eCookie%2e le%2e locsÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipartpart/form-dat-Tÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultiparte=y=%22 HtGET /ab8Xx=TT/1%2 aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
-Cookie:GET position: form-dat^; e: aÿmultipart/form-data; boundar=yÿ/ÿT1%2e%2ultipar¾¾¾=2&y=%20 HT8
-
-hao
-ltCoo
-GET /
-

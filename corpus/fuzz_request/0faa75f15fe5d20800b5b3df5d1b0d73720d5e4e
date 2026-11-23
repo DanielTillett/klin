@@ -1,5 +1,0 @@
-GET /a/b?x=% HTTP/1.1
-Host:hla
-Cookie:GET /b/Á?%x=1&y=%20 Hb/?%x=12:5
-
-ÛÿÿÿÏo=k

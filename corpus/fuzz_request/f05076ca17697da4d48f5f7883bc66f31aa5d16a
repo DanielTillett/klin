@@ -1,9 +1,0 @@
-GET /a/b?x=T%10ÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿPÿÿÿÿÿ HTTP/1.1
-Hos: localhost
-Cookie: afEme=
-COokie:ÿÿÿname=
-COokie:ta; name=
-COokHost: loct
-Cookie: a=
-COokie:ÿÿÿÿÿÿ?ÿÿÿÿe loc
-

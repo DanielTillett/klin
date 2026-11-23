@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-st: x
-Content-Type:multipart/form-datancodkiechunkedd
-Content-Length: 23
-
-a=1

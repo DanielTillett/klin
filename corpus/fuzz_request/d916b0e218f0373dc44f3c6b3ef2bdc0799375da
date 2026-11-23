@@ -1,8 +1,0 @@
-GET /a/b?x=1&20 HTTP/1.1
-Host:cost
-Cookie:G&y=%20
-COokie: aÿÿÿ;ÿÿ	ÿ1calhost
-Cookie:G
-COokie: (aÿÿÿÿÿ	: loc: bC
-
-
