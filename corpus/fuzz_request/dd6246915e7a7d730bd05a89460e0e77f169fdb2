@@ -1,0 +1,67 @@
+GET /a/b?xHTf HTTP/1.1
+Host: x
+Content-Type: applicaPOSTtion/x-www-form-ubr/a?xHTf HTTP/1.1
+Host: x
+Content-Type: application/x-www-for&-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: applicatioengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+ConteCookient-LengthC: 11Content-Typeoÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿrm-urlencoded
+Content-LengthC: 10Cojtent-TypeonteGET / HTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:4Type: appÿÿÿÿÿÿÿÿÿÿÿÿn/x-www-form-urlencoded
+ConteCookient-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC:un, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: appl: ation/x-www-form-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-Type: apðÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿnteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sent-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿlication/x-www-form-urlencoded
+Content-LengthC: 10Content-TypeonteGET / HTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08rm-urlencoded
+ConteCookient-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: application/x-www-form-urlencoded
+Content-Leontent-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-Type: appÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿlication/x-www-form-urlencoded
+Content-LengthC: 10Content-TypeonteGET÷/ HTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:4Type: appÿÿÿÿÿÿÿÿÿÿÿÿn/x-www-form-urlencoded
+ConteCookient-LengthC: 11Content-TypeonteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-www-form-urlencoded
+Content-LengthC: 11Content-TypeoGET /a/b?x=2Üy=%20ÿ[ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿnteGET / ÈTTP/1.0
+If-Modint-fied-Since: Sun, 06 Nov 1994 08:49:37TP/1ki×:
+ContHnt-LengthC: 22CPOSTntent-Type: application/x-www-form-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: application/x-wded
+Content-LengthC: 10Content-TypeonteGE

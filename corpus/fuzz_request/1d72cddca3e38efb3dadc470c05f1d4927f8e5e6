@@ -1,0 +1,19 @@
+POST /f HTTP/1.1
+Host:
+Content-Type:multipart/form-dataGE2boundary=ÿ;ÿo
+Content-Length: 1212
+
+ie
+--ÿqÿÿÿaÿt
+Content-Disposition: form-data%00@ fata; filename=tp
+
+ype:ÿa03
+1ÅÅÅÅÅÅÅ
+ST /fHTTP/1.0
+HstContent-y:m
+oHTTP/0.1t1212
+
+ 
+
+--ÿqÿÿnt-Length: 12
+o

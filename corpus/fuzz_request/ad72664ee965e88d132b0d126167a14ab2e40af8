@@ -1,0 +1,13 @@
+GET /a/b?x1Expect==%&y20 HTTP/1.1
+Host: localhost
+kooCie:GET b; lin_yalhost
+Cookie:GET%x=1&y=%20 HTTPT /Áb/?%x=1&yCont Hÿÿ	20 HTTP/1.1
+~ost: localhmst
+Cookie:GET /Áb/?%x=1&y=%20 HTTP/1.1s4444/?%x=1&y=%20 HTa=bGET /a/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\x½1okie:G?%x=1&y=%20 HTTP/1. /`Áb/?%x=1&y=%20 HTTP/1.1s4444/?%x=1&Y=%20 HTTP//?%x=/a/b?\\\\\\\\\\\\\\\=%2þÿ2ÿõHTTP HTTst
+Cookie:GET[ /Áb/?%x=1&y=%20 HTTP/ContExpecteCookient-&y=%20 HTTP/ost: lo1s44444:G k a=bGET /a/b?x½2okie:GET /Áb/?%x=1&y=%20 HTTP/1. /`Áb/?%x=1&y=%40 HTTP/2.1s4444/?%x=1&y=%20 HTTP//?%x=1&y=%20 HTTP/1.1s4444$:G k a=tipart/formnt-doee; kHostÁb/?%x=1&y=%20 Hÿÿ	2GEookie:GET%x=1&y=%20 HTTP/1.1s44444:G k a=bGEinaÿmult; kET /Áb/?%x=1&yCont Hÿÿ	20 HTTHTTP/1.1ost: localhmst
+Cookie:GET /Áb/?%x=1&y=%20 HTTP/1.’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’’1s4444/?%x=1&y=%20 HTa=bGET /a/b?\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\okie:G?%x=1&y=%20 HTTP/1. /`Áb/?%[=1&y=%20 HTTP/1.1s4444/?%x=1&y=%20 HTTP//?%x=1&y=teCookient-&y=%20 HTTP/os lo1s44444:G k a=bGET /a/b?x½2okie:GET /Áb/?%x=1&y=%20 HTTP/1. /`Áb/?%x=1&y=%20 HT2.1s4444/?%x=1&y=%20 HTTP//?%x=1&y=%20 HTTP/1.1s44444:G k a=tipart/formnt-doee; kET /Áb/?%x=1&y=%20 Hÿÿ	2GETTTP/1.1
+Host: localhost
+Cookie:GET%x=1&y=%20 HTGmult; kET /Á20 HTTP/1.1s44444:G k aEb=TG Einaart/formnt-doeent-Type; kET /Áb/?%x=1&y=%20 Hÿÿ	20 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?%x=1&y=%20 HTTP/1.1s4444/?%x=1&y=%20 HTTP/ost: lo23
+

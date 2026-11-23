@@ -1,0 +1,40 @@
+POST /f HTTP/1.1
+Host:Lengt: x2
+Host:tanHTTP/1.0dary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1211
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Conte-itDposition: form-fata; filename=:Hnadm-data; nContent-Dispion: form-data; na,e=ion: form-fafilename=:headm-data; namTypert/form-dataGE4boHTTP/1.0;ÿo
+Content-Length: 1213
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name=-fata; filename=:hea-itDposition:tioundary=ÿ;ÿo
+Co3ntent: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; n§’šÂ@ naíe=CposC--tens-itDposition:a; filename=:headta;Ty212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; name= 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; na+me=@ name; filename=:hea-ptDposition/tipa
+
+ 
+
+--ÿqÿIontent-Disp: form-data424
+
+Î
+--ÿ
+ATCH:N-1
+Ht:
+CoÅÅÅÅÅt
+ lgCo

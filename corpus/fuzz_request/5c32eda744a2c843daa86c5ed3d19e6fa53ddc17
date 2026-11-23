@@ -1,0 +1,19 @@
+GET /a/b?x=POST%1ÿÿÿÿÿ HTTP/1.1
+Hhst: localhost
+Cookie: a=[HTTP/01/data; name=
+COokie:ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿûjÿÿÿÿÿÿÿÿ; name=
+COokie:ÿÿÿÿÿÿÿÿÿ0ÿx=1&y=%2tip.rt;fET / HTTP/data; name=
+COokie:ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿûÿÿjjjÿÿÿÿÿÿÿÿ; name=
+COokie:ÿÿÿÿÿ name=
+COokie:1
+Host: localhost
+Cookie: a=b; klm-dAta; namContentÓLengthl=
+COokie:1
+Host:a=b; klinm: l†cäalhost
+Cookie: a=b; kli*GETnmultip/fET / HTTP name=
+COo:äostCo: a=ÿÿ!lhost
+Cookie:dAta; namContentÓLengthe=
+COokie:1
+Host:a=b; klinmultiparPg: chunked
+Content-Length: 0
+

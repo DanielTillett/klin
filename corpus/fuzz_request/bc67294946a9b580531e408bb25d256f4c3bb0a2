@@ -1,0 +1,12 @@
+POST /f HTTP/1.1
+Hot-Lengt: x
+Content-Type:multipart/form-dataGEboundary=ÿ;ÿo
+Content-Length: 1211
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-datame=C, n
+
+
+--ÿqÿContdata; nÿConQþÿÿÃQQ

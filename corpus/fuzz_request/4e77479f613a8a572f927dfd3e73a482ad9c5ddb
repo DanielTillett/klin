@@ -1,0 +1,6 @@
+GET /ÿÿÿ HTTP/1.1
+Ht:
+Cookie: a=s
+Cookie:a=b; a=k
+
+GE/x

@@ -1,0 +1,10 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+cook: lkie:GET /Áb/?x=1&Co
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; nt/form-data; boundary5ÿÿÿ_%id=klinaÿmultkpart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-"incetent-DispositÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎ`ÎÎÎÎÎÎion: form-dform-dfta; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Dispositiorm-data; boundary=ÿÿÿÿType; k'a=bÅßlin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; b—Š‘›ary=If-ModifideS-inceÿÿ:ÿÿ ÿbÿContent-Typ_s˜›=01232QQQQQQQQQQQQQQQQQQQQt)a; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Diokie: aÿmult_%id=klinaÿmultipartGE5bund/form%00-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-dath; bou-Modified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01230QQQQQQQContent-Disposition: form-data; name=QQQQQGQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ%21 Ht
+COokie: aÿmultipart/forÊ-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k an_%it/form-data; boundary=ÿÿÿÿÿÿ: bCont-neTtype; k a=b; lin_%id=klinaÿmultipart/form-donten)t-Type; k a=b; lin_%id=klinndary=If-Modified-SinceÿÿÿÿContentÿÿÿÿÿÿÿÿÿÿ-Typ_s˜›=01231QQQQQQQQQQQQQÁQQQ575
+
+
+

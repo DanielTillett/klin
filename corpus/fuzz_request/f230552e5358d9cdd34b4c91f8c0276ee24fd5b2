@@ -1,0 +1,5 @@
+GET /a/b?x2ÿ HTTP/1.1
+Host:lt
+Cookie: Út%2e?
+Cont:-- 0
+

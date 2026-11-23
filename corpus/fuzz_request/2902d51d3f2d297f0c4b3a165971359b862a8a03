@@ -1,0 +1,8 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-datanKorKcod%boundary=ÿ;ÿÿÿ 
+Content-Length: 1212
+
+ locaQQQgthööö
+
+ QQööW
