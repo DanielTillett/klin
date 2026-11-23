@@ -1,0 +1,16 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-dataod%0eundaryfaˆˆˆ boundary=ÿ;ÿÿÿÿÿzQQOST .1 
+Content-Length: 1212
+
+=CCÿÿÿÿÿte
+--ÿÿm-datst: x
+Content-Type:multipart/mixed
+
+
+
+
+
+
+
+POST /f H

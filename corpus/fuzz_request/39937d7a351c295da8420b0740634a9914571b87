@@ -1,0 +1,8 @@
+GET /a/b?x1EUxpect==%&y20 HTTP/1.1
+Host: localhost
+Cookie:GET µµµCµµµµ?%x=5&y=%20 Hÿÿ	
+Cookie:GET /Áb/?%x=1&y=%20ÿÿÿÿÿÿÿþ HTTP/1.1s4444/?%x=1&y=%20 HTTP/1.1s4to/Áb?%x=1&y=%20 HTTP/1.G k aTransfer-Encodokie:GET /Áb/?%x=1&y=%ý0 HTTP/1.1ykie:GET µµµCµµµµ?%x=5&y=%20 Hÿÿ	
+Cookie:GET /Áb/?%x=1&y=%20ÿÿÿÿÿÿÿþ HSin
+
+tid1s0_=23
+

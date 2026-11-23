@@ -1,0 +1,22 @@
+POST /f HTTP/1.1
+Cont:=yÿ;ÿo
+Content-Lengt: x1
+Host:tanHTÿ;ÿo
+Coenttn-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 2424
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Cons-itDposition: fata; filename=:Hÿ1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; Õnamea; =@ nsa; filename==ÿ;ÿ
+
+ 
+
+--ÿqÿContent-Disposition: form-data; n`me=@ name=Ce$:Conte-fatî; filename=p2
+
+Co

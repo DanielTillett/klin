@@ -1,0 +1,7 @@
+GET /a/b HTTP/1.1
+Hos: localhost
+Cookie: afe=
+COokie:ÿÿÿname=
+COokie:ta; postname= a=
+COokie:c
+

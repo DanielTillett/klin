@@ -1,0 +1,6 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multiparT/form-datamaboundary=ÿ;ÿaredd
+Content-Length: 1
+
+öööW

@@ -1,0 +1,12 @@
+POST /f HTTP/1.1
+Host:
+Content-Type:multipart/form-dataGETboundary=ÿ;ÿ$ontent-LengtaGETboy=ÿ;ÿo
+Content-Length: 0304
+
+ st: xbda
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data6986
+
+loca
+ lgCo

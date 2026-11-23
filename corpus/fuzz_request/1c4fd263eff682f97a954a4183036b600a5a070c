@@ -1,0 +1,52 @@
+POST /f HTTP/1.1
+Host:tanHTTP/1.0daryContent-Typet-Lengt: µ
+Content-Type:multipart/form-dataGE5ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒboundary=ÿ;ÿo
+Content-Length: 1211
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Contens-itDposposition: form-data; name=ensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data;Dispotensa; f name=Ce$:Contens-itDposposition: form-data; name=ensa; filename=:head%00m-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data2424
+
+ 
+
+--ÿqÿContent-Disposition: form-data;Dispotensa; filename=:headmËdataÿo
+Content-Mength:2
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCteontentÃLength: 1ame=Ce$:e=Ce$:Contensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCteontentÃLenmeCe$:Contensa; filename=å:hPOSTtentilename=:headm-dataÿo
+Content-Length:2
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCteontentÃLength: 1ame=Ce$:e=Ce$:Contensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCte1onteform-data; name=@ a; fCteontentÃLength: 1ame=Ce$:e=Ce$:Contensa; filename=:headm-dataÿo
+Content-Length: 1212
+
+
+--ÿqÿContent-Disposition: form-data; name=@ a; fCte1ontentÃLenmeCe$:Contensa; filename=å:hPOSTtent-Length: 1212
+
+
+--ÿ; filenntÃLenmeCe$:Contensa; filename=å:hPOSTtent-Length: 1212
+
+
+--ÿ; filename=:headm-data; enÅ½ÅÅÅÅÅt
+ iiiiG\\\\\±±i

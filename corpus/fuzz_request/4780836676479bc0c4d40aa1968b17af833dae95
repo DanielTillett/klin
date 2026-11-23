@@ -1,0 +1,10 @@
+POST /f HTTP/1.1
+Host:t-Leng
+Content-Type:multipart/form-dataGE5boundary=ÿ;
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data-itDpos0
+

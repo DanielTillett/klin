@@ -1,0 +1,19 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET %20 HTP/1.1
+Host: los&lhost
+ieC:o±ky=%20 HTTP/.1
+s1Hot: localhost
+COokie: aÿÿs˜›=0
+Host: localhPATCHost
+Cookih:GET /Á/?&=2&y=%20 HT]TP/1.1
+Host:alhost
+COokie: aÿnt
+Cookie:G k˜›=1
+Host: localhPATCHost
+Cookie:GET /Áb/?&=2&y=%20 HT]TP/1.1
+Host:alhost
+COokie: aÿnt
+Cookie:G k a=b
+
+
