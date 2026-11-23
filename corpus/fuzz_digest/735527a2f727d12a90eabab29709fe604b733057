@@ -1,13 +1,0 @@
-usernam
-user
-{
- nt SHA11 R
- password pbkdf2-sha256$1$AAAAA1AAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvv:vvvvvvvvvvvvvvvvvvvvvvvvvvvvvﬂvvbc",AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-;vvv, qop=a0001, cnonce="c"
-user
-{
- na1 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc",AAAAAAAAAA@AAAAAAAAAAAAA(AAAAAA=
-}
-;
