@@ -1,0 +1,48 @@
+username="u"=p=auth, nc=00="c"
+user
+{
+ n, qopririthm=SHA-25A-256, qop=auth,00$00001, clonce="c"
+user
+{ 
+ name u
+ real ,realm="R", nonce="1.a“bþ","00", ]
+ namalgorithm=SHA-256, qop=auth, nc=00000001, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name u
+ ", response="00" uri="/x", response="00"00$00001, clonce="c"
+user
+{ 
+ name u++++++++++++++++++++e u
+ digest SHAreal , algorithm=SHAonce="1.a“once="c"
+u&er
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name u
+ diges=/Ìx", respgori=am=SHA-256, qop=auth, nc=00000001, clonce="c"
+user
+{
+ name u
+ d, op=auth, n==00$000]01, clonce="c"ÿr
+user
+{
+ name u
+ diges=/x", re
+user
+{
+ name u
+ dc"
+user
+{
+ nameer
+{
+ na0e u
+ ì, 001, clo u
+ d

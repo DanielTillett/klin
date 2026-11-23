@@ -1,0 +1,35 @@
+username="u", realm="R", nonce="2.a“bc00000001, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ , clonce="c"
+user
+{
+ name u
+ diges=/x", response="00" uri="/x", response="15", algorithm=SHA-568ame="u", realmF"R", nonce="1.a“bc", uri="/x", response001, clonce="c"
+user
+{ 
+JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ alm="R", nonce="1.abc", uri="/x", response="00", algor{HA-256, qop=auth, nc=00000001, clonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="c"
+user
+{
+ name u
+ diges=/x", reslonce="c"
+user
+{
+ name u
+ d, qop=auth, nc=00$00001, clonce="usernamse="001, clonce="c"
+user
+{
+ name u
+ digest Scnonord pbkdf2-sha256$1$A=AAAAAAAAAAAAnse="00", algoritc"
+user
+{
+ name u
+ diges=/xhmgorithm=SHA)256, qop=auÿÿÿÿÿÿÿÿth= 0n=c0000003AAAAAAAAAAAA", responsA;AAAe="00"AA ur
