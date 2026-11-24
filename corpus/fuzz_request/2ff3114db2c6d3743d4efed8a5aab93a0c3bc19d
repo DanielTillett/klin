@@ -1,0 +1,5 @@
+GET /a/b?x=% HTTP/1.1
+Host:hla
+Cookie: //?%x=%20 H/?%x=2:5
+
+k

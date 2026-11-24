@@ -1,0 +1,4 @@
+GET //b?x=% HTTP/1.1
+Cookie: //?%x=%20 H/?%x=2filename=:5
+
+k

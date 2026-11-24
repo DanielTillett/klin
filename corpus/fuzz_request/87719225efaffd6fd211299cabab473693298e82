@@ -1,0 +1,17 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: ame=y=%21 Ht
+COokie: aary=ÿÿÿÿÿÿ: kCost
+Cookie:GET /Áb/?x=0&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/st
+Cookie:GET /Áb/?x=1&ContGET /Áb/?x=1&Conte Htent-Disposition: form-data; name=y=%21 Ht
+COokie: aÿ l-Type; k a=b; linHEAD=klinaÿ0:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Di‘ition: form-data; name=y=%10 Ht
+COokie: aÿmultipart/HTTP/1.1a; boundary=ÿÿÿÿÿÿ: bÁb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿ l-Type; k a=b; linHEAD=klinaÿ0:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: ndary=ÿÿÿÿÿÿ: bContent-Type; k a=b bContent›=012orm-data; name=y=%10 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bContb/?x=1&Content-Di‘ition: form-data; n-Encoding boundary=ÿÿÿÿÿÿ: dCib=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b bContent›=01230QQQQQQQQQQQQQQQQQ575
+
+
+

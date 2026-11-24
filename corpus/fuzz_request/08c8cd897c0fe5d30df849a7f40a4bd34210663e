@@ -1,0 +1,4 @@
+GET /a/b?x=%19 HTTP/1.0
+If-Modified-Since:€un,06 Jan 1994 8:49:37T
+
+¡.JHT

@@ -1,0 +1,14 @@
+POST /f HTTP/1.1
+Hosgt: x
+Content-Type:multipart/form-dataGEboundary=ÿ;üo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿ: 
+Content-Disposition: form-data@ n0: form-fata; filename='haform-fata; filename='hÿ0
+
+ 
+TfTP/10
+.1
+Co

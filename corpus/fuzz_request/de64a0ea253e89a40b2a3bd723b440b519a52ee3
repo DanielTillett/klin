@@ -1,0 +1,22 @@
+GET /a/b?x31&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET /¡b/?x=1&Content-Dispositionˇˇˇ:=y=%21 t
+Cookie:GET /¡b/?x=2&Content-data; name=y=%21 Ht
+COokie: aˇmultiplocalhost
+Cookie:GET /¡c/? name=y=%21 Ht
+COokie: aˇmultiparQQQorm-data; boundˇˇˇˇˇ: bCost
+Cookie:GContent-Dispgsition: form-data; name=y=%42 HtQQQQQQQQQQQookie:GET /¡b/applicati=%57 Ht
+COokie: aˇmultiplocalhost
+Cookie:GET /¡b/?xkeep-alive=1&Content-Disposition: form-dat~a; name=y=%21 Ht
+COokie: aˇmm-data; name=y=%21-data; boundary=ˇˇˇˇˇˇ: bCost
+Cookie:GET /¡b/?x=1&Content-Dispom-dat~a; name=y=%21 Ht
+COokie: aˇmm-data; name=y=%21-data; boundary=ˇˇˇˇˇˇ: bCost
+Cookie:Gsposition: form-data; name=y=%21 Ht
+COokie: aˇm=y=%21 t
+COokie: aˇmulsitaon: form-data; name=y=%21 Ht
+COokie: aˇmultint-Dta; name=y=%21 HQQQ: bCost
+Cookie:¥∫´ﬂ–>ù–?†=0&Content-Dispos%00on: form-data; name=y=%21 Ht
+COokie: aˇmultiplocalhosGET /¡b/?QQQQQQQQQQQQQQQQQ575
+
+
+
