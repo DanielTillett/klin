@@ -1,6 +1,0 @@
-ec=0
-user
-{
- name u
-
- password pbkdf2-sha256$1$AAAAAAAAAA0$AAA

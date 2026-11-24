@@ -1,28 +1,0 @@
-
-usernamealm="R", nonce="6, qop=au7th, nc=0000000ÏÓßœ‘‘’e="c"
-user
-{
- name1 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$»AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvAvvvvvvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-v-657, qop=au7th, nc=0000000ÏÓßœ‘‘’e="c"
-user
-{
- name1 R
- password pbkdf2-sha256$1$QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-vvvvvvvvb ,c"uri="/x", rvvvvvvvvvvvvvvvvvvvvvv, algorithm=SHAvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc", uri="/x",00000, cnonce="c"
-user
-{
- neme u
- digest SHA-256 0011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAéAA==$AAAAAAAAAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-}
-vvvvvvvvb ,c"uri="/x", rvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbc", uri="/x", response=nc=00000000, cnonce="c"
-user
-{
- neme u
- digest SHA-256 0011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$Avvvvvvvv2vvvvvvvvvvvvvvvv}vAAAAAAAAAAAAAAAASHA-257AAAAAA=
-}
-;vvvvv="u", ' algorithm=SH
