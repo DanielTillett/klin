@@ -1,0 +1,15 @@
+POST /f HTTP/1.1
+Cont:taÿ;ÿo
+Coentzn-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 6296
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ na; name=@ ens-om-fata; filename=""
+Co3ContenN-Lengthntent-Length: 1212
+
+ 
+
+--ÿÿÿÿmname

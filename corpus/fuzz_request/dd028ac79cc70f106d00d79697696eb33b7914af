@@ -1,0 +1,48 @@
+POST /f HTTP/1.1
+Host:tanHTTP1.0dary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 4848
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Contens-itDp=ta; filenam=e=D¥pos[tion:tioundary=ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ;ÿo
+Co4ntent-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-data; n§’šÂ@ naíemw-form-urlencodeda; filename=:headm-datÿÿÿÿÿÿÌDposition:
+
+ 
+
+--ÿ--qÿContent-DispositIon: form-data; filename= nam
+
+ 
+*
+--ÿqÿContent-Disposition: form-datansitIon: form-data; filename= nam
+
+ 
+
+--ÿqÿContent-Disposition: form-data%nsa; filename=:head
+
+ 
+
+--ÿq„Content-Disposition: fo 
+
+--ÿqÿContent-DispositIon: form-data; filename= nam
+
+ 
+Content-Disposition: form-datansa; filename=:head$-2
+
+ 
+
+-'-le&ilenamGET \%e=:EAD06
+
+ 
+
+--ÿqÿContenion: form-datansa; filename=:headm-1
+
+ 
+
+--ÿq„Content

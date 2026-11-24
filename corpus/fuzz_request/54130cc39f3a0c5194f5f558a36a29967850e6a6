@@ -1,0 +1,5 @@
+GET /a/b?x1Expect==%&y20 HTTP/1.1
+Host: localhost
+Cookie:GET b; li$n_ype; kET /Áb/?TPo‘ie:GET /Áb/?%x=2&y=%20 HTTP/ie:GET /×b/?%x=1&y=%20 HTTP/1.1s444e:GE%x=1&y=%2#0 HTTP/1.1s44444:G k a=bGET /Áb/?%x=1&y=%20 Hb/Áb/?%x=1&y=%20 HTTP/1.1s444e:GE%x=1&y=%20 HTTPb/?%x=1&y=%20 HTTP/Áb/?%x=1&pe¼ßkET /Áb/?%x=1&y=%20 Hÿÿ	20 HTTP/1lhost
+Cookie:GE%x=1&y=%2ÿÿÿÿCoE%x=1&yokie:GET /Áb/?%x=0&yÚÍÏ Hÿÿ	220 Hb/Áb/?%x=1&y=%20 HTTP/1.1s444e:GE%x=1&y=%20 HTTPb/?%x=1&y=%20 HTTP/Áb/?%x=1&pe¼ßkErrrrrrrrrrrrrrrrrrrrrrrrrrP/44:G k a=ET 3
+

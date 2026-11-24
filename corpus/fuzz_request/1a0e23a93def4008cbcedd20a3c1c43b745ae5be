@@ -1,0 +1,43 @@
+POST /f HTTP/1.1
+Host: llll:tandary=ÿ;ÿo
+Content-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿtTransfer-Encoding
+Content-Disposition: form-data@ name=Ce$:ConC||||||||||GE2boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿ|||||||||||||GE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿm-dataÿÿ|||||||||||||GE5boundary=ÿ;ÿo
+Content-Ltnegh: 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿÿÿÿÿÿÿe$:Contens-itDposition: form-!
+
+ 
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿ|||||ary=ÿ;ÿo
+Content-Length: 1214
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿDpExpectn: form-
+
+ ò
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿÿ||||||||||||: 1212
+
+ 
+
+--ÿqÿContenLenllllllllllll0

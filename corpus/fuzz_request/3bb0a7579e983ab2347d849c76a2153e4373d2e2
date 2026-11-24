@@ -1,0 +1,18 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: ame=y=%21 Ht
+COokie: aary=ÿÿÿÿÿÿ:Ø”¼st
+Cookie:GET /Áb/?x=0&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/st
+Cookie:GET /Áb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿ l-Type; k a=b; linHEAD=klinaÿ0:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Di‘ition: form-data; name=y=%10 Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bÁb/?x=1&Content-Disposition: form-data; name=y=%21 Ht
+COokie: aÿ l-Type; k a=b; linHEAD=klinaÿ0:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Di‘ition: form-data; name=y=%10 Htrt/form-data; boundary=ÿÿÿÿÿÿ: bContb/?x=1&Content-Di‘ition: form-data; name=y=%21 Ht
+COokie: aÿmultipart/form-data;Transfer-Encoding boundary=ÿÿÿÿÿÿ: bCid=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin,%id=klinaÿmultipart/form-data; boundary=If-Modified-Sinceÿÿÿÿÿÿ: bContent›=01230QQQQQQQQQQQQQQQQQ575
+
+
+
