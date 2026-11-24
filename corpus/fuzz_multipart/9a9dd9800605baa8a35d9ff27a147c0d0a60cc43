@@ -1,26 +1,0 @@
----Encoding
-
-valueì
---XyZ
-Content-Disposition: form-data; name="f"; filename="x.å=.txt"
-Content-Type: texding
-
-value
---XyZ
-Content-Disposition: form-data; name="f"; filename="x.e=.txt"
-Content-Type: text/plain
-
-file bodyinform-datagthlue
---XyZ
-Content-Disposition: form-data; name="f"; filename="x.txtg: "
-Content-Type: text/plain
-
-fliode b€€€€€€€€€„€€le bodyinform-
-
-value
---XyZ
-Content-Disposition: form-data; name="n"; filename="x.txtg: "
-Content-Type: text/pl%00
-
-file bod€€ÿÿÿÿÿÿÿÿÿÿÿÿÿÿ€€€€€-Xy€€€
-€€€€€
