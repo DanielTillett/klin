@@ -1,0 +1,5 @@
+
+user
+{
+ n _
+ password pbkdf2-sha256$1$Af++++++++++++++++AAAAAAAA==$

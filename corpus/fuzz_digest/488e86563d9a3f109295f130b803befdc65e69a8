@@ -1,0 +1,21 @@
+=,=usernonce="cnonce="â"passwo
+user
+{
+ name  R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vu", rea
+user
+{
+ name u
+ digest SHA-128 0001 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAGAAAAAAAAAAA=
+}
+vvvf"u", realm0000c"
+user
+{
+ name u
+ digest-256 .011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vv000~1, c
