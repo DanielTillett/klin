@@ -1,9 +1,9 @@
-fuzz_digest
+fuzz_multipart
 fuzz_session
-fuzz_url
 fuzz_json
 fuzz_ws
-fuzz_header
-fuzz_multipart
+fuzz_url
 fuzz_translate
 fuzz_request
+fuzz_digest
+fuzz_header
