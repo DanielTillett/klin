@@ -1,7 +1,0 @@
-POST /f HTTP/1.1
-h: 
-e: 
-G:h-Cnxwo
-#GET: 10
-
-=en=

@@ -1,10 +1,0 @@
-POST /f HTTP/1.1
-s:
-Content-Type:multipart/form-dataGETboundary=ÿ;ÿOSTLend
-Content-Length: 0304
-
---ÿqÿÿÿÿÿt
-Content-Disposition: form-data6986
-
-loac
- lgCo
