@@ -1,0 +1,13 @@
+-xt"
+Content-Typ:: 
+Content-Type: t\€
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Content-Typ:: 
+Content-Type: t\\\\\\\\\\\\\\\\\\\\\\™™™™™™™™™™™™ÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐÐf"ÐÐ™™™™™™™™™™™™™™™™™™™Content-Tra™¬™™™™™™™™™™™™™™™™™™™™™™/pmultipart/formÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿa; name="a"
+
+value
+; nam--XyZ
+Content-: form-data; n"; filename="x.txt"
+Content-u\--XyZ
+Content-Dispositio\\\\\\\
