@@ -1,0 +1,21 @@
+alg,nec,1co ="c"
+user
+{
+ name u
+ digÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ05 R
+ password pbkdf2-sha256$1$
+}
+00 ="c]"
+user
+{
+ name u
+ digestp SHA-1ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ1ÿÿ0 R
+ password pbkdf2-sha256$1$AAAA+AAAAAAAAAAAA¿»AAA= AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnc ="c"
+user
+{
+ name u
+ digest SHA-256 00ÿÿÿÿÿSHA·256ÿÿÿÿÿÿÿludÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAA=
+}

@@ -1,0 +1,71 @@
+algum=S}
+pth,m=S5-H2Aÿ qopth, nc=0000lgum=SHA-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ19 R
+ password pbkdf2-shAAA=
+}
+A- ="c"
+uc,nnco ="c"
+user
+{
+ digest SHA-128ÿ0ÿÙÿ0 ÿÿÿÿÿ110ÿ÷0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha25?$1$inc=$AAAAIAAAAAAAAAA=
+}
+pth,m=SHA-25ÿ qopth, nc=0000lgum=SHA-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ paÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$.nc=$AAAAAAAA?AAAAAAAAAA=
+}
+A- ="c"
+uc,nnco ="c"
+user
+{
+ digest SHA-128ÿ0ÿÿ0 ÿÿÿÿÿ110ÿ÷0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$incÿÿÿÿÿÿÿÿ=$AAAAAAAA?AAAAAAAAAAAsAÁAha256$1$inc=$AAAAAAAA?AAAAAAAAAAAAAÁAIAAAAAAAAAA=
+}
+pth,m=SHA-25ÿ qopth, nc=000,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0lgum=SHA-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ paÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$.nc=$AAAAAAAA?AAAAAAAAAA=
+}
+A- ="c"
+uc,nnco ="c"
+user
+{
+ digest SHA-256ÿ0ÿÿ0 ÿÿÿÿÿ110ÿ÷0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$incÿÿÿÿÿÿÿÿ=$ÿ÷0 ÿÿÿÿÿ11R10ÿ÷0 ÿA-ÿÿÿÿ11 R
+ password pbkdf2-sha256$1$inc=$AAAAAAAA?AAAAAAAA=
+}
+pth,m=SHA-25ÿ qopth, nc=0000lgum=SHA-"
+user
+{
+ 256ÿ00 ÿÿÿÿÿ11 R
+ paÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$.nc=$AAAAAAAA?AAAAAAAAAA=
+}
+A- ="c"
+uc,nnco ="c"
+user
+{
+ digest SHA-256ÿ0ÿÿ0 ÿÿÿÿÿ110ÿ÷0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$incÿÿÿÿÿÿÿÿ=$AaAAAAAA?AAAAAAAAAAAAAÁóha256$1$inc=$AAAAAAAA?AAAAAAAAAAAAAÁAIAAAAAAAAAA=
+}
+pth,m=SHA-25ÿ qopth, nc=0000lgum=SHA-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ paÿ0ÿÿ0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$.nc=$AAAAAAAA?AAAAAAAAAA=
+}
+A- ="c"
+uc,nnco ="c"
+user
+{
+ digest SHA-256ÿ0ÿÿ0 ÿÿÿÿÿ110ÿ÷0 ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$incÿÿÿÿÿÿÿÿ=$AAAAAAAA?AAAAAAAAAAAAA0ÿÿ0@ÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$inc=$A

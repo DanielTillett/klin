@@ -1,0 +1,26 @@
+
+usernamealm="R", nonce="6, qop=au7th, nc=0000000ÏÓßœ‘‘’e="c"
+user
+{
+ name1 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$»AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvAvvvvvvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAvvvvvvvvvvvvvvvvvvvvAAA=
+}
+v-657, qop=au7th, nc=0000000ÏÓßœ‘‘’e="c"
+user
+{
+ name1 R
+ password pbkdf2-sha256$1$QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vvvvvvvvb ,c"uri="/x",m=SHA/vvvvvvvvvvvvvve="c"
+user
+{
+ neme u
+	 digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAéAA==$AAAAAAAAAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿvvvvvvvvvvvvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vvvvvvvvb ,c"uri="/x", rvvvvvvvvvvvvvvvvvvvvvvvvvesponse=nc=00000000, cnonce="c"
+user
+{
+ neme u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$Avvvvvvvv2vvvvvvvvvvvvvvvv}vAAAAAAAAAAAAAAAASHA-257A="u", ' algorithm=SH

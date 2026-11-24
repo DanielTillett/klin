@@ -1,0 +1,31 @@
+rlg="u",lm="P",="abc" uri="",eg="alm="ÿÿÿú"abc" urii="rxe/="u6, qop=ŸŠÈƒh,=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u", 's
+ e    " uri}"", cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ passwogest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u", real, qop=au7th, nconce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAA]A=
+}
+;vvvvv=vvvvvvvvvvvvvvvvvv""u"alm="ÿÿÿú01", alg, qop=au7th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u", realpbkdf2-sha228$1$AAAAAAAAAAAAAAse1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAsAAAAAA
