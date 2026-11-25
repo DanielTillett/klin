@@ -1,17 +1,0 @@
---XyZ
-Content-Disposition: form-data; name="a"
-
-value
-n
-
-file body
--pe: tex/tplain
-
-fi%00le body
---Xye="x.txt"
-Content-Type: texpl
-iale b
--
-
-fiel body
---Xy
