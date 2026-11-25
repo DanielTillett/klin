@@ -1,0 +1,11 @@
+POST /f HTTP/1.1
+Host:x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+--
+--ÿqt
+Content-Disposition: form-data@ nalename=:hdm-data;                                namntÿ0
+
+gCo

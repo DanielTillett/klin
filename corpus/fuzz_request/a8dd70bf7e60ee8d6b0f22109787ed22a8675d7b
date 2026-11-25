@@ -1,0 +1,11 @@
+GET /a/b HTTP/1.1
+Cookie:GET %20 H¬okie: aÿÿÿÿÿ	19 HTTP;1
+Ht: l
+Cookie:GET /TTP: Lochalost
+COokie:® 0Host
+Cookie:GET 1
+Host:alhost
+COokie: aÿÿÿÿÿnt
+Cookie:G k a=b
+
+
