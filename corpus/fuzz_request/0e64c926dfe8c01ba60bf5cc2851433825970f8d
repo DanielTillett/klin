@@ -1,7 +1,0 @@
-GET /a/b HTTP/1.1
-H:t
-Cookie: afe=
-COokie:ÿÿÿname=
-COokie:taname= a=
-COokie:c
-

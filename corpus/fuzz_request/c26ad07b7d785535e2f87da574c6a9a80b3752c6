@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-Host: x
-Content-Type:multiparT/form-data-daboundary=ÿ;edd
-Content-Length: 1
-
-öööW

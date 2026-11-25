@@ -1,13 +1,0 @@
-POST /f HTTP/1.1
-Host:x
-Content-Type:multipart/form-dataGE5boundary=
-Content-Length: 1212
-
- 
-
---ÿqÿÿ: 
-Content-Disposition: form-data@ na0: forta; filename=Üßßß„„„„„„„   
-
-
-.0
-Co
