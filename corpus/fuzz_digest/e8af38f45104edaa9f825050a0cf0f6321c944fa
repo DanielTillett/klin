@@ -1,0 +1,4 @@
+1
+user
+{
+ password pbkdf2-sha256$1$AA}

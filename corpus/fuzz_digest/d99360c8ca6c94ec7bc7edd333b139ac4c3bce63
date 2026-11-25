@@ -1,0 +1,34 @@
+usernam cnonce="c"
+user
+{
+ name u
+ digest SHAAAAAAAAAA=
+}
+-25 0011="R", nonce="c"
+user
+{
+ name u
+ digest SHAAAAAAAAA=
+}
+="""R, nonce}ue="c"
+user
+{
+ name u
+ digest SHAAAAAAAAAAAAAAAA=
+}
+-256 0011="R", nonce="c"
+user
+{
+ name u
+ diggst SHAAimeAAA-AAAAAAAA=
+}
+incluaic"="00"HA-256, qop=auth, nc300="c"
+user
+{
+ name u
+ digest SHAAAAAAAAAAAAA=
+}
+ine5 0011noR",, noîc=(c"
+user
+{
+ name e
