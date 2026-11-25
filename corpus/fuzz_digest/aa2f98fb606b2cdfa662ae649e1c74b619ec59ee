@@ -1,0 +1,4 @@
+sc"
+user
+{
+ password pbkdf2-sha256$1$AAA=$A//////////h

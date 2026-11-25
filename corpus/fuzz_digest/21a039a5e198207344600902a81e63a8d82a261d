@@ -1,0 +1,109 @@
+=,=usernce="c"
+user
+{
+ na u
+ password CA=
+}
+vvvvvurvvvus =gv
+v realm="c"
+user
+{
+ password pbkdf2-sha256$256$256$1$AAAAAAAAAACA=
+}
+vvvvvurvvvus =gv
+v realm="c"
+user
+{
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vvuvvvr", 0, cno
+user
+{
+ na-25 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ name u
+ dige+=Š,=(,=‚st SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ password pbkdf2-sha256$1$AAA2AAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAACA=
+}
+vvvvvurvvvu‹ =gv
+v realm="c"
+user
+{
+ password pbkdf2-sha256$AAAAAAAA u
+ password pbkdf2-shaAACAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ password pbkdf2-sha256$1$AAA2AAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAACA=
+}
+vvvvvurvvvus =gv
+v realm="c"v", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+/x", 1--sha256$1$AAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAACA=
+}
+vvvvvurvvvus =gv
+v realm="c"
+user
+{
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAÿÿÿÿÿÿÿA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+vvuvvvr", 0, cno
+user
+{
+ na-25 R
+ password pbkdf2-sha256$1$AAAAAA,AAAAAAAAAAAAAAACAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ password pbkdf2-sha256$1$AAA2AAAAAAAAAAAAAAAAAA==vvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAACA=
+}
+vvvvvurvvvus  cno
+user
+{
+ r=(na-25 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAA<AAAA²ACAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0022 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ password pbkdf2-sha256$1$AAA2AAAAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAAACA=
+}
+vvvvvurvvvus =gv
+v realm="c"
+user
+{
+ password pbkdf2-sha256$AAAAAAAA u
+ password pbkdf2-sha256$1$AAA2AAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vth, vvvvvvvv", rnonce="c"
+user
+{
+ nam1 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAvvAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAA

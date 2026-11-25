@@ -1,0 +1,117 @@
+algum=SHA-256, qopth, nc=0 ="c"
+user
+{
+ name u
+ digÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAdigÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAor=AAAA=
+}
+0000ec,nnco ="c"
+user
+{
+2nÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ desÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp Sÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp SHA-128 00ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAor=AAAA=
+}
+0000ec,nnco ="c"
+user
+{
+2nÿÿÿÿÿÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ desÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp SHA-128 00ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp SHA-128 00ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAor=AAAA=
+}
+0000ec,nnco ="c"
+user
+{
+2nÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ name u
+ desÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp Sÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAAAAor=AAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ digestp SHA-128 00ÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ desÿÿÿÿÿ11 R
+ paÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ30 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAor=AAAA=
+}
+0000ec,nnco ="c"
+user
+{
+2nÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ÷ÿÿÿÿÿÿÿÿÿÿÿÿ10 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAA?AAAAAAAAA=
+}
+0001ec,nnco ="c"
+user
+{
+ name u
+ desÿÿÿÿÿ11 R
+ password pbkdf2-sha256$1$AAAAA+AAAAAAAAAAA¿»AAA==$AAAAAAAAAAAAA?AAAAAAAAAAIAAAAAAAAAA=
+}

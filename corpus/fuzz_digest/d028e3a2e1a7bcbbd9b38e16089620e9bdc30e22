@@ -1,0 +1,19 @@
+"c"
+user
+{
+ name u
+ digest SHA-330 0011 R
+ password pbkdf2-sha256$1$$AA2-sha256$1$$AAAAA=
+}
+;vv"/x", recnonce="c"
+user
+{
+ na R 0076 R
+ password pbkdf2-sha256$1$$AAAAA=
+}
+;vvv nc=0000Ê001, cnonce="c"
+user
+{
+ amne u
+ dig512 0001 R
+ password pbkdf2-sha256$1$$AAAAAõõõõAAAAAAAAAA==$AAAAAbAAAA="u",AAAAAAAAAAAAsAAAAAA

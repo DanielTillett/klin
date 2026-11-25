@@ -1,0 +1,29 @@
+=,=usernv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿø0011 AAAAAAAvvvvvvvvassword pbkdf2-sja256$1$AAAAAAAAAAAAAAAA name u
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAword pbkdf2-sha256$256$1$AAAAAAAAvvvvvvvvassword pbkdf2-sja256$1$AAAAAAAAAAAAAAAA=AAAAACAAAAAAAAAAAAAA=
+}
+;vthvv", rnonce="c"
+user
+{
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ rd pbkdf2-sha256$256$1$AAAvvvvvvvvassword pbkdf2-sja256$1$AAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAA=
+}
+;vthvv", rnonce="c"
+user
+{
+ digest SHA-þÿÿø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ rd pbkdf2-sha256$256$1$AAAAAAAAAAAAAA u
+ password pbkdf2-sha25AAAAAAAAAAAAAAAA==$AAvvvvvvvvvvvvAAAAAAAAAAAAAAAAAAAAAAAAAA½Ã=
+}
+vvvvvv", rnonce="c"
+user
+{
+ name u
+ digest SHA-þÿÿ2ø0011 R
+ password pbkdf2-sha256$256$1$AAAAAAAAAAAAAAAA==$AAvvAAAAAAAA==$AAvvvvvh

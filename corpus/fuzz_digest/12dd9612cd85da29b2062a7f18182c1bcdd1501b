@@ -1,0 +1,26 @@
+algum=S7, c,nnco ="c"
+uc,nnco ="c"
+user
+{
+ tam*e u
+ digest SHA-2511 R
+ password pbkdf2-sha256$1$inc=$AAAAAAAA=AAAAAAAAAA=
+}
+A- ="
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ19 R
+ password pbkdf2-sha256$1$inc=ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ$sworAAAAAAAAA=
+}
+pth,m=SHA-26ÿ qopth, nc=0000lÿÿÿÿÿÿÿÿ]ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿßÿÿÿÿÿÿÿgum=SHA-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ19 R
+ password pbkdf2-sha256$1$inc=ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ$)n™™™™™™ÿÿd11 RAAAAA=
+}
+pth,m=SHA-26ÿ qopt,00 n=ch00lÿÿÿÿÿÿÿ-"
+user
+{
+ 256ÿ0ÿÿ0 ÿÿÿÿÿ19 R
+ password pbkdf2-sha256$1$inc=ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ$AAAAAAAAAAAAAAAAAAAIAA=AAAAAAA=
+}
