@@ -1,0 +1,28 @@
+POST /f HTTP/1.1
+Host: llgt: x
+Content-Type:multipart/form-dataGE4-datancoboundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿtTr-Enco=ding
+Content-Disposition: form-data@ name=Ce$:Con2ben1HEAD2
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿ|||||| 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿ12
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿanda
+
+ ò
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿ||||||: 1213
+
+ 
+
+--ÿqÿContenLenllllllll0

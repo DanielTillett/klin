@@ -1,0 +1,11 @@
+POST /f HTTP/1.1
+Host: l x
+Content-Type:multipart/form-dataGE0boundary=ÿ;ÿo
+Content-Length: 121
+
+ 
+
+--ÿqÿÿPOST
+Content-Disposition: form-data; namePa; na:form-data;  
+
+--ÿqÿ

@@ -1,0 +1,18 @@
+POST /f HTTP/1.1
+Host: x
+Content-Type:multipart/form-datanKcput1eundaryˆˆ/fnrm; boundary=ÿ;ÿÿ1.1 
+Content-Length: 1212
+
+ ÿWö 
+
+--ÿqÿÿÿÿ	t
+Content-Disposition: form-data@ ÿÿÿÿÿ; filename=C::$C22
+
+
+--ÿÿontens-iifo:; filename=:rÿÿÿt
+Content-Disposition: form-data@t%3e%2eens-ipsitione:606
+
+
+ 
+
+--ÿqÿCJontenPOST /fenh:
