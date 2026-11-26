@@ -1,0 +1,9 @@
+GET /a/b?x=2&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: ame=y=%21 Ht
+COokie: aary=ÿÿÿÿe:GET /Áb/?x=0&ContenP/1.1a; boundary=ÿÿÿÿÿÿ: bÁb/?x=1&Content-Disposition: f=b; linHEAD=klinaÿ0:GET /Áb/?x=1&Conte Ht
+COokie:ÿlultipart/form-ÿÿÿÿÿdata; boundary=ÿÿÿÿÿÿ: ndary=ÿÿÿent-Type; k a=b bContent›=013orm-data@ nam:=y=%11 Ht
+COokie: aÿmultipart/for t;-damaboundary=ÿÿÿÿÿÿ: bContb/?x=1&Content-Di‘ition: form-datundary=ÿÿÿÿÿÿ: dCib=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿta; n-Encodary=ÿÿÿÿÿÿ: dCib=klinaÿmultipart/fart/form-dat boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b bContent›=01231QQQQQQQQQQQQQQQQQ57ÿ: bContent-Type; k a=b bContent›=ÿÿÿÿ: bContb/?x=1&Content-Di‘ition: form-data; n-Encoding boundary=ÿÿÿÿÿÿ: dCib=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k a=b bContent›=02460QQQQQQQQQQQQQQQQQ575
+
+
+

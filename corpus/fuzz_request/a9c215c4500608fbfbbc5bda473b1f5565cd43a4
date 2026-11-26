@@ -1,0 +1,15 @@
+POST /f HTTP/1.1
+t:oto-Le
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+
+--ÿ~~~~~~ø~~~
+Content-Disposition: form-data@ name=I-f3
+
+ 
+
+--ÿqÿContent-ion: form-dataûÿÿÿ1213
+-Disposition: form-data@ namm2
+
+ 

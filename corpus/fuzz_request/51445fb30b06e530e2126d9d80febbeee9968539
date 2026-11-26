@@ -1,0 +1,11 @@
+POST /f HTTP/1.1
+Ho:tana: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿt
+Content-Disposition: form-data@ a; name="C)ÿÿt
+
+-Mifn
