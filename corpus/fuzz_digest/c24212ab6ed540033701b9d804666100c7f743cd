@@ -1,0 +1,21 @@
+alg,nek,1co ="c"
+user
+{
+ name u
+ dig R
+ password pbkdf2-sha256$1$
+}
+00 ="c]"
+user
+{
+ name u
+ dig÷ÿÿÿÿ05 R
+ password pbkdf2-sha256$1$
+}
+00 ="c]"
+user
+{
+ name u}
+ÿÿ11 R
+ password pbkdf2-sha256$1$AAAAAA
+}

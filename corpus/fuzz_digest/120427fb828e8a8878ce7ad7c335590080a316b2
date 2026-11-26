@@ -1,0 +1,17 @@
+=,=use onc=c"e"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ2¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ005 R
+wo-sha256$1e u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿ11ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+ ¥password pAA
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf0-sha256$1$AAAAAAAAAAAAAAA¿¾¾¾AAAAAAÆ¾¾¾AAA=
+}
+vvvvvurixusern01, Znonce="cnoncec"
+user
+{
+ name u
+ digest SHA-256 0ÿ=,=usernam,=ealmabc"="ÿÿÿÿÿRÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ073 R
+ password vvvv"v

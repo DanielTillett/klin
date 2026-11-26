@@ -1,0 +1,57 @@
+passvv=vvvvvvvvvvvv"u", realm0ÐÏÏÏÍÓß¤nonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ passw2ord =
+}
+vvvvvvv6="00", alrithm=SHA-256, 000001, snonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password p56&1$AAAAAAAAAAAAAAAA'AAAAAAAAAAAAAAAAAA=
+}
+;vvv000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$3$AAAAAAAAAAAAAAA«AAAAAbkdf2AvvAAAAAAAAAA'AAAAAAAAAAAAAAAAAA=
+}
+ÿÿÿÿÏÿÿÿÿÿÿÿvvvvv"uÿ0001, cn/nceÿnc"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2AAAAAAA
+}
+vvvvvvvÿ6="0thm=A-256, 000001, ,nonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ p¡Œsword pbkdAAA=
+}
+, nonc, realm000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0015 R
+ password pbkdf4-sha256$1$AAAAAAAAAAshaAA=
+}
+;vvv000001, cnonce="c"
+user
+{
+ n!me u
+ digest SHA-256 0011 R
+ dige R
+ ]password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAbkdf2-sha5A6AAA2vvvvvvvvvvAAAAA'AAAAAAAAAAAAAAAAAA=
+}
+;vvvvv=alm="R",, 000001, cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbk
+u=e""c="u", r
