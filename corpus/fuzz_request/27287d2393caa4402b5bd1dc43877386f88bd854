@@ -1,15 +1,0 @@
-POST /f HTTP/1.1
-t:
-Content-Type:multipart/form-dataGboundary=ÿ;ÿo
-Content-Length: 1212
-
-
-
---ÿ
-Content-Disposition: form-datam-fata; filename=:hesinÆÎ 1211
-
-: aÿmu;ÿÿÿICoa:Ht
-so x
-o:mu
-Cng:ed
--Encoding
