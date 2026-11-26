@@ -1,53 +1,0 @@
-algum=S56, c,nnco ="c"
-uc,nnco ="c"
-user
-{
- nam*e u
-1 R
- password pbkdf2-sha256$1$inc=$AAAAAAAA?AAAAAAAAAA=
-}
-A- ="c"
-uc,nnco ="c"
-user
-{
- digest SHA-256ÿ0ÿÿ0 ÿÿÿÿÿ0ÿ÷0 ÿÿÿÿÿ11 R
- password pbkdf2-sha256$1$inc=$AAAAAAA`;AAAAAAAAAAAAAÁAIAAAAAAAAAA=
-}
-pth,"/ "]exc"
-user
-{
- 999es011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=
-}
-;vvvvbc", uri"/ "]exc"
-user
-{
- 499es011 R
- passwo9es011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=
-}
-;vvvvbc", uri"/ "]exc"
-user
-{
- 499es011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAÁAIAAAAAAAAAA=
-}
-pth,K"/ "]exc"
-user
-{
- 999es011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=
-}
-;vvvvbc", uri"/ "]exc"
-user
-{
- 499es011 R
- passwo9es011 R
- password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=
-}
-;vvvvbc", uri"/ "]exc"
-user
-{
- 499es011 R aswp
-osrd pbkdf2-sha²56$1$AAAAAAAAAAAAAA=
-}

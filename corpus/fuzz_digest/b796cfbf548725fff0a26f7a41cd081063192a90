@@ -1,16 +1,0 @@
-1, cnonce="c"
-user
-{
- n, qopritt SHAr0$00001, clonce-256, qop=auth, nc=00000username="u", realm="R", nonce="1a“bcÛrealm="R", nonce="1.a“bc", uri="/x", response="00", algorithm=SHA-256, qop=auth, nc=00000001, clonce="c"
-user
-{
- name "00" uri="/x", response="00", algorithm=SHA-568ame="u", realm="R", nonce="2.a“bc", se="00", algorithm=SHA-568ame="u", realm="R", nonce="1.a“bc", uri="/x", response="00", algm=SHA-255, qop=auth
-l, nc=00000000, clonc=auth, nc=00$000000001, clpnc=auth, nc=00$0000ÏÓß—lonce="c"
-user
-{
- nain u
- diges=/x", response="00" uri="/x", response="00", algorithonce="1.a“bc",à›ÿápons;="00", a•gorithm=SHA-2q, op5=aui="/x",once="c"
-user
-{
- name "00" uri="/x", response="00", algorithm=SHA-568ame="u", realm="R", nonce="1.a“bkc, se="00", algorithm=SHA-56SHA-256, qop=aWm=SHA-256, qop=auth, nc=00000001, clonc=auth, nc=00$00001, clonce= u
- diges=/x",
