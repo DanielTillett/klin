@@ -1,0 +1,13 @@
+--XyZ
+Content-Disposition: form-data; name="a""
+
+valu
+--XyZ
+Content-Disposition: form-data; name=-o-
+
+file bodye
+--XyZ
+Content-Disposition: form-data; name=-me"in
+
+file body
+--XyZ--
