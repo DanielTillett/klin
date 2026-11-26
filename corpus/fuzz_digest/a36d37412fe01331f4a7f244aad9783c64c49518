@@ -1,0 +1,13 @@
+pasövvvvb=b/ "exc"
+user
+{
+ name e
+ord* pbkdf4-sha256AAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realm="R", nvvvvvvvvvvvvvvh, nc=00000000, cnonce="`"
+user
+{
+ name u
+ digest rd pbkdf3-sha256$1$AAAAAAAAAAAAAAAAAAAA==AA, htnAA.AAAA=
+}
+;
