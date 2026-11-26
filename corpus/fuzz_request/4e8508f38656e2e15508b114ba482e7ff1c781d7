@@ -1,0 +1,13 @@
+GET /a/b?x=2&y=%20 HTTP/1.1
+Host: localhost
+Cookie:GET / aÿmultipart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k'a=b; lin_%id=klinaÿmultipart/form-dontent­Type; k ˜›=024CCCCCC31QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ­®®®QQQQQQQQQQQQQQQQQQQQQQQQQQ!QQQQQQQQQQQQisposition: form-data; name=y=%25 Ht
+COokie: aÿmultipart/foipart/form-data; boundary5ÿÿÿÿÿÿ: bContGET-Type; k'a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-Sincetent-DispositÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎion: form-data; name=y=%21 Ht
+COokie: tiaprt/form-dat=klinaÿmultipart/form-dontent-Type;k  a=b; lin_%id=klinaÿmultipart/form-data; b—Š‘›ary=If-Modified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01233QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQPUTQQ: aÿmultiploca; name=y=%21 Ht
+COokie: aÿmult_%id=klinaÿmultipart/form%00-dontent-Type;<k a=b; lin_%id=klinaÿmContent-Typeultipart/form-data; boundary=If-MConnectionnceÿÿÿÿÿÿ: bContQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQe:GET /Áb/?x=1&Conte Ht
+COokie: aÿmultipartposiŒ on: fa=b; lin_%id=klinaÿmultipart/form-daPATCHoundary=If-Modifn_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-data; boundary=If-Modified-Sincetent-DispositÎÎÎÎÎÎÎÎÎltipart/form-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&ConŒš‘‹Ò»–‚positiorm-data; bouyanrd=ÿÿÿÿÿÿ: bContent-Tyep; k'a=b; lin_%id-Modified-Sinceÿÿÿÿÿ=: bContent-T_s˜›=01231QQQQQQQQQQQQQQQQQQQ¯®®®®®®³QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQe: aÿmultipart/form-da-Disposition: form-data; name=,y=%21 Ht
+COokie: aÿmult_%id=klinaÿmulwipa,t/f**************orm%00-dgntent-Type; k a=b; lin_%id=klinaÿmContent-Typeultipart/form-data; boundary=If-Modified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01231QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQame=y=%21 Ht
+COokie: aÿmultipart/formmultipart/form-data; boundary=nt-Type; k a=b; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; lin_%id=klinaÿmultipart/fart/form-data; boundary=ÿÿÿÿÿÿontent-Type; k a=b; lin_%id=klinaÿmultipart/fntAent-Typ˜›=01231QQQQQQQQQQQQQQQQQ575
+
+
+

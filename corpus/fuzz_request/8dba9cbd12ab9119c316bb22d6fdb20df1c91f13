@@ -1,0 +1,13 @@
+POST /f HTTP/1.1
+Htent: x
+Content-Type:multipart/form-dataGE0boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿ
+Content-Disposition: form-data@ nma; filename=dÿÿÿC
+
+--C
+t
+ lgCo

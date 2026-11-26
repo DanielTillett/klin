@@ -1,0 +1,6 @@
+GET /a/b?x=1&4%20GTE HTTP/1.1
+Host: localhost
+Cookie:;ÿoffffffff_ffdary=ÿ©ÿÿÿHos#tontent-Ty p;ek STtipart/for name=y=%21 ntent-Type;==ÿ;ÿoe;= b k arm-data; bo lin_%id=klinaÿmultipart/form-dontent-Type;= b : a;lin_%idHEAD=klinaÿmu-datata; name=y=%42 ntent-Type;= b = b k= n;bil_%id=klinaÿmultipat-Type;= b k a;lin_%id=klinaÿmult k a=b; lin_%id=klinaÿmultipart/form-dontent-Type;= b k a;lin_%id ntent-Type;= b = blipe; k aPOzTtipart/formTransfer-Encoding21 ntent-Type;= b ke;= b = b k a=b; lin_%id=klinaÿmultipart/form-/dontent-Type;=;=rm-dontent-Type;= b k a;lin_%id=klinaÿmultipart/ bC/ntent-Type; k a=b; lin_%id=klinaÿmultipartrt/form-hontent-Type;=rm-dontent-Type;= b k a;lin_%id=klinaÿmtipart/ bC/ntent-Typen_%id=klioundType;4 k a;n =bli_%id=klinÿimatlupart/fo}pe;= b = b k a=b; lin_%id=klinaÿmultipart/form-dontenm-dontent-Type;= b tntent-Type;= b k a;lin_%id=klinaÿmult k a=b; lin_%id=klinape;= b k a;lin_%id ntent-Type;= b = blipe; k aPOzTtipart/formTransfer-Encoding21 ntent-Type;= b ke;= b = b k a=b; lin_%id=klinaÿmultipart/form-/dontent-Type;=;=rm-dontent-Type;= b k a;lin_%id=klinaÿmultipart/ bC/ntent-Type; k a=b; lin_%id=klinaÿmultiparrm-dontent-Type;= b k a
+
+
+
