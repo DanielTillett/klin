@@ -1,0 +1,10 @@
+GET /a/b?x HTTP/1.1
+Transfer-Encoding:ÿÿÿ
+Transfer-Encoding: mu
+Transfer-Encoding:HTTP1.1
+Transfer-Encoding: mul/1.1
+Transfer-Encoding:1&1
+Transfer-Encoding: .1)
+Transfer-Encoding:t#T1.1
+Transfer-Encoding: 
+
