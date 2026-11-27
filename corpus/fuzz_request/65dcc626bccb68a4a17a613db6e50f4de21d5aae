@@ -1,8 +1,0 @@
-POST /f HTTP/1.1
-n:æööö
-Content-Length:mnc
-Content-Length:ööö
-Content-Length:
-Content-Length: 2
-
-a=
