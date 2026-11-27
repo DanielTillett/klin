@@ -1,0 +1,12 @@
+POST /f HTTP/1.1
+Ho: x
+Content-Type:multipart/form-datadarTboundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿt
+Content-Disposition: form-data; name=
+
+ 
+Co

@@ -1,0 +1,12 @@
+POST /b?2: HTTP/1.1
+CoLengt: µ
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 1211
+
+ 
+
+--ÿqÿÿÿÿt
+Content-Disposition: form-data nsa; filename=""
+
+
+--ÿ;  ntent-: 

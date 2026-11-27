@@ -1,0 +1,12 @@
+GET /ab?=ST+1ÿÿ HTTP/1.1
+t:st
+Cookie: a/=
+COokie:ÿÿÿý
+COokie:ÿÿ=
+COokie:ÿÿ; me=
+COokie:ÿÿat
+COokie:o
+COokie:ÿÿtipuname=
+COokie:a=
+COokie:oA2
+

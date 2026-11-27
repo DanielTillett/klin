@@ -1,0 +1,62 @@
+POST /f HTTP/1.1
+Host:tangt
+Co0ntent-Lengt: x
+Content-Type:multipart/form-dataGD5boundary=ÿ;ÿo
+Content-Length: 2424
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ name=Ce$:Contens-iDisposition: form-datansa; filename=:headm-3
+
+ 
+
+--ÿq„Content-Disposition: form-data; nqtf ;ailehead
+
+ 
+
+--ÿq„Content-Disposition: form-data; ÿÿÿÌDposDispositIon: horm-data; filename= nam
+
+ 
+
+--ÿqÿContent-Disposition: form-datansa; filename=:head$-:EAD06
+
+ 
+
+--ÿqÿContent-DispositIon: form-data; filename= nam
+
+ 
+
+--ÿqÿContent-Disposition: form-datansa; filename=:headm-2
+
+ 
+
+-tent-
+Cookie
+ 
+
+--ÿqÿContent-DispositIon: form-data; filename= nAm
+
+ 
+
+--ÿqÿContent-Disposition: form-datasna; filename=:m-2
+
+ 
+
+--ÿq„Content-Disposition: form-data; natf ;ailenaÿÿÿÿÿÿÿdata%nsa; filename=:head
+
+ 
+
+--ÿq„Content-Disposition: form-data; ÿÿÿÌDposi; filename=:head$-2
+
+ 
+
+--le&ilenamGET \%e=:EAD06
+
+ 
+
+--ÿqÿContent-DispositIon: f
+
+ 
+
+--ÿq„Content

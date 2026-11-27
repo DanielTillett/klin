@@ -1,0 +1,12 @@
+POST /f HTTP/1.1
+Hos: 4: x
+ConteNt-Type:multipart/form-dataGE0boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿÿÿÿÿ
+Content-Disposition: form-data; name=Ctia; name=CCÿspoa; name=Ce$GETntent-Dita; name=CCent
+
+ 
+o

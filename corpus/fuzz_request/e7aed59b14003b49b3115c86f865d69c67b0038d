@@ -1,0 +1,9 @@
+GET /ab0 HTTP/1.1
+t: %
+C: a=ê-1
+t: %
+C: a=ê-Typ
+s: x
+C: Typ
+s: x
+C: uÃ
