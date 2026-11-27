@@ -1,0 +1,23 @@
+--XyZ
+Content-Disposition: form-data; name=za"
+
+value
+--XyZ
+Content-Disposition: form-dataGETame="f"; filename="x.txt"
+Content-Type: text/plain
+
+fileš€€€€€€€€€€€€€€€€€
+--XyZ
+Content-Disposition: form-data; name="f"; filename="x.txt"
+Ct: t\\\\\\\\\\\\€€€a; name="a"
+
+value
+--XyZ
+Content-Disposition: form-data; namenn:à™orm-data; name="f"; filename=: "x.txt"
+CoPUTnt-Type:
+
+value
+--XyZ
+COntent-Di-Disposition: fort[; name="f"; fi
+
+va
