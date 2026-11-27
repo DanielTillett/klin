@@ -1,0 +1,26 @@
+rlg="ul"=,"m"P,="abc" uri="1, cnonce="c"
+user
+{
+ name u
+ digest SHA-"56 0011 R
+ password pbkdf2-sha256$1$AAAAAAA==$AAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvvvvvvrg=l"u",lbc" uri=""
+user
+{
+ name u
+ digest SHA-"56 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAA===$AAAAAAAAAAAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", realonce="c"
+user
+{
+ name uimesword pbAAAA=
+}
+;vvvvv="u", real, qop=au7th, nc000" uri=""
+user
+{
+ name u
+ digest SHA-"56 001! R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAA===$AAR
+ password pbkdf2-sha256$1$AAAAAa=,¬ =,0,=,A¬ =,0AAA,
