@@ -1,0 +1,11 @@
+m=e"
+user
+{
+ password pbkdf2-sha256$1$
+}
+co "c"
+user
+{
+ asswÿ R
+ password pbkdf2-sha256$1$AAA
+}
