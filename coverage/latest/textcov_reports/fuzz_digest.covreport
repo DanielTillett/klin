@@ -1,150 +1,150 @@
 fuzz_digest.c:fuzz_string:
-   30|    653|{
-   31|    653|    char *s = malloc(size + 1);
+   30|    669|{
+   31|    669|    char *s = malloc(size + 1);
    32|       |
-   33|    653|    if(s == NULL)
+   33|    669|    if(s == NULL)
   ------------------
-  |  Branch (33:8): [True: 0, False: 653]
+  |  Branch (33:8): [True: 0, False: 669]
   ------------------
    34|      0|        abort();
-   35|    653|    memcpy(s, data, size);
-   36|    653|    s[size] = '\0';
-   37|    653|    return s;
-   38|    653|}
+   35|    669|    memcpy(s, data, size);
+   36|    669|    s[size] = '\0';
+   37|    669|    return s;
+   38|    669|}
 
 LLVMFuzzerTestOneInput:
-   21|    653|{
-   22|    653|    char *input, *nl, name[32], val[512], *users_text;
-   23|    653|    const char *p, *v;
-   24|    653|    u_config_t *users = NULL, *u;
-   25|    653|    unsigned long iters;
-   26|    653|    int i, alg;
+   21|    669|{
+   22|    669|    char *input, *nl, name[32], val[512], *users_text;
+   23|    669|    const char *p, *v;
+   24|    669|    u_config_t *users = NULL, *u;
+   25|    669|    unsigned long iters;
+   26|    669|    int i, alg;
    27|       |
-   28|    653|    if(size > FUZZ_MAX)
+   28|    669|    if(size > FUZZ_MAX)
   ------------------
-  |  Branch (28:8): [True: 0, False: 653]
+  |  Branch (28:8): [True: 0, False: 669]
   ------------------
    29|      0|        return 0;
-   30|    653|    input = fuzz_string(data, size);
-   31|    653|    if((nl = strchr(input, '\n')) != NULL)
+   30|    669|    input = fuzz_string(data, size);
+   31|    669|    if((nl = strchr(input, '\n')) != NULL)
   ------------------
-  |  Branch (31:8): [True: 580, False: 73]
+  |  Branch (31:8): [True: 596, False: 73]
   ------------------
-   32|    580|        *nl = '\0';
+   32|    596|        *nl = '\0';
    33|       |
    34|       |    /* the Authorization parameters, as auth_digest() reads them */
-   35|  2.57k|    for(p = input; (p = auth_next_param(p, name, sizeof name, val, sizeof val)); )
+   35|  2.31k|    for(p = input; (p = auth_next_param(p, name, sizeof name, val, sizeof val)); )
   ------------------
-  |  Branch (35:20): [True: 1.92k, False: 653]
+  |  Branch (35:20): [True: 1.64k, False: 669]
   ------------------
-   36|  1.92k|    {
-   37|  1.92k|        if(strlen(name) >= sizeof name || strlen(val) >= sizeof val)
+   36|  1.64k|    {
+   37|  1.64k|        if(strlen(name) >= sizeof name || strlen(val) >= sizeof val)
   ------------------
-  |  Branch (37:12): [True: 0, False: 1.92k]
-  |  Branch (37:43): [True: 0, False: 1.92k]
+  |  Branch (37:12): [True: 0, False: 1.64k]
+  |  Branch (37:43): [True: 0, False: 1.64k]
   ------------------
    38|      0|            abort();
-   39|  1.92k|        if(!strcasecmp(name, "algorithm"))
+   39|  1.64k|        if(!strcasecmp(name, "algorithm"))
   ------------------
-  |  Branch (39:12): [True: 86, False: 1.84k]
+  |  Branch (39:12): [True: 82, False: 1.56k]
   ------------------
-   40|     86|            (void) auth_alg_from_name(val);
-   41|  1.92k|    }
-   42|    653|    (void) auth_in_list(input, "auth", 4);
+   40|     82|            (void) auth_alg_from_name(val);
+   41|  1.64k|    }
+   42|    669|    (void) auth_in_list(input, "auth", 4);
    43|       |
    44|       |    /* a users block, its users' HA1 for a realm and their stored password */
-   45|    653|    if(nl && (users_text = strdup(nl + 1)) != NULL)
+   45|    669|    if(nl && (users_text = strdup(nl + 1)) != NULL)
   ------------------
-  |  Branch (45:8): [True: 580, False: 73]
-  |  Branch (45:14): [True: 580, False: 0]
+  |  Branch (45:8): [True: 596, False: 73]
+  |  Branch (45:14): [True: 596, False: 0]
   ------------------
-   46|    580|    {
-   47|    580|        if(u_config_load_from_buf(users_text, strlen(users_text), &users) == 0)
+   46|    596|    {
+   47|    596|        if(u_config_load_from_buf(users_text, strlen(users_text), &users) == 0)
   ------------------
-  |  Branch (47:12): [True: 403, False: 177]
+  |  Branch (47:12): [True: 414, False: 182]
   ------------------
-   48|    403|        {
-   49|    403|            (void) auth_check_users(users, "fuzz");
-   50|  1.55k|            for(i = 0; (u = u_config_get_child_n(users, "user", i)); ++i)
+   48|    414|        {
+   49|    414|            (void) auth_check_users(users, "fuzz");
+   50|  1.62k|            for(i = 0; (u = u_config_get_child_n(users, "user", i)); ++i)
   ------------------
-  |  Branch (50:24): [True: 1.15k, False: 403]
+  |  Branch (50:24): [True: 1.21k, False: 414]
   ------------------
-   51|  1.15k|            {
-   52|  3.45k|                for(alg = AUTH_ALG_MD5; alg <= AUTH_ALG_SHA256; ++alg)
+   51|  1.21k|            {
+   52|  3.63k|                for(alg = AUTH_ALG_MD5; alg <= AUTH_ALG_SHA256; ++alg)
   ------------------
-  |  Branch (52:41): [True: 2.30k, False: 1.15k]
+  |  Branch (52:41): [True: 2.42k, False: 1.21k]
   ------------------
-   53|  2.30k|                    (void) auth_user_ha1(u, alg, "R");
+   53|  2.42k|                    (void) auth_user_ha1(u, alg, "R");
    54|       |                /* PBKDF2 is slow on purpose: only cheap iteration counts */
-   55|  1.15k|                v = u_config_get_subkey_value(u, "password");
-   56|  1.15k|                if(v && !strncmp(v, AUTH_PBKDF2_PREFIX_FUZZ,
+   55|  1.21k|                v = u_config_get_subkey_value(u, "password");
+   56|  1.21k|                if(v && !strncmp(v, AUTH_PBKDF2_PREFIX_FUZZ,
   ------------------
-  |  Branch (56:20): [True: 707, False: 444]
-  |  Branch (56:25): [True: 650, False: 57]
+  |  Branch (56:20): [True: 783, False: 427]
+  |  Branch (56:25): [True: 724, False: 59]
   ------------------
-   57|    707|                            sizeof AUTH_PBKDF2_PREFIX_FUZZ - 1) &&
-   58|    650|                        (iters = strtoul(v + sizeof AUTH_PBKDF2_PREFIX_FUZZ - 1,
+   57|    783|                            sizeof AUTH_PBKDF2_PREFIX_FUZZ - 1) &&
+   58|    724|                        (iters = strtoul(v + sizeof AUTH_PBKDF2_PREFIX_FUZZ - 1,
   ------------------
-  |  Branch (58:25): [True: 611, False: 39]
+  |  Branch (58:25): [True: 684, False: 40]
   ------------------
-   59|    650|                                         NULL, 10)) > 0 && iters <= 16)
+   59|    724|                                         NULL, 10)) > 0 && iters <= 16)
   ------------------
-  |  Branch (59:60): [True: 577, False: 34]
+  |  Branch (59:60): [True: 650, False: 34]
   ------------------
-   60|    577|                    (void) auth_password_verify("secret", v);
-   61|  1.15k|            }
-   62|    403|            u_config_free(users);
-   63|    403|        }
-   64|    580|        free(users_text);
-   65|    580|    }
+   60|    650|                    (void) auth_password_verify("secret", v);
+   61|  1.21k|            }
+   62|    414|            u_config_free(users);
+   63|    414|        }
+   64|    596|        free(users_text);
+   65|    596|    }
    66|       |
-   67|    653|    free(input);
-   68|    653|    return 0;
-   69|    653|}
+   67|    669|    free(input);
+   68|    669|    return 0;
+   69|    669|}
 
 strlcpy:
-   28|  21.8k|{
-   29|  21.8k|	char *d = dst;
-   30|  21.8k|	const char *s = src;
-   31|  21.8k|	size_t n = siz;
+   28|  22.3k|{
+   29|  22.3k|	char *d = dst;
+   30|  22.3k|	const char *s = src;
+   31|  22.3k|	size_t n = siz;
    32|       |
    33|       |	/* Copy as many bytes as will fit */
-   34|  21.8k|	if (n != 0 && --n != 0) {
+   34|  22.3k|	if (n != 0 && --n != 0) {
   ------------------
-  |  Branch (34:6): [True: 21.8k, False: 0]
-  |  Branch (34:16): [True: 21.8k, False: 0]
+  |  Branch (34:6): [True: 22.3k, False: 0]
+  |  Branch (34:16): [True: 22.3k, False: 0]
   ------------------
-   35|   313k|		do {
-   36|   313k|			if ((*d++ = *s++) == 0)
+   35|   312k|		do {
+   36|   312k|			if ((*d++ = *s++) == 0)
   ------------------
-  |  Branch (36:8): [True: 21.7k, False: 292k]
+  |  Branch (36:8): [True: 22.2k, False: 290k]
   ------------------
-   37|  21.7k|				break;
-   38|   313k|		} while (--n != 0);
+   37|  22.2k|				break;
+   38|   312k|		} while (--n != 0);
   ------------------
-  |  Branch (38:12): [True: 292k, False: 20]
+  |  Branch (38:12): [True: 290k, False: 36]
   ------------------
-   39|  21.8k|	}
+   39|  22.3k|	}
    40|       |
    41|       |	/* Not enough room in dst, add NUL and traverse rest of src */
-   42|  21.8k|	if (n == 0) {
+   42|  22.3k|	if (n == 0) {
   ------------------
-  |  Branch (42:6): [True: 20, False: 21.7k]
+  |  Branch (42:6): [True: 36, False: 22.2k]
   ------------------
-   43|     20|		if (siz != 0)
+   43|     36|		if (siz != 0)
   ------------------
-  |  Branch (43:7): [True: 20, False: 0]
+  |  Branch (43:7): [True: 36, False: 0]
   ------------------
-   44|     20|			*d = '\0';		/* NUL-terminate dst */
-   45|  1.13k|		while (*s++)
+   44|     36|			*d = '\0';		/* NUL-terminate dst */
+   45|  1.27k|		while (*s++)
   ------------------
-  |  Branch (45:10): [True: 1.11k, False: 20]
+  |  Branch (45:10): [True: 1.23k, False: 36]
   ------------------
-   46|  1.11k|			;
-   47|     20|	}
+   46|  1.23k|			;
+   47|     36|	}
    48|       |
-   49|  21.8k|	return(s - src - 1);	/* count does not include NUL */
-   50|  21.8k|}
+   49|  22.3k|	return(s - src - 1);	/* count does not include NUL */
+   50|  22.3k|}
 
 u_b64_decode:
   125|    434|{
@@ -185,113 +185,113 @@ u_b64_decode:
   |  |  ------------------
   ------------------
   134|       |
-  135|  2.68k|    for (pout = out; in_sz; )
+  135|  2.53k|    for (pout = out; in_sz; )
   ------------------
-  |  Branch (135:22): [True: 2.24k, False: 434]
+  |  Branch (135:22): [True: 2.09k, False: 434]
   ------------------
-  136|  2.24k|    {
-  137|  11.2k|        for (pad = 0, len = 0, i = 0; i < 4; ++i)
+  136|  2.09k|    {
+  137|  10.4k|        for (pad = 0, len = 0, i = 0; i < 4; ++i)
   ------------------
-  |  Branch (137:39): [True: 8.98k, False: 2.24k]
+  |  Branch (137:39): [True: 8.39k, False: 2.09k]
   ------------------
-  138|  8.98k|        {
-  139|  8.98k|            if (in_sz && in_sz-- > 0)   /* Avoid wrapping around in_sz. */
+  138|  8.39k|        {
+  139|  8.39k|            if (in_sz && in_sz-- > 0)   /* Avoid wrapping around in_sz. */
   ------------------
-  |  Branch (139:17): [True: 8.98k, False: 0]
-  |  Branch (139:26): [True: 8.98k, False: 0]
+  |  Branch (139:17): [True: 8.39k, False: 0]
+  |  Branch (139:26): [True: 8.39k, False: 0]
   ------------------
-  140|  8.98k|            {
-  141|  8.98k|                buf[i] = *in++;
+  140|  8.39k|            {
+  141|  8.39k|                buf[i] = *in++;
   142|       |
-  143|  8.98k|                if (buf[i] == '=')
+  143|  8.39k|                if (buf[i] == '=')
   ------------------
-  |  Branch (143:21): [True: 603, False: 8.38k]
+  |  Branch (143:21): [True: 587, False: 7.80k]
   ------------------
-  144|    603|                    ++pad;
-  145|  8.38k|                else if (!is_base64(buf[i]))    
+  144|    587|                    ++pad;
+  145|  7.80k|                else if (!is_base64(buf[i]))    
   ------------------
-  |  Branch (145:26): [True: 0, False: 8.38k]
+  |  Branch (145:26): [True: 0, False: 7.80k]
   ------------------
   146|      0|                    return ~0;
   147|       |
-  148|  8.98k|                ++len;
-  149|  8.98k|            }
+  148|  8.39k|                ++len;
+  149|  8.39k|            }
   150|      0|            else
   151|      0|                buf[i] = '\0';
-  152|  8.98k|        }
+  152|  8.39k|        }
   153|       |
-  154|  2.24k|        if (len)
+  154|  2.09k|        if (len)
   ------------------
-  |  Branch (154:13): [True: 2.24k, False: 0]
+  |  Branch (154:13): [True: 2.09k, False: 0]
   ------------------
-  155|  2.24k|        {
-  156|  2.24k|            size_t nlen = 3 - pad;
+  155|  2.09k|        {
+  156|  2.09k|            size_t nlen = 3 - pad;
   157|       |
-  158|  2.24k|            if (tot_sz >= nlen)
+  158|  2.09k|            if (tot_sz >= nlen)
   ------------------
-  |  Branch (158:17): [True: 2.24k, False: 0]
+  |  Branch (158:17): [True: 2.09k, False: 0]
   ------------------
-  159|  2.24k|            {
-  160|  2.24k|                chunk_decode(buf, pout);
-  161|  2.24k|                tot_sz -= nlen; /* Take care of subtracting pad bytes. */
-  162|  2.24k|                pout += nlen;
-  163|  2.24k|            } 
+  159|  2.09k|            {
+  160|  2.09k|                chunk_decode(buf, pout);
+  161|  2.09k|                tot_sz -= nlen; /* Take care of subtracting pad bytes. */
+  162|  2.09k|                pout += nlen;
+  163|  2.09k|            } 
   164|      0|            else
   165|      0|                return ~0;  /* Not enough space. */
-  166|  2.24k|        }
-  167|  2.24k|    }
+  166|  2.09k|        }
+  167|  2.09k|    }
   168|       |
   169|    434|    *out_sz -= tot_sz;
   170|       |
   171|    434|    return 0;
   172|    434|}
 b64.c:is_base64:
-  179|  8.38k|{
-  180|  8.38k|    return D[c];
-  181|  8.38k|}
+  179|  7.80k|{
+  180|  7.80k|    return D[c];
+  181|  7.80k|}
 b64.c:chunk_decode:
-  197|  2.24k|{   
-  198|  2.24k|    out[0] = (val(in[0]) << 2) | (val(in[1]) >> 4);
-  199|  2.24k|    out[1] = ((val(in[1]) & 0x0f) << 4) | (val(in[2]) >> 2);
-  200|  2.24k|    out[2] = ((val(in[2]) & 0x03) << 6) | val(in[3]);
-  201|  2.24k|}
+  197|  2.09k|{   
+  198|  2.09k|    out[0] = (val(in[0]) << 2) | (val(in[1]) >> 4);
+  199|  2.09k|    out[1] = ((val(in[1]) & 0x0f) << 4) | (val(in[2]) >> 2);
+  200|  2.09k|    out[2] = ((val(in[2]) & 0x03) << 6) | val(in[3]);
+  201|  2.09k|}
 b64.c:val:
-  184|  13.4k|{
-  185|  13.4k|    return (D[c] - 1);
-  186|  13.4k|}
+  184|  12.5k|{
+  185|  12.5k|    return (D[c] - 1);
+  186|  12.5k|}
 
 u_log_write_ex:
-  147|    366|{
-  148|    366|    va_list ap;
-  149|    366|    err_type savederr;
+  147|    374|{
+  148|    374|    va_list ap;
+  149|    374|    err_type savederr;
   ------------------
-  |  |   39|    366|#define err_type int
+  |  |   39|    374|#define err_type int
   ------------------
-  150|    366|    int rc;
-  151|    366|    char msg[U_MAX_LOG_LENGTH], strerr[STRERR_BUFSZ], errmsg[STRERR_BUFSZ];
+  150|    374|    int rc;
+  151|    374|    char msg[U_MAX_LOG_LENGTH], strerr[STRERR_BUFSZ], errmsg[STRERR_BUFSZ];
   152|       |
-  153|    366|    save_errno(savederr);
+  153|    374|    save_errno(savederr);
   ------------------
-  |  |   40|    366|#define save_errno(var) var = errno;
+  |  |   40|    374|#define save_errno(var) var = errno;
   ------------------
   154|       |
   155|       |    /* build the message to send to the log system */
-  156|    366|    va_start(ap, fmt); 
-  157|    366|    rc = vsnprintf(msg, U_MAX_LOG_LENGTH, fmt, ap);
-  158|    366|    va_end(ap);
+  156|    374|    va_start(ap, fmt); 
+  157|    374|    rc = vsnprintf(msg, U_MAX_LOG_LENGTH, fmt, ap);
+  158|    374|    va_end(ap);
   159|       |
-  160|    366|    if(rc >= U_MAX_LOG_LENGTH)
+  160|    374|    if(rc >= U_MAX_LOG_LENGTH)
   ------------------
-  |  Branch (160:8): [True: 1, False: 365]
+  |  Branch (160:8): [True: 1, False: 373]
   ------------------
   161|      1|        goto err; /* message too long */
   162|       |
   163|       |    /* init empty strings */
-  164|    365|    errmsg[0] = strerr[0] = 0;
+  164|    373|    errmsg[0] = strerr[0] = 0;
   165|       |
-  166|    365|    if(err)
+  166|    373|    if(err)
   ------------------
-  |  Branch (166:8): [True: 0, False: 365]
+  |  Branch (166:8): [True: 0, False: 373]
   ------------------
   167|      0|    {
   168|      0|        u_strerror_r(err, strerr, sizeof(strerr));
@@ -300,56 +300,56 @@ u_log_write_ex:
   171|      0|    } 
   172|       |
   173|       |    /* ok, send the msg to the logger */
-  174|    365|    if(flags & LOG_WRITE_FLAG_CTX)
+  174|    373|    if(flags & LOG_WRITE_FLAG_CTX)
   ------------------
-  |  Branch (174:8): [True: 365, False: 0]
+  |  Branch (174:8): [True: 373, False: 0]
   ------------------
-  175|    365|        u_log(fac, lev, "[%s][%d:%s:%d:%s] %s %s", 
-  176|    365|               u_log_label(lev), getpid(), file, line, func, msg, errmsg);
+  175|    373|        u_log(fac, lev, "[%s][%d:%s:%d:%s] %s %s", 
+  176|    373|               u_log_label(lev), getpid(), file, line, func, msg, errmsg);
   177|      0|    else
   178|      0|        u_log(fac, lev, "[%s][%d:::] %s %s", 
   179|      0|               u_log_label(lev), getpid(), msg, errmsg);
   180|       |
-  181|    365|    restore_errno(savederr);
+  181|    373|    restore_errno(savederr);
   ------------------
-  |  |   41|    365|#define restore_errno(var) errno = var;
+  |  |   41|    373|#define restore_errno(var) errno = var;
   ------------------
-  182|    365|    return 0;
+  182|    373|    return 0;
   183|      1|err:
   184|       |    restore_errno(savederr);
   ------------------
   |  |   41|      1|#define restore_errno(var) errno = var;
   ------------------
   185|      1|    return ~0;
-  186|    366|}
+  186|    374|}
 log.c:u_log_lock:
-   61|    365|{
-   62|    365|    if(f_lock)
+   61|    373|{
+   62|    373|    if(f_lock)
   ------------------
-  |  Branch (62:8): [True: 0, False: 365]
+  |  Branch (62:8): [True: 0, False: 373]
   ------------------
    63|      0|        f_lock(f_lock_arg);
-   64|    365|}
+   64|    373|}
 log.c:u_log_unlock:
-   67|    365|{
-   68|    365|    if(f_unlock)
+   67|    373|{
+   68|    373|    if(f_unlock)
   ------------------
-  |  Branch (68:8): [True: 0, False: 365]
+  |  Branch (68:8): [True: 0, False: 373]
   ------------------
    69|      0|        f_unlock(f_unlock_arg);
-   70|    365|}
+   70|    373|}
 log.c:u_log:
-  100|    365|{
-  101|    365|    va_list ap;
-  102|    365|    char buf[U_MAX_LOG_LENGTH];
+  100|    373|{
+  101|    373|    va_list ap;
+  102|    373|    char buf[U_MAX_LOG_LENGTH];
   103|       |
-  104|    365|    va_start(ap, fmt); 
+  104|    373|    va_start(ap, fmt); 
   105|       |
-  106|    365|    u_log_lock();
+  106|    373|    u_log_lock();
   107|       |
-  108|    365|    if(hook)
+  108|    373|    if(hook)
   ------------------
-  |  Branch (108:8): [True: 0, False: 365]
+  |  Branch (108:8): [True: 0, False: 373]
   ------------------
   109|      0|    {
   110|      0|        if(vsnprintf(buf, U_MAX_LOG_LENGTH, fmt, ap) > U_MAX_LOG_LENGTH)
@@ -364,159 +364,172 @@ log.c:u_log:
   116|      0|        buf[U_MAX_LOG_LENGTH - 1] = 0; 
   117|      0|        hook(hook_arg, level, buf);
   118|      0|    } else 
-  119|    365|        vsyslog(fac | level, fmt, ap);
+  119|    373|        vsyslog(fac | level, fmt, ap);
   120|       |
-  121|    365|    u_log_unlock();
+  121|    373|    u_log_unlock();
   122|       |
-  123|    365|    va_end(ap);
+  123|    373|    va_end(ap);
   124|       |
-  125|    365|    return 0;
-  126|    365|}
+  125|    373|    return 0;
+  126|    373|}
 log.c:u_log_label:
-   73|    365|{
-   74|    365|    switch(lev)
-   75|    365|    {
+   73|    373|{
+   74|    373|    switch(lev)
+   75|    373|    {
    76|      0|    case LOG_DEBUG:  
   ------------------
-  |  Branch (76:5): [True: 0, False: 365]
+  |  Branch (76:5): [True: 0, False: 373]
   ------------------
    77|      0|        return "dbg"; 
    78|      0|    case LOG_INFO:   
   ------------------
-  |  Branch (78:5): [True: 0, False: 365]
+  |  Branch (78:5): [True: 0, False: 373]
   ------------------
    79|      0|        return "inf"; 
    80|      0|    case LOG_NOTICE: 
   ------------------
-  |  Branch (80:5): [True: 0, False: 365]
+  |  Branch (80:5): [True: 0, False: 373]
   ------------------
    81|      0|        return "ntc"; 
-   82|    200|    case LOG_WARNING:
+   82|    209|    case LOG_WARNING:
   ------------------
-  |  Branch (82:5): [True: 200, False: 165]
+  |  Branch (82:5): [True: 209, False: 164]
   ------------------
-   83|    200|        return "wrn";
+   83|    209|        return "wrn";
    84|      0|    case LOG_ERR:    
   ------------------
-  |  Branch (84:5): [True: 0, False: 365]
+  |  Branch (84:5): [True: 0, False: 373]
   ------------------
    85|      0|        return "err";
-   86|    165|    case LOG_CRIT:   
+   86|    164|    case LOG_CRIT:   
   ------------------
-  |  Branch (86:5): [True: 165, False: 200]
+  |  Branch (86:5): [True: 164, False: 209]
   ------------------
-   87|    165|        return "crt";
+   87|    164|        return "crt";
    88|      0|    case LOG_ALERT:   
   ------------------
-  |  Branch (88:5): [True: 0, False: 365]
+  |  Branch (88:5): [True: 0, False: 373]
   ------------------
    89|      0|        return "alr";
    90|      0|    case LOG_EMERG:   
   ------------------
-  |  Branch (90:5): [True: 0, False: 365]
+  |  Branch (90:5): [True: 0, False: 373]
   ------------------
    91|      0|        return "emg";
    92|      0|    default: 
   ------------------
-  |  Branch (92:5): [True: 0, False: 365]
+  |  Branch (92:5): [True: 0, False: 373]
   ------------------
    93|       |        syslog(LOG_WARNING, 
    94|      0|               "[wrn][%d:::] unknown log level: %d", getpid(), lev);
    95|      0|        return "unk";
-   96|    365|    }
-   97|    365|}
+   96|    373|    }
+   97|    373|}
 
 u_malloc:
-   62|  73.6k|{
-   63|  73.6k|    return u_memory_fns.f_malloc(sz);
-   64|  73.6k|}
+   62|  73.2k|{
+   63|  73.2k|    return u_memory_fns.f_malloc(sz);
+   64|  73.2k|}
 u_zalloc:
-   74|  18.4k|{
-   75|  18.4k|    return u_memory_fns.f_calloc(1, sz);
-   76|  18.4k|}
+   74|  18.3k|{
+   75|  18.3k|    return u_memory_fns.f_calloc(1, sz);
+   76|  18.3k|}
 u_realloc:
-   80|  29.0k|{
-   81|  29.0k|    return u_memory_fns.f_realloc(ptr, sz);
-   82|  29.0k|}
+   80|  29.1k|{
+   81|  29.1k|    return u_memory_fns.f_realloc(ptr, sz);
+   82|  29.1k|}
 u_free:
    86|   131k|{
    87|   131k|    if (ptr)
   ------------------
-  |  Branch (87:9): [True: 120k, False: 11.3k]
+  |  Branch (87:9): [True: 119k, False: 11.2k]
   ------------------
-   88|   120k|        u_memory_fns.f_free(ptr);
+   88|   119k|        u_memory_fns.f_free(ptr);
    89|   131k|}
 
 u_string_trim:
-  107|  42.3k|{
-  108|  42.3k|    dbg_return_if (s == NULL, ~0);
+  107|  42.8k|{
+  108|  42.8k|    dbg_return_if (s == NULL, ~0);
   ------------------
-  |  |  619|  42.3k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  42.8k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 42.3k]
-  |  |  |  Branch (619:79): [Folded, False: 42.3k]
+  |  |  |  Branch (619:50): [True: 0, False: 42.8k]
+  |  |  |  Branch (619:79): [Folded, False: 42.8k]
   |  |  ------------------
   ------------------
   109|       |
-  110|  42.3k|    if (s->data_len > 0)
+  110|  42.8k|    if (s->data_len > 0)
   ------------------
-  |  Branch (110:9): [True: 35.7k, False: 6.59k]
+  |  Branch (110:9): [True: 36.0k, False: 6.81k]
   ------------------
-  111|  35.7k|    {
-  112|  35.7k|        u_trim(s->data);
-  113|  35.7k|        s->data_len = strlen(s->data);
-  114|  35.7k|    }
+  111|  36.0k|    {
+  112|  36.0k|        u_trim(s->data);
+  113|  36.0k|        s->data_len = strlen(s->data);
+  114|  36.0k|    }
   115|       |
-  116|  42.3k|    return 0;
-  117|  42.3k|}
+  116|  42.8k|    return 0;
+  117|  42.8k|}
 u_string_set_length:
-  131|  3.42k|{
-  132|  3.42k|    dbg_return_if (s == NULL, ~0);
+  131|  3.57k|{
+  132|  3.57k|    dbg_return_if (s == NULL, ~0);
   ------------------
-  |  |  619|  3.42k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 3.42k]
-  |  |  |  Branch (619:79): [Folded, False: 3.42k]
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
   |  |  ------------------
   ------------------
-  133|  3.42k|    dbg_return_if (len > s->data_len, ~0);
+  133|  3.57k|    dbg_return_if (len > s->data_len, ~0);
   ------------------
-  |  |  619|  3.42k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  3.57k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 3.42k]
-  |  |  |  Branch (619:79): [Folded, False: 3.42k]
+  |  |  |  Branch (619:50): [True: 0, False: 3.57k]
+  |  |  |  Branch (619:79): [Folded, False: 3.57k]
   |  |  ------------------
   ------------------
   134|       |
-  135|  3.42k|    if (len < s->data_len)
+  135|  3.57k|    if (len < s->data_len)
   ------------------
-  |  Branch (135:9): [True: 3.42k, False: 0]
+  |  Branch (135:9): [True: 3.57k, False: 0]
   ------------------
-  136|  3.42k|    {
-  137|  3.42k|        s->data_len = len;
-  138|  3.42k|        s->data[len] = '\0';
-  139|  3.42k|    }
+  136|  3.57k|    {
+  137|  3.57k|        s->data_len = len;
+  138|  3.57k|        s->data[len] = '\0';
+  139|  3.57k|    }
   140|       |
   141|       |    /* if (len == s->data_len) do nothing */ 
   142|       |
-  143|  3.42k|    return 0;
-  144|  3.42k|}
+  143|  3.57k|    return 0;
+  144|  3.57k|}
 u_string_len:
-  156|  64.7k|{
-  157|  64.7k|    dbg_return_if (s == NULL, 0);
+  156|  65.6k|{
+  157|  65.6k|    dbg_return_if (s == NULL, 0);
   ------------------
-  |  |  619|  64.7k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  65.6k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 64.7k]
-  |  |  |  Branch (619:79): [Folded, False: 64.7k]
+  |  |  |  Branch (619:50): [True: 0, False: 65.6k]
+  |  |  |  Branch (619:79): [Folded, False: 65.6k]
   |  |  ------------------
   ------------------
   158|       |
-  159|  64.7k|    return s->data_len;
-  160|  64.7k|}
+  159|  65.6k|    return s->data_len;
+  160|  65.6k|}
 u_string_c:
-  173|   101k|{
-  174|   101k|    dbg_return_if (s == NULL, NULL);
+  173|   102k|{
+  174|   102k|    dbg_return_if (s == NULL, NULL);
+  ------------------
+  |  |  619|   102k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (619:50): [True: 0, False: 102k]
+  |  |  |  Branch (619:79): [Folded, False: 102k]
+  |  |  ------------------
+  ------------------
+  175|       |
+  176|   102k|    return s->data;
+  177|   102k|}
+u_string_clear:
+  212|   101k|{
+  213|   101k|    dbg_return_if (s == NULL, ~0);
   ------------------
   |  |  619|   101k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
@@ -524,62 +537,49 @@ u_string_c:
   |  |  |  Branch (619:79): [Folded, False: 101k]
   |  |  ------------------
   ------------------
-  175|       |
-  176|   101k|    return s->data;
-  177|   101k|}
-u_string_clear:
-  212|  98.8k|{
-  213|  98.8k|    dbg_return_if (s == NULL, ~0);
-  ------------------
-  |  |  619|  98.8k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 98.8k]
-  |  |  |  Branch (619:79): [Folded, False: 98.8k]
-  |  |  ------------------
-  ------------------
   214|       |
   215|       |    /* clear the string but do not free the buffer */
-  216|  98.8k|    if (s->data_sz)
+  216|   101k|    if (s->data_sz)
   ------------------
-  |  Branch (216:9): [True: 73.2k, False: 25.6k]
+  |  Branch (216:9): [True: 75.1k, False: 25.9k]
   ------------------
-  217|  73.2k|    {
-  218|  73.2k|        s->data[0] = '\0';
-  219|  73.2k|        s->data_len = 0;
-  220|  73.2k|    }
+  217|  75.1k|    {
+  218|  75.1k|        s->data[0] = '\0';
+  219|  75.1k|        s->data_len = 0;
+  220|  75.1k|    }
   221|       |
-  222|  98.8k|    return 0;
-  223|  98.8k|}
+  222|   101k|    return 0;
+  223|   101k|}
 u_string_create:
-  241|  40.1k|{
-  242|  40.1k|    u_string_t *s = NULL;
+  241|  40.4k|{
+  242|  40.4k|    u_string_t *s = NULL;
   243|       |
-  244|  40.1k|    dbg_return_if (ps == NULL, ~0);
+  244|  40.4k|    dbg_return_if (ps == NULL, ~0);
   ------------------
-  |  |  619|  40.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  40.4k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 40.1k]
-  |  |  |  Branch (619:79): [Folded, False: 40.1k]
+  |  |  |  Branch (619:50): [True: 0, False: 40.4k]
+  |  |  |  Branch (619:79): [Folded, False: 40.4k]
   |  |  ------------------
   ------------------
   245|       |
-  246|  40.1k|    dbg_err_sif ((s = u_malloc(sizeof(u_string_t))) == NULL);
+  246|  40.4k|    dbg_err_sif ((s = u_malloc(sizeof(u_string_t))) == NULL);
   ------------------
-  |  |  627|  40.1k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  627|  40.4k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (627:50): [True: 0, False: 40.1k]
-  |  |  |  Branch (627:77): [Folded, False: 40.1k]
+  |  |  |  Branch (627:50): [True: 0, False: 40.4k]
+  |  |  |  Branch (627:77): [Folded, False: 40.4k]
   |  |  ------------------
   ------------------
   247|       |
-  248|  40.1k|    s->data_sz = 0;
-  249|  40.1k|    s->data_len = 0;
-  250|  40.1k|    s->shift_cnt = 0;
-  251|  40.1k|    s->data = null;
+  248|  40.4k|    s->data_sz = 0;
+  249|  40.4k|    s->data_len = 0;
+  250|  40.4k|    s->shift_cnt = 0;
+  251|  40.4k|    s->data = null;
   252|       |
-  253|  40.1k|    if (buf)
+  253|  40.4k|    if (buf)
   ------------------
-  |  Branch (253:9): [True: 0, False: 40.1k]
+  |  Branch (253:9): [True: 0, False: 40.4k]
   ------------------
   254|      0|        dbg_err_if (u_string_append(s, buf, len));
   ------------------
@@ -590,9 +590,9 @@ u_string_create:
   |  |  ------------------
   ------------------
   255|       |
-  256|  40.1k|    *ps = s;
+  256|  40.4k|    *ps = s;
   257|       |
-  258|  40.1k|    return 0;
+  258|  40.4k|    return 0;
   259|      0|err:
   260|      0|    if (s)
   ------------------
@@ -600,623 +600,623 @@ u_string_create:
   ------------------
   261|      0|        u_string_free(s);
   262|      0|    return ~0;
-  263|  40.1k|}
+  263|  40.4k|}
 u_string_free:
-  275|  40.1k|{
-  276|  40.1k|    if (s)
+  275|  40.4k|{
+  276|  40.4k|    if (s)
   ------------------
-  |  Branch (276:9): [True: 40.1k, False: 0]
+  |  Branch (276:9): [True: 40.4k, False: 0]
   ------------------
-  277|  40.1k|    {
-  278|  40.1k|        if (s->data_sz)
+  277|  40.4k|    {
+  278|  40.4k|        if (s->data_sz)
   ------------------
-  |  Branch (278:13): [True: 28.1k, False: 12.0k]
+  |  Branch (278:13): [True: 28.2k, False: 12.2k]
   ------------------
-  279|  28.1k|            U_FREE(s->data);
+  279|  28.2k|            U_FREE(s->data);
   ------------------
-  |  |   47|  28.1k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|  28.2k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 28.1k]
+  |  |  |  Branch (47:60): [Folded, False: 28.2k]
   |  |  ------------------
   ------------------
-  280|  40.1k|        u_free(s);
-  281|  40.1k|    }
+  280|  40.4k|        u_free(s);
+  281|  40.4k|    }
   282|       |
-  283|  40.1k|    return 0;
-  284|  40.1k|}
+  283|  40.4k|    return 0;
+  284|  40.4k|}
 u_string_set:
-  299|  55.6k|{
-  300|  55.6k|    dbg_return_if (s == NULL, ~0);
+  299|  56.1k|{
+  300|  56.1k|    dbg_return_if (s == NULL, ~0);
   ------------------
-  |  |  619|  55.6k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  56.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 55.6k]
-  |  |  |  Branch (619:79): [Folded, False: 55.6k]
+  |  |  |  Branch (619:50): [True: 0, False: 56.1k]
+  |  |  |  Branch (619:79): [Folded, False: 56.1k]
   |  |  ------------------
   ------------------
   301|       |
-  302|  55.6k|    (void) u_string_clear(s);
+  302|  56.1k|    (void) u_string_clear(s);
   303|       |
-  304|  55.6k|    return u_string_append(s, buf, len);
-  305|  55.6k|}
+  304|  56.1k|    return u_string_append(s, buf, len);
+  305|  56.1k|}
 u_string_reserve:
-  320|  29.0k|{
-  321|  29.0k|    char *nbuf = NULL;
+  320|  29.1k|{
+  321|  29.1k|    char *nbuf = NULL;
   322|       |
-  323|  29.0k|    dbg_return_if (s == NULL, ~0);
+  323|  29.1k|    dbg_return_if (s == NULL, ~0);
   ------------------
-  |  |  619|  29.0k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  29.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 29.0k]
-  |  |  |  Branch (619:79): [Folded, False: 29.0k]
+  |  |  |  Branch (619:50): [True: 0, False: 29.1k]
+  |  |  |  Branch (619:79): [Folded, False: 29.1k]
   |  |  ------------------
   ------------------
-  324|  29.0k|    nop_return_if (size <= s->data_sz, 0);
+  324|  29.1k|    nop_return_if (size <= s->data_sz, 0);
   ------------------
-  |  |  381|  29.0k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
+  |  |  381|  29.1k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (381:48): [True: 0, False: 29.0k]
-  |  |  |  Branch (381:74): [Folded, False: 29.0k]
+  |  |  |  Branch (381:48): [True: 0, False: 29.1k]
+  |  |  |  Branch (381:74): [Folded, False: 29.1k]
   |  |  ------------------
   ------------------
   325|       |   
   326|       |    /* realloc requested size plus 1 char to store the terminating '\0' */
-  327|  29.0k|    nbuf = u_realloc(((s->data == null) ? NULL : s->data), size + 1);
+  327|  29.1k|    nbuf = u_realloc(((s->data == null) ? NULL : s->data), size + 1);
   ------------------
-  |  Branch (327:23): [True: 28.1k, False: 967]
+  |  Branch (327:23): [True: 28.2k, False: 915]
   ------------------
-  328|  29.0k|    dbg_err_sif (nbuf == NULL);
+  328|  29.1k|    dbg_err_sif (nbuf == NULL);
   ------------------
-  |  |  627|  29.0k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  627|  29.1k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (627:50): [True: 0, False: 29.0k]
-  |  |  |  Branch (627:77): [Folded, False: 29.0k]
+  |  |  |  Branch (627:50): [True: 0, False: 29.1k]
+  |  |  |  Branch (627:77): [Folded, False: 29.1k]
   |  |  ------------------
   ------------------
   329|       |
   330|       |    /* zero terminate it */
-  331|  29.0k|    nbuf[size] = '\0';
+  331|  29.1k|    nbuf[size] = '\0';
   332|       |
-  333|  29.0k|    s->data = (void *) nbuf;
-  334|  29.0k|    s->data_sz = size;
+  333|  29.1k|    s->data = (void *) nbuf;
+  334|  29.1k|    s->data_sz = size;
   335|       |
-  336|  29.0k|    return 0;
+  336|  29.1k|    return 0;
   337|      0|err:
   338|      0|    return ~0;
-  339|  29.0k|}
+  339|  29.1k|}
 u_string_append:
-  380|  86.5k|{
-  381|  86.5k|    size_t nsz, min;
+  380|  87.2k|{
+  381|  87.2k|    size_t nsz, min;
   382|       |
-  383|  86.5k|    dbg_return_if (s == NULL, ~0);
+  383|  87.2k|    dbg_return_if (s == NULL, ~0);
   ------------------
-  |  |  619|  86.5k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  87.2k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 86.5k]
-  |  |  |  Branch (619:79): [Folded, False: 86.5k]
-  |  |  ------------------
-  ------------------
-  384|  86.5k|    dbg_return_if (buf == NULL, ~0);
-  ------------------
-  |  |  619|  86.5k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 86.5k]
-  |  |  |  Branch (619:79): [Folded, False: 86.5k]
+  |  |  |  Branch (619:50): [True: 0, False: 87.2k]
+  |  |  |  Branch (619:79): [Folded, False: 87.2k]
   |  |  ------------------
   ------------------
-  385|  86.5k|    nop_return_if (len == 0, 0);    /* nothing to do */
+  384|  87.2k|    dbg_return_if (buf == NULL, ~0);
   ------------------
-  |  |  381|  86.5k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
+  |  |  619|  87.2k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (381:48): [True: 7.90k, False: 78.6k]
-  |  |  |  Branch (381:74): [Folded, False: 78.6k]
+  |  |  |  Branch (619:50): [True: 0, False: 87.2k]
+  |  |  |  Branch (619:79): [Folded, False: 87.2k]
+  |  |  ------------------
+  ------------------
+  385|  87.2k|    nop_return_if (len == 0, 0);    /* nothing to do */
+  ------------------
+  |  |  381|  87.2k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (381:48): [True: 8.26k, False: 78.9k]
+  |  |  |  Branch (381:74): [Folded, False: 78.9k]
   |  |  ------------------
   ------------------
   386|       |
   387|       |    /* if there's not enough space on s->data alloc a bigger buffer */
-  388|  78.6k|    if (s->data_len + len + 1 > s->data_sz)
+  388|  78.9k|    if (s->data_len + len + 1 > s->data_sz)
   ------------------
-  |  Branch (388:9): [True: 29.0k, False: 49.5k]
+  |  Branch (388:9): [True: 29.1k, False: 49.7k]
   ------------------
-  389|  29.0k|    {
-  390|  29.0k|        min = s->data_len + len + 1; /* min required buffer length */
-  391|  29.0k|        nsz = s->data_sz;
+  389|  29.1k|    {
+  390|  29.1k|        min = s->data_len + len + 1; /* min required buffer length */
+  391|  29.1k|        nsz = s->data_sz;
   392|  59.1k|        while (nsz <= min)
   ------------------
-  |  Branch (392:16): [True: 30.0k, False: 29.0k]
+  |  Branch (392:16): [True: 29.9k, False: 29.1k]
   ------------------
-  393|  30.0k|            nsz += (BLOCK_SIZE << s->shift_cnt++);
+  393|  29.9k|            nsz += (BLOCK_SIZE << s->shift_cnt++);
   394|       |
-  395|  29.0k|        dbg_err_if (u_string_reserve(s, nsz));
+  395|  29.1k|        dbg_err_if (u_string_reserve(s, nsz));
   ------------------
-  |  |  626|  29.0k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  29.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 29.0k]
-  |  |  |  Branch (626:77): [Folded, False: 29.0k]
+  |  |  |  Branch (626:50): [True: 0, False: 29.1k]
+  |  |  |  Branch (626:77): [Folded, False: 29.1k]
   |  |  ------------------
   ------------------
-  396|  29.0k|    }
+  396|  29.1k|    }
   397|       |
   398|       |    /* append this chunk to the data buffer */
-  399|  78.6k|    strncpy(s->data + s->data_len, buf, len);
-  400|  78.6k|    s->data_len += len;
-  401|  78.6k|    s->data[s->data_len] = '\0';
+  399|  78.9k|    strncpy(s->data + s->data_len, buf, len);
+  400|  78.9k|    s->data_len += len;
+  401|  78.9k|    s->data[s->data_len] = '\0';
   402|       |    
-  403|  78.6k|    return 0;
+  403|  78.9k|    return 0;
   404|      0|err:
   405|      0|    return ~0;
-  406|  78.6k|}
+  406|  78.9k|}
 
 fuzz_digest.c:auth_check_users:
-  646|    403|{
-  647|    403|    u_config_t *user;
-  648|    403|    const char *v;
-  649|    403|    int i;
+  646|    414|{
+  647|    414|    u_config_t *user;
+  648|    414|    const char *v;
+  649|    414|    int i;
   650|       |
-  651|    711|    for(i = 0; c && (user = u_config_get_child_n(c, "user", i)); ++i)
+  651|    688|    for(i = 0; c && (user = u_config_get_child_n(c, "user", i)); ++i)
   ------------------
-  |  Branch (651:16): [True: 711, False: 0]
-  |  Branch (651:21): [True: 508, False: 203]
+  |  Branch (651:16): [True: 688, False: 0]
+  |  Branch (651:21): [True: 483, False: 205]
   ------------------
-  652|    508|    {
-  653|    508|        v = u_config_get_subkey_value(user, "name");
-  654|    508|        warn_err_ifm(v == NULL || !auth_name_ok(v) || strchr(v, ':'),
+  652|    483|    {
+  653|    483|        v = u_config_get_subkey_value(user, "name");
+  654|    483|        warn_err_ifm(v == NULL || !auth_name_ok(v) || strchr(v, ':'),
   ------------------
-  |  |  516|    508|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
+  |  |  516|    483|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
   |  |  ------------------
-  |  |  |  |  297|  1.66k|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
+  |  |  |  |  297|  1.53k|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
   |  |  |  |  ------------------
-  |  |  |  |  |  |   23|    189|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |   23|    200|#define msg(label, err, ...) label( err, __VA_ARGS__ )
   |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  516|    189|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  516|    200|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
   |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  264|    189|#define warn_( err, ...) u_log_warning(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  264|    200|#define warn_( err, ...) u_log_warning(facility, 1, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  207|    189|    u_log_write(facility, LOG_WARNING, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  207|    200|    u_log_write(facility, LOG_WARNING, flags, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|    189|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|    189|            __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  ------------------
-  |  |  |  |  ------------------
-  |  |  |  |  |  Branch (297:15): [True: 184, False: 324]
-  |  |  |  |  |  Branch (297:15): [True: 4, False: 320]
-  |  |  |  |  |  Branch (297:15): [True: 1, False: 319]
-  |  |  |  |  |  Branch (297:73): [Folded, False: 319]
-  |  |  |  |  ------------------
-  |  |  ------------------
-  ------------------
-  655|    319|                "auth: a user in %s has no name, or a bad one", where);
-  656|    319|        v = u_config_get_subkey_value(user, "password");
-  657|    319|        warn_err_ifm(v && strncmp(v, "pbkdf2-sha256$", 14),
-  ------------------
-  |  |  516|    319|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
-  |  |  ------------------
-  |  |  |  |  297|    436|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
-  |  |  |  |  ------------------
-  |  |  |  |  |  |   23|     11|#define msg(label, err, ...) label( err, __VA_ARGS__ )
-  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  516|     11|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  264|     11|#define warn_( err, ...) u_log_warning(facility, 1, err, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  207|     11|    u_log_write(facility, LOG_WARNING, flags, err, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     11|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     11|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|    200|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|    200|            __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  ------------------
   |  |  |  |  ------------------
-  |  |  |  |  |  Branch (297:15): [True: 117, False: 202]
-  |  |  |  |  |  Branch (297:15): [True: 11, False: 106]
-  |  |  |  |  |  Branch (297:73): [Folded, False: 308]
+  |  |  |  |  |  Branch (297:15): [True: 195, False: 288]
+  |  |  |  |  |  Branch (297:15): [True: 4, False: 284]
+  |  |  |  |  |  Branch (297:15): [True: 1, False: 283]
+  |  |  |  |  |  Branch (297:73): [Folded, False: 283]
   |  |  |  |  ------------------
   |  |  ------------------
   ------------------
-  658|    319|                "auth: user %s: password must be a klin -c passwd hash "
-  659|    319|                "(no plaintext)", u_config_get_subkey_value(user, "name"));
-  660|    319|    }
+  655|    283|                "auth: a user in %s has no name, or a bad one", where);
+  656|    283|        v = u_config_get_subkey_value(user, "password");
+  657|    283|        warn_err_ifm(v && strncmp(v, "pbkdf2-sha256$", 14),
+  ------------------
+  |  |  516|    283|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
+  |  |  ------------------
+  |  |  |  |  297|    375|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  |   23|      9|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  516|      9|#define warn_err_ifm(expr, ...)         msg_err_ifm(warn_, expr, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  264|      9|#define warn_( err, ...) u_log_warning(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  207|      9|    u_log_write(facility, LOG_WARNING, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|      9|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|      9|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (297:15): [True: 92, False: 191]
+  |  |  |  |  |  Branch (297:15): [True: 9, False: 83]
+  |  |  |  |  |  Branch (297:73): [Folded, False: 274]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  ------------------
+  658|    283|                "auth: user %s: password must be a klin -c passwd hash "
+  659|    283|                "(no plaintext)", u_config_get_subkey_value(user, "name"));
+  660|    283|    }
   661|       |
-  662|    203|    return 0;
-  663|    200|err:
-  664|    200|    return ~0;
-  665|    403|}
+  662|    205|    return 0;
+  663|    209|err:
+  664|    209|    return ~0;
+  665|    414|}
 fuzz_digest.c:auth_name_ok:
-  638|    324|{
-  639|  1.10k|    for(; s && *s; ++s)
+  638|    288|{
+  639|    938|    for(; s && *s; ++s)
   ------------------
-  |  Branch (639:11): [True: 1.10k, False: 0]
-  |  Branch (639:16): [True: 781, False: 320]
+  |  Branch (639:11): [True: 938, False: 0]
+  |  Branch (639:16): [True: 654, False: 284]
   ------------------
-  640|    781|        if(*s == '"' || *s == '\\' || (unsigned char) *s < 0x20)
+  640|    654|        if(*s == '"' || *s == '\\' || (unsigned char) *s < 0x20)
   ------------------
-  |  Branch (640:12): [True: 1, False: 780]
-  |  Branch (640:25): [True: 1, False: 779]
-  |  Branch (640:39): [True: 2, False: 777]
+  |  Branch (640:12): [True: 1, False: 653]
+  |  Branch (640:25): [True: 1, False: 652]
+  |  Branch (640:39): [True: 2, False: 650]
   ------------------
   641|      4|            return 0;
-  642|    320|    return s != NULL;
-  643|    324|}
+  642|    284|    return s != NULL;
+  643|    288|}
 fuzz_digest.c:auth_next_param:
-  327|  2.57k|{
-  328|  2.57k|    size_t n = 0, v = 0;
+  327|  2.31k|{
+  328|  2.31k|    size_t n = 0, v = 0;
   329|       |
-  330|  2.57k|    p += strspn(p, " \t,");
-  331|  2.57k|    if(*p == '\0')
+  330|  2.31k|    p += strspn(p, " \t,");
+  331|  2.31k|    if(*p == '\0')
   ------------------
-  |  Branch (331:8): [True: 364, False: 2.21k]
+  |  Branch (331:8): [True: 381, False: 1.93k]
   ------------------
-  332|    364|        return NULL;
+  332|    381|        return NULL;
   333|       |
-  334|  8.13k|    while(*p && *p != '=' && *p != ' ' && *p != '\t' && n + 1 < nsz)
+  334|  7.35k|    while(*p && *p != '=' && *p != ' ' && *p != '\t' && n + 1 < nsz)
   ------------------
-  |  Branch (334:11): [True: 7.94k, False: 190]
-  |  Branch (334:17): [True: 6.25k, False: 1.68k]
-  |  Branch (334:30): [True: 5.91k, False: 339]
-  |  Branch (334:43): [True: 5.91k, False: 0]
-  |  Branch (334:57): [True: 5.91k, False: 0]
+  |  Branch (334:11): [True: 7.16k, False: 188]
+  |  Branch (334:17): [True: 5.69k, False: 1.47k]
+  |  Branch (334:30): [True: 5.42k, False: 272]
+  |  Branch (334:43): [True: 5.42k, False: 0]
+  |  Branch (334:57): [True: 5.42k, False: 0]
   ------------------
-  335|  5.91k|        name[n++] = *p++;
-  336|  2.21k|    name[n] = '\0';
-  337|  2.21k|    p += strspn(p, " \t");
-  338|  2.21k|    if(*p++ != '=')
+  335|  5.42k|        name[n++] = *p++;
+  336|  1.93k|    name[n] = '\0';
+  337|  1.93k|    p += strspn(p, " \t");
+  338|  1.93k|    if(*p++ != '=')
   ------------------
-  |  Branch (338:8): [True: 259, False: 1.95k]
+  |  Branch (338:8): [True: 250, False: 1.68k]
   ------------------
-  339|    259|        return NULL;
-  340|  1.95k|    p += strspn(p, " \t");
+  339|    250|        return NULL;
+  340|  1.68k|    p += strspn(p, " \t");
   341|       |
-  342|  1.95k|    if(*p == '"')
+  342|  1.68k|    if(*p == '"')
   ------------------
-  |  Branch (342:8): [True: 441, False: 1.51k]
+  |  Branch (342:8): [True: 425, False: 1.25k]
   ------------------
-  343|    441|    {
-  344|  2.65k|        for(++p; *p && *p != '"'; ++p)
+  343|    425|    {
+  344|  2.43k|        for(++p; *p && *p != '"'; ++p)
   ------------------
-  |  Branch (344:18): [True: 2.62k, False: 29]
-  |  Branch (344:24): [True: 2.21k, False: 411]
+  |  Branch (344:18): [True: 2.39k, False: 37]
+  |  Branch (344:24): [True: 2.00k, False: 387]
   ------------------
-  345|  2.21k|        {
-  346|  2.21k|            if(*p == '\\' && p[1])
+  345|  2.00k|        {
+  346|  2.00k|            if(*p == '\\' && p[1])
   ------------------
-  |  Branch (346:16): [True: 198, False: 2.01k]
-  |  Branch (346:30): [True: 197, False: 1]
+  |  Branch (346:16): [True: 196, False: 1.81k]
+  |  Branch (346:30): [True: 195, False: 1]
   ------------------
-  347|    197|                ++p;
-  348|  2.21k|            if(v + 1 >= bsz)
+  347|    195|                ++p;
+  348|  2.00k|            if(v + 1 >= bsz)
   ------------------
-  |  Branch (348:16): [True: 1, False: 2.21k]
+  |  Branch (348:16): [True: 1, False: 2.00k]
   ------------------
   349|      1|                return NULL;
-  350|  2.21k|            buf[v++] = *p;
-  351|  2.21k|        }
-  352|    440|        if(*p++ != '"')
+  350|  2.00k|            buf[v++] = *p;
+  351|  2.00k|        }
+  352|    424|        if(*p++ != '"')
   ------------------
-  |  Branch (352:12): [True: 29, False: 411]
+  |  Branch (352:12): [True: 37, False: 387]
   ------------------
-  353|     29|            return NULL;
-  354|  1.51k|    } else {
-  355|  4.78k|        while(*p && *p != ',' && *p != ' ' && *p != '\t' && v + 1 < bsz)
+  353|     37|            return NULL;
+  354|  1.25k|    } else {
+  355|  4.00k|        while(*p && *p != ',' && *p != ' ' && *p != '\t' && v + 1 < bsz)
   ------------------
-  |  Branch (355:15): [True: 4.69k, False: 94]
-  |  Branch (355:21): [True: 3.33k, False: 1.36k]
-  |  Branch (355:34): [True: 3.27k, False: 56]
-  |  Branch (355:47): [True: 3.27k, False: 1]
-  |  Branch (355:61): [True: 3.27k, False: 0]
+  |  Branch (355:15): [True: 3.91k, False: 91]
+  |  Branch (355:21): [True: 2.79k, False: 1.11k]
+  |  Branch (355:34): [True: 2.74k, False: 52]
+  |  Branch (355:47): [True: 2.74k, False: 1]
+  |  Branch (355:61): [True: 2.74k, False: 0]
   ------------------
-  356|  3.27k|            buf[v++] = *p++;
-  357|  1.51k|    }
-  358|  1.92k|    buf[v] = '\0';
+  356|  2.74k|            buf[v++] = *p++;
+  357|  1.25k|    }
+  358|  1.64k|    buf[v] = '\0';
   359|       |
-  360|  1.92k|    return p;
-  361|  1.95k|}
+  360|  1.64k|    return p;
+  361|  1.68k|}
 fuzz_digest.c:auth_in_list:
-   81|    653|{
-   82|    653|    const char *p = list, *e;
+   81|    669|{
+   82|    669|    const char *p = list, *e;
    83|       |
-   84|  3.70k|    while(p && *p)
+   84|  3.29k|    while(p && *p)
   ------------------
-  |  Branch (84:11): [True: 3.70k, False: 0]
-  |  Branch (84:16): [True: 3.05k, False: 652]
+  |  Branch (84:11): [True: 3.29k, False: 0]
+  |  Branch (84:16): [True: 2.62k, False: 668]
   ------------------
-   85|  3.05k|    {
-   86|  3.05k|        p += strspn(p, " \t,");
-   87|  3.05k|        e = p + strcspn(p, " \t,");
-   88|  3.05k|        if((size_t) (e - p) == toklen && !strncmp(p, tok, toklen))
+   85|  2.62k|    {
+   86|  2.62k|        p += strspn(p, " \t,");
+   87|  2.62k|        e = p + strcspn(p, " \t,");
+   88|  2.62k|        if((size_t) (e - p) == toklen && !strncmp(p, tok, toklen))
   ------------------
-  |  Branch (88:12): [True: 310, False: 2.74k]
-  |  Branch (88:42): [True: 1, False: 309]
+  |  Branch (88:12): [True: 304, False: 2.32k]
+  |  Branch (88:42): [True: 1, False: 303]
   ------------------
    89|      1|            return 1;
-   90|  3.05k|        p = e;
-   91|  3.05k|    }
+   90|  2.62k|        p = e;
+   91|  2.62k|    }
    92|       |
-   93|    652|    return 0;
-   94|    653|}
+   93|    668|    return 0;
+   94|    669|}
 fuzz_digest.c:auth_user_ha1:
-  157|  2.30k|{
-  158|  2.30k|    static char ha1[AUTH_HEX_SZ];
-  159|  2.30k|    char algname[16];
-  160|  2.30k|    const char *v, *hex, *rn;
-  161|  2.30k|    size_t hl;
-  162|  2.30k|    u_config_t *d;
-  163|  2.30k|    int i;
+  157|  2.42k|{
+  158|  2.42k|    static char ha1[AUTH_HEX_SZ];
+  159|  2.42k|    char algname[16];
+  160|  2.42k|    const char *v, *hex, *rn;
+  161|  2.42k|    size_t hl;
+  162|  2.42k|    u_config_t *d;
+  163|  2.42k|    int i;
   164|       |
-  165|  3.66k|    for(i = 0; (d = u_config_get_child_n(user, "digest", i)); ++i)
+  165|  3.93k|    for(i = 0; (d = u_config_get_child_n(user, "digest", i)); ++i)
   ------------------
-  |  Branch (165:16): [True: 1.46k, False: 2.20k]
+  |  Branch (165:16): [True: 1.60k, False: 2.33k]
   ------------------
-  166|  1.46k|    {
-  167|  1.46k|        if((v = u_config_get_value(d)) == NULL)
+  166|  1.60k|    {
+  167|  1.60k|        if((v = u_config_get_value(d)) == NULL)
   ------------------
-  |  Branch (167:12): [True: 10, False: 1.45k]
+  |  Branch (167:12): [True: 10, False: 1.59k]
   ------------------
   168|     10|            continue;
-  169|  1.45k|        hex = v + strcspn(v, " \t");
-  170|  1.45k|        if((size_t) (hex - v) >= sizeof algname)
+  169|  1.59k|        hex = v + strcspn(v, " \t");
+  170|  1.59k|        if((size_t) (hex - v) >= sizeof algname)
   ------------------
-  |  Branch (170:12): [True: 422, False: 1.02k]
+  |  Branch (170:12): [True: 414, False: 1.18k]
   ------------------
-  171|    422|            continue;
-  172|  1.02k|        memcpy(algname, v, (size_t) (hex - v));
-  173|  1.02k|        algname[hex - v] = '\0';
-  174|  1.02k|        hex += strspn(hex, " \t");
-  175|  1.02k|        hl = strcspn(hex, " \t");
-  176|  1.02k|        rn = hex + hl;
-  177|  1.02k|        rn += strspn(rn, " \t");
-  178|  1.02k|        if(auth_alg_from_name(algname) == alg && !strcmp(rn, realm) &&
+  171|    414|            continue;
+  172|  1.18k|        memcpy(algname, v, (size_t) (hex - v));
+  173|  1.18k|        algname[hex - v] = '\0';
+  174|  1.18k|        hex += strspn(hex, " \t");
+  175|  1.18k|        hl = strcspn(hex, " \t");
+  176|  1.18k|        rn = hex + hl;
+  177|  1.18k|        rn += strspn(rn, " \t");
+  178|  1.18k|        if(auth_alg_from_name(algname) == alg && !strcmp(rn, realm) &&
   ------------------
-  |  Branch (178:12): [True: 243, False: 786]
-  |  Branch (178:50): [True: 134, False: 109]
+  |  Branch (178:12): [True: 296, False: 885]
+  |  Branch (178:50): [True: 122, False: 174]
   ------------------
-  179|    134|                hl < sizeof ha1)
+  179|    122|                hl < sizeof ha1)
   ------------------
-  |  Branch (179:17): [True: 100, False: 34]
+  |  Branch (179:17): [True: 88, False: 34]
   ------------------
-  180|    100|        {
-  181|    100|            memcpy(ha1, hex, hl);
-  182|    100|            ha1[hl] = '\0';
-  183|    100|            return ha1;
-  184|    100|        }
-  185|  1.02k|    }
+  180|     88|        {
+  181|     88|            memcpy(ha1, hex, hl);
+  182|     88|            ha1[hl] = '\0';
+  183|     88|            return ha1;
+  184|     88|        }
+  185|  1.18k|    }
   186|       |
-  187|  2.20k|    return NULL;
-  188|  2.30k|}
+  187|  2.33k|    return NULL;
+  188|  2.42k|}
 
 auth_alg_from_name:
-   27|  1.11k|{
-   28|  1.11k|    if(name == NULL)
+   27|  1.26k|{
+   28|  1.26k|    if(name == NULL)
   ------------------
-  |  Branch (28:8): [True: 0, False: 1.11k]
+  |  Branch (28:8): [True: 0, False: 1.26k]
   ------------------
    29|      0|        return 0;
-   30|  1.11k|    if(!strcasecmp(name, "MD5"))
+   30|  1.26k|    if(!strcasecmp(name, "MD5"))
   ------------------
-  |  Branch (30:8): [True: 68, False: 1.04k]
+  |  Branch (30:8): [True: 196, False: 1.06k]
   ------------------
-   31|     68|        return AUTH_ALG_MD5;
-   32|  1.04k|    if(!strcasecmp(name, "SHA-256"))
+   31|    196|        return AUTH_ALG_MD5;
+   32|  1.06k|    if(!strcasecmp(name, "SHA-256"))
   ------------------
-  |  Branch (32:8): [True: 437, False: 610]
+  |  Branch (32:8): [True: 414, False: 653]
   ------------------
-   33|    437|        return AUTH_ALG_SHA256;
-   34|    610|    return 0;
-   35|  1.04k|}
+   33|    414|        return AUTH_ALG_SHA256;
+   34|    653|    return 0;
+   35|  1.06k|}
 auth_password_verify:
-  146|    577|{
-  147|    577|    unsigned char salt[AUTH_SALT_SZ + 4], want[AUTH_KEY_SZ + 4],
-  148|    577|                  key[AUTH_KEY_SZ];
-  149|    577|    char copy[AUTH_PASSWORD_SZ], *p, *salt64, *key64, *end;
-  150|    577|    size_t saltlen = sizeof salt, wantlen = sizeof want;
-  151|    577|    unsigned long iterations;
-  152|    577|    int rc;
+  146|    650|{
+  147|    650|    unsigned char salt[AUTH_SALT_SZ + 4], want[AUTH_KEY_SZ + 4],
+  148|    650|                  key[AUTH_KEY_SZ];
+  149|    650|    char copy[AUTH_PASSWORD_SZ], *p, *salt64, *key64, *end;
+  150|    650|    size_t saltlen = sizeof salt, wantlen = sizeof want;
+  151|    650|    unsigned long iterations;
+  152|    650|    int rc;
   153|       |
-  154|    577|    nop_err_if(password == NULL || stored == NULL);
+  154|    650|    nop_err_if(password == NULL || stored == NULL);
   ------------------
-  |  |  382|  1.73k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  1.95k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 0, False: 577]
-  |  |  |  Branch (382:48): [True: 0, False: 577]
-  |  |  |  Branch (382:74): [Folded, False: 577]
-  |  |  ------------------
-  ------------------
-  155|    577|    nop_err_if(strncmp(stored, AUTH_PBKDF2_PREFIX,
-  ------------------
-  |  |  382|    577|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
-  |  |  ------------------
-  |  |  |  Branch (382:48): [True: 0, False: 577]
-  |  |  |  Branch (382:74): [Folded, False: 577]
+  |  |  |  Branch (382:48): [True: 0, False: 650]
+  |  |  |  Branch (382:48): [True: 0, False: 650]
+  |  |  |  Branch (382:74): [Folded, False: 650]
   |  |  ------------------
   ------------------
-  156|    577|                sizeof AUTH_PBKDF2_PREFIX - 1));
-  157|    577|    nop_err_if(u_strlcpy(copy, stored + sizeof AUTH_PBKDF2_PREFIX - 1,
+  155|    650|    nop_err_if(strncmp(stored, AUTH_PBKDF2_PREFIX,
   ------------------
-  |  |  382|    577|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|    650|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 18, False: 559]
-  |  |  |  Branch (382:74): [Folded, False: 559]
+  |  |  |  Branch (382:48): [True: 0, False: 650]
+  |  |  |  Branch (382:74): [Folded, False: 650]
   |  |  ------------------
   ------------------
-  158|    577|                sizeof copy));
+  156|    650|                sizeof AUTH_PBKDF2_PREFIX - 1));
+  157|    650|    nop_err_if(u_strlcpy(copy, stored + sizeof AUTH_PBKDF2_PREFIX - 1,
+  ------------------
+  |  |  382|    650|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 34, False: 616]
+  |  |  |  Branch (382:74): [Folded, False: 616]
+  |  |  ------------------
+  ------------------
+  158|    650|                sizeof copy));
   159|       |
   160|       |    /* <iterations>$<salt>$<key> */
-  161|    559|    iterations = strtoul(copy, &end, 10);
-  162|    559|    nop_err_if(end == copy || *end != '$' || iterations == 0 ||
+  161|    616|    iterations = strtoul(copy, &end, 10);
+  162|    616|    nop_err_if(end == copy || *end != '$' || iterations == 0 ||
   ------------------
-  |  |  382|  3.83k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  4.24k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 0, False: 559]
-  |  |  |  Branch (382:48): [True: 39, False: 520]
-  |  |  |  Branch (382:48): [True: 0, False: 520]
-  |  |  |  Branch (382:48): [True: 0, False: 520]
-  |  |  |  Branch (382:74): [Folded, False: 520]
-  |  |  ------------------
-  ------------------
-  163|    559|            iterations > 100000000);
-  164|    520|    salt64 = end + 1;
-  165|    520|    nop_err_if((p = strchr(salt64, '$')) == NULL);
-  ------------------
-  |  |  382|    520|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
-  |  |  ------------------
-  |  |  |  Branch (382:48): [True: 51, False: 469]
-  |  |  |  Branch (382:74): [Folded, False: 469]
+  |  |  |  Branch (382:48): [True: 0, False: 616]
+  |  |  |  Branch (382:48): [True: 34, False: 582]
+  |  |  |  Branch (382:48): [True: 0, False: 582]
+  |  |  |  Branch (382:48): [True: 0, False: 582]
+  |  |  |  Branch (382:74): [Folded, False: 582]
   |  |  ------------------
   ------------------
-  166|    469|    *p = '\0';
-  167|    469|    key64 = p + 1;
+  163|    616|            iterations > 100000000);
+  164|    582|    salt64 = end + 1;
+  165|    582|    nop_err_if((p = strchr(salt64, '$')) == NULL);
+  ------------------
+  |  |  382|    582|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 57, False: 525]
+  |  |  |  Branch (382:74): [Folded, False: 525]
+  |  |  ------------------
+  ------------------
+  166|    525|    *p = '\0';
+  167|    525|    key64 = p + 1;
   168|       |
-  169|    469|    nop_err_if(klin_b64_decode(salt64, strlen(salt64), salt, &saltlen));
+  169|    525|    nop_err_if(klin_b64_decode(salt64, strlen(salt64), salt, &saltlen));
   ------------------
-  |  |  382|    469|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|    525|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 168, False: 301]
-  |  |  |  Branch (382:74): [Folded, False: 301]
-  |  |  ------------------
-  ------------------
-  170|    301|    nop_err_if(klin_b64_decode(key64, strlen(key64), want, &wantlen));
-  ------------------
-  |  |  382|    301|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
-  |  |  ------------------
-  |  |  |  Branch (382:48): [True: 168, False: 133]
-  |  |  |  Branch (382:74): [Folded, False: 133]
+  |  |  |  Branch (382:48): [True: 217, False: 308]
+  |  |  |  Branch (382:74): [Folded, False: 308]
   |  |  ------------------
   ------------------
-  171|    133|    nop_err_if(saltlen != AUTH_SALT_SZ || wantlen != AUTH_KEY_SZ);
+  170|    308|    nop_err_if(klin_b64_decode(key64, strlen(key64), want, &wantlen));
   ------------------
-  |  |  382|    355|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|    308|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 44, False: 89]
-  |  |  |  Branch (382:48): [True: 51, False: 38]
-  |  |  |  Branch (382:74): [Folded, False: 38]
+  |  |  |  Branch (382:48): [True: 182, False: 126]
+  |  |  |  Branch (382:74): [Folded, False: 126]
+  |  |  ------------------
+  ------------------
+  171|    126|    nop_err_if(saltlen != AUTH_SALT_SZ || wantlen != AUTH_KEY_SZ);
+  ------------------
+  |  |  382|    334|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 44, False: 82]
+  |  |  |  Branch (382:48): [True: 45, False: 37]
+  |  |  |  Branch (382:74): [Folded, False: 37]
   |  |  ------------------
   ------------------
   172|       |
-  173|     38|    nop_err_if(auth_pbkdf2(password, salt, (unsigned int) iterations, key));
+  173|     37|    nop_err_if(auth_pbkdf2(password, salt, (unsigned int) iterations, key));
   ------------------
-  |  |  382|     38|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|     37|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 0, False: 38]
-  |  |  |  Branch (382:74): [Folded, False: 38]
+  |  |  |  Branch (382:48): [True: 0, False: 37]
+  |  |  |  Branch (382:74): [Folded, False: 37]
   |  |  ------------------
   ------------------
   174|       |
-  175|     38|    rc = kc_memeq(key, want, AUTH_KEY_SZ) ? 0 : ~0;
+  175|     37|    rc = kc_memeq(key, want, AUTH_KEY_SZ) ? 0 : ~0;
   ------------------
-  |  Branch (175:10): [True: 0, False: 38]
+  |  Branch (175:10): [True: 0, False: 37]
   ------------------
-  176|     38|    kc_cleanse(key, sizeof key);
+  176|     37|    kc_cleanse(key, sizeof key);
   177|       |
-  178|     38|    return rc;
-  179|    539|err:
-  180|    539|    return ~0;
-  181|     38|}
+  178|     37|    return rc;
+  179|    613|err:
+  180|    613|    return ~0;
+  181|     37|}
 authhash.c:auth_pbkdf2:
-  111|     38|{
-  112|     38|    return kc_pbkdf2_sha256(password, strlen(password), salt, AUTH_SALT_SZ,
-  113|     38|            iterations, key, AUTH_KEY_SZ);
-  114|     38|}
+  111|     37|{
+  112|     37|    return kc_pbkdf2_sha256(password, strlen(password), salt, AUTH_SALT_SZ,
+  113|     37|            iterations, key, AUTH_KEY_SZ);
+  114|     37|}
 
 kc_pbkdf2_sha256:
-  186|     38|{
-  187|     38|    dbg_return_if (password == NULL || salt == NULL || out == NULL, ~0);
+  186|     37|{
+  187|     37|    dbg_return_if (password == NULL || salt == NULL || out == NULL, ~0);
   ------------------
-  |  |  619|    152|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    148|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:51): [True: 0, False: 38]
-  |  |  |  Branch (619:51): [True: 0, False: 38]
-  |  |  |  Branch (619:51): [True: 0, False: 38]
-  |  |  |  Branch (619:79): [Folded, False: 38]
+  |  |  |  Branch (619:51): [True: 0, False: 37]
+  |  |  |  Branch (619:51): [True: 0, False: 37]
+  |  |  |  Branch (619:51): [True: 0, False: 37]
+  |  |  |  Branch (619:79): [Folded, False: 37]
   |  |  ------------------
   ------------------
   188|       |
-  189|     38|    return PKCS5_PBKDF2_HMAC(password, (int) pwlen, salt, (int) saltlen,
+  189|     37|    return PKCS5_PBKDF2_HMAC(password, (int) pwlen, salt, (int) saltlen,
   ------------------
-  |  Branch (189:12): [True: 38, False: 0]
+  |  Branch (189:12): [True: 37, False: 0]
   ------------------
-  190|     38|            (int) iterations, EVP_sha256(), (int) outlen, out) == 1 ? 0 : ~0;
-  191|     38|}
+  190|     37|            (int) iterations, EVP_sha256(), (int) outlen, out) == 1 ? 0 : ~0;
+  191|     37|}
 kc_memeq:
-  200|     38|{
-  201|     38|    return CRYPTO_memcmp(a, b, len) == 0;
-  202|     38|}
+  200|     37|{
+  201|     37|    return CRYPTO_memcmp(a, b, len) == 0;
+  202|     37|}
 kc_cleanse:
-  205|     38|{
-  206|     38|    if(p && len)
+  205|     37|{
+  206|     37|    if(p && len)
   ------------------
-  |  Branch (206:8): [True: 38, False: 0]
-  |  Branch (206:13): [True: 38, False: 0]
+  |  Branch (206:8): [True: 37, False: 0]
+  |  Branch (206:13): [True: 37, False: 0]
   ------------------
-  207|     38|        OPENSSL_cleanse(p, len);
-  208|     38|}
+  207|     37|        OPENSSL_cleanse(p, len);
+  208|     37|}
 
 klin_b64_decode:
-   57|    770|{
-   58|    770|    size_t i, pad = 0, n;
-   59|    770|    unsigned char c, *tmp = NULL;
+   57|    833|{
+   58|    833|    size_t i, pad = 0, n;
+   59|    833|    unsigned char c, *tmp = NULL;
    60|       |
-   61|    770|    dbg_return_if (in == NULL || out == NULL || outlen == NULL, ~0);
+   61|    833|    dbg_return_if (in == NULL || out == NULL || outlen == NULL, ~0);
   ------------------
-  |  |  619|  3.08k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  3.33k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:51): [True: 0, False: 770]
-  |  |  |  Branch (619:51): [True: 0, False: 770]
-  |  |  |  Branch (619:51): [True: 0, False: 770]
-  |  |  |  Branch (619:79): [Folded, False: 770]
+  |  |  |  Branch (619:51): [True: 0, False: 833]
+  |  |  |  Branch (619:51): [True: 0, False: 833]
+  |  |  |  Branch (619:51): [True: 0, False: 833]
+  |  |  |  Branch (619:79): [Folded, False: 833]
   |  |  ------------------
   ------------------
    62|       |
-   63|    770|    if(len == 0 || len % 4)
+   63|    833|    if(len == 0 || len % 4)
   ------------------
-  |  Branch (63:8): [True: 38, False: 732]
-  |  Branch (63:20): [True: 60, False: 672]
+  |  Branch (63:8): [True: 42, False: 791]
+  |  Branch (63:20): [True: 51, False: 740]
   ------------------
-   64|     98|        return ~0;
-   65|  15.3k|    for(i = 0; i < len; ++i)
+   64|     93|        return ~0;
+   65|  14.9k|    for(i = 0; i < len; ++i)
   ------------------
-  |  Branch (65:16): [True: 14.8k, False: 490]
+  |  Branch (65:16): [True: 14.5k, False: 497]
   ------------------
-   66|  14.8k|    {
-   67|  14.8k|        c = (unsigned char) in[i];
-   68|  14.8k|        if(c == '=')
+   66|  14.5k|    {
+   67|  14.5k|        c = (unsigned char) in[i];
+   68|  14.5k|        if(c == '=')
   ------------------
-  |  Branch (68:12): [True: 696, False: 14.1k]
+  |  Branch (68:12): [True: 768, False: 13.7k]
   ------------------
-   69|    696|            ++pad;
-   70|  14.1k|        else if(pad || !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+   69|    768|            ++pad;
+   70|  13.7k|        else if(pad || !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
   ------------------
-  |  Branch (70:17): [True: 34, False: 14.1k]
-  |  Branch (70:27): [True: 13.0k, False: 1.15k]
-  |  Branch (70:39): [True: 11.1k, False: 1.87k]
-  |  Branch (70:53): [True: 1.84k, False: 1.18k]
-  |  Branch (70:65): [True: 1.80k, False: 41]
+  |  Branch (70:17): [True: 98, False: 13.6k]
+  |  Branch (70:27): [True: 12.5k, False: 1.10k]
+  |  Branch (70:39): [True: 10.5k, False: 1.99k]
+  |  Branch (70:53): [True: 1.96k, False: 1.14k]
+  |  Branch (70:65): [True: 1.92k, False: 39]
   ------------------
-   71|  1.22k|                    (c >= '0' && c <= '9') || c == '+' || c == '/'))
+   71|  1.18k|                    (c >= '0' && c <= '9') || c == '+' || c == '/'))
   ------------------
-  |  Branch (71:22): [True: 708, False: 521]
-  |  Branch (71:34): [True: 598, False: 110]
-  |  Branch (71:47): [True: 414, False: 217]
-  |  Branch (71:59): [True: 69, False: 148]
+  |  Branch (71:22): [True: 683, False: 497]
+  |  Branch (71:34): [True: 576, False: 107]
+  |  Branch (71:47): [True: 391, False: 213]
+  |  Branch (71:59): [True: 68, False: 145]
   ------------------
-   72|    182|            return ~0;
-   73|  14.8k|    }
-   74|    490|    if(pad > 2)
+   72|    243|            return ~0;
+   73|  14.5k|    }
+   74|    497|    if(pad > 2)
   ------------------
-  |  Branch (74:8): [True: 10, False: 480]
+  |  Branch (74:8): [True: 18, False: 479]
   ------------------
-   75|     10|        return ~0;
+   75|     18|        return ~0;
    76|       |
    77|       |    /* every group written whole */
-   78|    480|    n = len / 4 * 3;
-   79|    480|    if(n - pad > *outlen || (tmp = u_malloc(n)) == NULL)
+   78|    479|    n = len / 4 * 3;
+   79|    479|    if(n - pad > *outlen || (tmp = u_malloc(n)) == NULL)
   ------------------
-  |  Branch (79:8): [True: 46, False: 434]
+  |  Branch (79:8): [True: 45, False: 434]
   |  Branch (79:29): [True: 0, False: 434]
   ------------------
-   80|     46|        return ~0;
+   80|     45|        return ~0;
    81|    434|    if(u_b64_decode(in, len, tmp, &n) || n > *outlen)
   ------------------
   |  Branch (81:8): [True: 0, False: 434]
@@ -1234,150 +1234,150 @@ klin_b64_decode:
    91|    434|}
 
 u_config_add_child:
-  312|  17.8k|{
-  313|  17.8k|    u_config_t *child = NULL;
+  312|  17.7k|{
+  313|  17.7k|    u_config_t *child = NULL;
   314|       |
-  315|  17.8k|    dbg_err_if(u_config_create(&child));
+  315|  17.7k|    dbg_err_if(u_config_create(&child));
   ------------------
-  |  |  626|  17.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  17.7k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 17.8k]
-  |  |  |  Branch (626:77): [Folded, False: 17.8k]
+  |  |  |  Branch (626:50): [True: 0, False: 17.7k]
+  |  |  |  Branch (626:77): [Folded, False: 17.7k]
   |  |  ------------------
   ------------------
   316|       |
-  317|  17.8k|    child->parent = c;
-  318|  17.8k|    child->key = u_strdup(key);
-  319|  17.8k|    dbg_err_if(child->key == NULL);
+  317|  17.7k|    child->parent = c;
+  318|  17.7k|    child->key = u_strdup(key);
+  319|  17.7k|    dbg_err_if(child->key == NULL);
   ------------------
-  |  |  626|  17.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  17.7k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 17.8k]
-  |  |  |  Branch (626:77): [Folded, False: 17.8k]
+  |  |  |  Branch (626:50): [True: 0, False: 17.7k]
+  |  |  |  Branch (626:77): [Folded, False: 17.7k]
   |  |  ------------------
   ------------------
   320|       |
-  321|  17.8k|    TAILQ_INSERT_TAIL(&c->children, child, np);
+  321|  17.7k|    TAILQ_INSERT_TAIL(&c->children, child, np);
   ------------------
-  |  |  154|  17.8k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
-  |  |  155|  17.8k|        (elm)->field.tqe_next = NULL;                                       \
-  |  |  156|  17.8k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
-  |  |  157|  17.8k|        *(head)->tqh_last = (elm);                                          \
-  |  |  158|  17.8k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
-  |  |  159|  17.8k|}
+  |  |  154|  17.7k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
+  |  |  155|  17.7k|        (elm)->field.tqe_next = NULL;                                       \
+  |  |  156|  17.7k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
+  |  |  157|  17.7k|        *(head)->tqh_last = (elm);                                          \
+  |  |  158|  17.7k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
+  |  |  159|  17.7k|}
   ------------------
   322|       |
-  323|  17.8k|    *pc = child;
+  323|  17.7k|    *pc = child;
   324|       |
-  325|  17.8k|    return 0;
+  325|  17.7k|    return 0;
   326|      0|err:
   327|      0|    return ~0;
-  328|  17.8k|}
+  328|  17.7k|}
 u_config_get_child_n:
-  343|  25.8k|{
-  344|  25.8k|    u_config_t *item;
+  343|  25.5k|{
+  344|  25.5k|    u_config_t *item;
   345|       |
-  346|  25.8k|    TAILQ_FOREACH(item, &c->children, np)
+  346|  25.5k|    TAILQ_FOREACH(item, &c->children, np)
   ------------------
-  |  |  339|  25.8k|        for((var) = TAILQ_FIRST(head);                                      \
+  |  |  339|  25.5k|        for((var) = TAILQ_FIRST(head);                                      \
   |  |  ------------------
-  |  |  |  |  311|  25.8k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  |  |  311|  25.5k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
   |  |  ------------------
-  |  |  340|   112k|            (var) != TAILQ_END(head);                                       \
+  |  |  340|   121k|            (var) != TAILQ_END(head);                                       \
   |  |  ------------------
-  |  |  |  |  315|   112k|#define TAILQ_END(head)     NULL
+  |  |  |  |  315|   121k|#define TAILQ_END(head)     NULL
   |  |  ------------------
-  |  |  |  Branch (340:13): [True: 97.2k, False: 15.4k]
+  |  |  |  Branch (340:13): [True: 106k, False: 15.3k]
   |  |  ------------------
-  |  |  341|  86.8k|            (var) = TAILQ_NEXT(var, field))
+  |  |  341|  95.9k|            (var) = TAILQ_NEXT(var, field))
   |  |  ------------------
-  |  |  |  |  319|  86.8k|#define TAILQ_NEXT(elm, field)  ((elm)->field.tqe_next)
+  |  |  |  |  319|  95.9k|#define TAILQ_NEXT(elm, field)  ((elm)->field.tqe_next)
   |  |  ------------------
   ------------------
-  347|  97.2k|    {
-  348|  97.2k|        if((key == NULL || strcmp(item->key, key) == 0) && n-- == 0)
+  347|   106k|    {
+  348|   106k|        if((key == NULL || strcmp(item->key, key) == 0) && n-- == 0)
   ------------------
-  |  Branch (348:13): [True: 0, False: 97.2k]
-  |  Branch (348:28): [True: 29.4k, False: 67.7k]
-  |  Branch (348:60): [True: 10.4k, False: 19.0k]
+  |  Branch (348:13): [True: 0, False: 106k]
+  |  Branch (348:28): [True: 35.4k, False: 70.7k]
+  |  Branch (348:60): [True: 10.2k, False: 25.2k]
   ------------------
-  349|  10.4k|            return item;  /* found */
-  350|  97.2k|    }
+  349|  10.2k|            return item;  /* found */
+  350|   106k|    }
   351|       |
-  352|  15.4k|    return NULL; /* not found */
-  353|  25.8k|}
+  352|  15.3k|    return NULL; /* not found */
+  353|  25.5k|}
 u_config_get_child:
-  366|  15.0k|{
-  367|  15.0k|    return u_config_get_child_n(c, key, 0);
-  368|  15.0k|}
+  366|  14.6k|{
+  367|  14.6k|    return u_config_get_child_n(c, key, 0);
+  368|  14.6k|}
 u_config_get_subkey_nth:
-  388|  6.66k|{
-  389|  6.66k|    u_config_t *child = NULL;
-  390|  6.66k|    char *first_key = NULL, *p;
+  388|  6.25k|{
+  389|  6.25k|    u_config_t *child = NULL;
+  390|  6.25k|    char *first_key = NULL, *p;
   391|       |
-  392|  6.66k|    if ((p = strchr(subkey, '.')) == NULL)
+  392|  6.25k|    if ((p = strchr(subkey, '.')) == NULL)
   ------------------
-  |  Branch (392:9): [True: 4.86k, False: 1.80k]
+  |  Branch (392:9): [True: 4.65k, False: 1.60k]
   ------------------
-  393|  4.86k|    {
-  394|  4.86k|        if ((child = u_config_get_child_n(c, subkey, n)) != NULL)
+  393|  4.65k|    {
+  394|  4.65k|        if ((child = u_config_get_child_n(c, subkey, n)) != NULL)
   ------------------
-  |  Branch (394:13): [True: 2.98k, False: 1.88k]
+  |  Branch (394:13): [True: 2.81k, False: 1.83k]
   ------------------
-  395|  2.98k|        {
-  396|  2.98k|            *pc = child;
-  397|  2.98k|            return 0;
-  398|  2.98k|        } 
-  399|  4.86k|    } 
-  400|  1.80k|    else 
-  401|  1.80k|    {
-  402|  1.80k|        if ((first_key = u_strndup(subkey, p - subkey)) != NULL)
+  395|  2.81k|        {
+  396|  2.81k|            *pc = child;
+  397|  2.81k|            return 0;
+  398|  2.81k|        } 
+  399|  4.65k|    } 
+  400|  1.60k|    else 
+  401|  1.60k|    {
+  402|  1.60k|        if ((first_key = u_strndup(subkey, p - subkey)) != NULL)
   ------------------
-  |  Branch (402:13): [True: 1.80k, False: 0]
+  |  Branch (402:13): [True: 1.60k, False: 0]
   ------------------
-  403|  1.80k|        {
-  404|  1.80k|            child = u_config_get_child(c, first_key);
-  405|  1.80k|            U_FREE(first_key);
+  403|  1.60k|        {
+  404|  1.60k|            child = u_config_get_child(c, first_key);
+  405|  1.60k|            U_FREE(first_key);
   ------------------
-  |  |   47|  1.80k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|  1.60k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 1.80k]
+  |  |  |  Branch (47:60): [Folded, False: 1.60k]
   |  |  ------------------
   ------------------
-  406|  1.80k|        }
+  406|  1.60k|        }
   407|       |
-  408|  1.80k|        if (child != NULL)
+  408|  1.60k|        if (child != NULL)
   ------------------
-  |  Branch (408:13): [True: 1.28k, False: 515]
+  |  Branch (408:13): [True: 1.10k, False: 495]
   ------------------
-  409|  1.28k|            return u_config_get_subkey(child, ++p, pc);
-  410|  1.80k|    }
+  409|  1.10k|            return u_config_get_subkey(child, ++p, pc);
+  410|  1.60k|    }
   411|       |
-  412|  2.39k|    return ~0; /* not found */
-  413|  6.66k|}
+  412|  2.32k|    return ~0; /* not found */
+  413|  6.25k|}
 u_config_get_subkey:
-  429|  6.65k|{
-  430|  6.65k|    return u_config_get_subkey_nth(c, subkey, 0, pc);
-  431|  6.65k|}
+  429|  6.24k|{
+  430|  6.24k|    return u_config_get_subkey_nth(c, subkey, 0, pc);
+  431|  6.24k|}
 u_config_set_value:
-  445|  7.68k|{
-  446|  7.68k|    u_config_t *root, *ignore;
-  447|  7.68k|    const char *varval, *vs, *ve, *p;
-  448|  7.68k|    u_string_t *var = NULL, *value = NULL;
+  445|  7.67k|{
+  446|  7.67k|    u_config_t *root, *ignore;
+  447|  7.67k|    const char *varval, *vs, *ve, *p;
+  448|  7.67k|    u_string_t *var = NULL, *value = NULL;
   449|       |
-  450|  7.68k|    dbg_err_if(c == NULL);
+  450|  7.67k|    dbg_err_if(c == NULL);
   ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.68k]
-  |  |  |  Branch (626:77): [Folded, False: 7.68k]
+  |  |  |  Branch (626:50): [True: 0, False: 7.67k]
+  |  |  |  Branch (626:77): [Folded, False: 7.67k]
   |  |  ------------------
   ------------------
   451|       |
   452|       |    /* free() previous value if any */
-  453|  7.68k|    if(c->value)
+  453|  7.67k|    if(c->value)
   ------------------
-  |  Branch (453:8): [True: 0, False: 7.68k]
+  |  Branch (453:8): [True: 0, False: 7.67k]
   ------------------
   454|      0|    {
   455|      0|        U_FREE(c->value);
@@ -1390,130 +1390,12 @@ u_config_set_value:
   456|      0|        c->value = NULL;
   457|      0|    } 
   458|       |
-  459|  7.68k|    if(val)
+  459|  7.67k|    if(val)
   ------------------
-  |  Branch (459:8): [True: 7.68k, False: 0]
+  |  Branch (459:8): [True: 7.67k, False: 0]
   ------------------
-  460|  7.68k|    {
-  461|  7.68k|        dbg_err_if(u_string_create(NULL, 0, &var));
-  ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.68k]
-  |  |  |  Branch (626:77): [Folded, False: 7.68k]
-  |  |  ------------------
-  ------------------
-  462|  7.68k|        dbg_err_if(u_string_create(NULL, 0, &value));
-  ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.68k]
-  |  |  |  Branch (626:77): [Folded, False: 7.68k]
-  |  |  ------------------
-  ------------------
-  463|       |
-  464|  7.68k|        root = u_config_get_root(c);
-  465|  7.68k|        dbg_err_if(root == NULL);
-  ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.68k]
-  |  |  |  Branch (626:77): [Folded, False: 7.68k]
-  |  |  ------------------
-  ------------------
-  466|       |
-  467|       |        /* search and replace ${variables} */
-  468|  7.68k|        vs = ve = val;
-  469|  9.37k|        for(; vs && *vs && (p = strstr(vs, "${")) != NULL; vs = ++ve)
-  ------------------
-  |  Branch (469:15): [True: 9.37k, False: 0]
-  |  Branch (469:21): [True: 9.20k, False: 166]
-  |  Branch (469:28): [True: 1.69k, False: 7.51k]
-  ------------------
-  470|  1.69k|        {   /* variable substituion */
-  471|  1.69k|            dbg_err_if(u_string_append(value, vs, p-vs));
-  ------------------
-  |  |  626|  1.69k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 1.69k]
-  |  |  |  Branch (626:77): [Folded, False: 1.69k]
-  |  |  ------------------
-  ------------------
-  472|       |
-  473|       |            /* skip ${ */
-  474|  1.69k|            vs = p+2;               
-  475|       |
-  476|       |            /* look for closing bracket */
-  477|  1.69k|            ve = strchr(vs, '}');
-  478|  1.69k|            dbg_err_if(ve == NULL); /* closing bracket missing */
-  ------------------
-  |  |  626|  1.69k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 7, False: 1.69k]
-  |  |  |  Branch (626:77): [Folded, False: 1.69k]
-  |  |  ------------------
-  ------------------
-  479|       |
-  480|       |            /* get the variable name/path */
-  481|  1.69k|            dbg_err_if(u_string_set(var, vs, ve-vs));
-  ------------------
-  |  |  626|  1.69k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 1.69k]
-  |  |  |  Branch (626:77): [Folded, False: 1.69k]
-  |  |  ------------------
-  ------------------
-  482|       |
-  483|       |            /* first see if the variable can be resolved in the local scope
-  484|       |               otherwise resolve it from the root */
-  485|  1.69k|            root = c->parent;
-  486|  1.69k|            if(u_config_get_subkey(root, u_string_c(var), &ignore))
-  ------------------
-  |  Branch (486:16): [True: 814, False: 877]
-  ------------------
-  487|    814|                root = u_config_get_root(c);
-  488|  1.69k|            dbg_err_if(root == NULL);
-  ------------------
-  |  |  626|  1.69k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 1.69k]
-  |  |  |  Branch (626:77): [Folded, False: 1.69k]
-  |  |  ------------------
-  ------------------
-  489|       |
-  490|       |            /* append the variable value */
-  491|  1.69k|            varval = u_config_get_subkey_value(root, u_string_c(var));
-  492|  1.69k|            if(varval != NULL)
-  ------------------
-  |  Branch (492:16): [True: 431, False: 1.26k]
-  ------------------
-  493|    431|                dbg_err_if(u_string_append(value, varval, strlen(varval)));
-  ------------------
-  |  |  626|    431|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 431]
-  |  |  |  Branch (626:77): [Folded, False: 431]
-  |  |  ------------------
-  ------------------
-  494|  1.69k|        }
-  495|  7.67k|        if(ve && *ve)
-  ------------------
-  |  Branch (495:12): [True: 7.67k, False: 0]
-  |  Branch (495:18): [True: 7.51k, False: 166]
-  ------------------
-  496|  7.51k|            dbg_err_if(u_string_append(value, ve, strlen(ve)));
-  ------------------
-  |  |  626|  7.51k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.51k]
-  |  |  |  Branch (626:77): [Folded, False: 7.51k]
-  |  |  ------------------
-  ------------------
-  497|       |
-  498|  7.67k|        u_string_trim(value); /* remove leading and trailing spaces */
-  499|       |
-  500|  7.67k|        c->value = u_strdup(u_string_c(value));;
-  501|  7.67k|        dbg_err_if(c->value == NULL);
+  460|  7.67k|    {
+  461|  7.67k|        dbg_err_if(u_string_create(NULL, 0, &var));
   ------------------
   |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
@@ -1521,50 +1403,168 @@ u_config_set_value:
   |  |  |  Branch (626:77): [Folded, False: 7.67k]
   |  |  ------------------
   ------------------
-  502|       |
-  503|  7.67k|        u_string_free(value);
-  504|  7.67k|        u_string_free(var);
-  505|  7.67k|    }
-  506|       |
-  507|  7.67k|    return 0;
-  508|      7|err:
-  509|      7|    if(value)
+  462|  7.67k|        dbg_err_if(u_string_create(NULL, 0, &value));
   ------------------
-  |  Branch (509:8): [True: 7, False: 0]
-  ------------------
-  510|      7|        u_string_free(value);
-  511|      7|    if(var)
-  ------------------
-  |  Branch (511:8): [True: 7, False: 0]
-  ------------------
-  512|      7|        u_string_free(var);
-  513|      7|    return ~0;
-  514|  7.68k|}
-u_config_create:
-  648|  18.4k|{
-  649|  18.4k|    u_config_t *c = NULL;
-  650|       |
-  651|  18.4k|    c = u_zalloc(sizeof(u_config_t));
-  652|  18.4k|    dbg_err_sif (c == NULL);
-  ------------------
-  |  |  627|  18.4k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (627:50): [True: 0, False: 18.4k]
-  |  |  |  Branch (627:77): [Folded, False: 18.4k]
+  |  |  |  Branch (626:50): [True: 0, False: 7.67k]
+  |  |  |  Branch (626:77): [Folded, False: 7.67k]
+  |  |  ------------------
+  ------------------
+  463|       |
+  464|  7.67k|        root = u_config_get_root(c);
+  465|  7.67k|        dbg_err_if(root == NULL);
+  ------------------
+  |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 7.67k]
+  |  |  |  Branch (626:77): [Folded, False: 7.67k]
+  |  |  ------------------
+  ------------------
+  466|       |
+  467|       |        /* search and replace ${variables} */
+  468|  7.67k|        vs = ve = val;
+  469|  9.25k|        for(; vs && *vs && (p = strstr(vs, "${")) != NULL; vs = ++ve)
+  ------------------
+  |  Branch (469:15): [True: 9.25k, False: 0]
+  |  Branch (469:21): [True: 9.09k, False: 161]
+  |  Branch (469:28): [True: 1.59k, False: 7.50k]
+  ------------------
+  470|  1.59k|        {   /* variable substituion */
+  471|  1.59k|            dbg_err_if(u_string_append(value, vs, p-vs));
+  ------------------
+  |  |  626|  1.59k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.59k]
+  |  |  |  Branch (626:77): [Folded, False: 1.59k]
+  |  |  ------------------
+  ------------------
+  472|       |
+  473|       |            /* skip ${ */
+  474|  1.59k|            vs = p+2;               
+  475|       |
+  476|       |            /* look for closing bracket */
+  477|  1.59k|            ve = strchr(vs, '}');
+  478|  1.59k|            dbg_err_if(ve == NULL); /* closing bracket missing */
+  ------------------
+  |  |  626|  1.59k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 13, False: 1.57k]
+  |  |  |  Branch (626:77): [Folded, False: 1.57k]
+  |  |  ------------------
+  ------------------
+  479|       |
+  480|       |            /* get the variable name/path */
+  481|  1.57k|            dbg_err_if(u_string_set(var, vs, ve-vs));
+  ------------------
+  |  |  626|  1.57k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.57k]
+  |  |  |  Branch (626:77): [Folded, False: 1.57k]
+  |  |  ------------------
+  ------------------
+  482|       |
+  483|       |            /* first see if the variable can be resolved in the local scope
+  484|       |               otherwise resolve it from the root */
+  485|  1.57k|            root = c->parent;
+  486|  1.57k|            if(u_config_get_subkey(root, u_string_c(var), &ignore))
+  ------------------
+  |  Branch (486:16): [True: 789, False: 789]
+  ------------------
+  487|    789|                root = u_config_get_root(c);
+  488|  1.57k|            dbg_err_if(root == NULL);
+  ------------------
+  |  |  626|  1.57k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 1.57k]
+  |  |  |  Branch (626:77): [Folded, False: 1.57k]
+  |  |  ------------------
+  ------------------
+  489|       |
+  490|       |            /* append the variable value */
+  491|  1.57k|            varval = u_config_get_subkey_value(root, u_string_c(var));
+  492|  1.57k|            if(varval != NULL)
+  ------------------
+  |  Branch (492:16): [True: 352, False: 1.22k]
+  ------------------
+  493|    352|                dbg_err_if(u_string_append(value, varval, strlen(varval)));
+  ------------------
+  |  |  626|    352|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 352]
+  |  |  |  Branch (626:77): [Folded, False: 352]
+  |  |  ------------------
+  ------------------
+  494|  1.57k|        }
+  495|  7.66k|        if(ve && *ve)
+  ------------------
+  |  Branch (495:12): [True: 7.66k, False: 0]
+  |  Branch (495:18): [True: 7.50k, False: 161]
+  ------------------
+  496|  7.50k|            dbg_err_if(u_string_append(value, ve, strlen(ve)));
+  ------------------
+  |  |  626|  7.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 7.50k]
+  |  |  |  Branch (626:77): [Folded, False: 7.50k]
+  |  |  ------------------
+  ------------------
+  497|       |
+  498|  7.66k|        u_string_trim(value); /* remove leading and trailing spaces */
+  499|       |
+  500|  7.66k|        c->value = u_strdup(u_string_c(value));;
+  501|  7.66k|        dbg_err_if(c->value == NULL);
+  ------------------
+  |  |  626|  7.66k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 7.66k]
+  |  |  |  Branch (626:77): [Folded, False: 7.66k]
+  |  |  ------------------
+  ------------------
+  502|       |
+  503|  7.66k|        u_string_free(value);
+  504|  7.66k|        u_string_free(var);
+  505|  7.66k|    }
+  506|       |
+  507|  7.66k|    return 0;
+  508|     13|err:
+  509|     13|    if(value)
+  ------------------
+  |  Branch (509:8): [True: 13, False: 0]
+  ------------------
+  510|     13|        u_string_free(value);
+  511|     13|    if(var)
+  ------------------
+  |  Branch (511:8): [True: 13, False: 0]
+  ------------------
+  512|     13|        u_string_free(var);
+  513|     13|    return ~0;
+  514|  7.67k|}
+u_config_create:
+  648|  18.3k|{
+  649|  18.3k|    u_config_t *c = NULL;
+  650|       |
+  651|  18.3k|    c = u_zalloc(sizeof(u_config_t));
+  652|  18.3k|    dbg_err_sif (c == NULL);
+  ------------------
+  |  |  627|  18.3k|    #define dbg_err_sif(expr)           do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (627:50): [True: 0, False: 18.3k]
+  |  |  |  Branch (627:77): [Folded, False: 18.3k]
   |  |  ------------------
   ------------------
   653|       |
-  654|  18.4k|    TAILQ_INIT(&c->children);
+  654|  18.3k|    TAILQ_INIT(&c->children);
   ------------------
-  |  |  135|  18.4k|#define TAILQ_INIT(head) {                                                  \
-  |  |  136|  18.4k|        (head)->tqh_first = NULL;                                           \
-  |  |  137|  18.4k|        (head)->tqh_last = &(head)->tqh_first;                              \
-  |  |  138|  18.4k|}
+  |  |  135|  18.3k|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|  18.3k|        (head)->tqh_first = NULL;                                           \
+  |  |  137|  18.3k|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|  18.3k|}
   ------------------
   655|       |
-  656|  18.4k|    *pc = c;
+  656|  18.3k|    *pc = c;
   657|       |
-  658|  18.4k|    return 0;
+  658|  18.3k|    return 0;
   659|      0|err:
   660|      0|    if(c)
   ------------------
@@ -1572,352 +1572,322 @@ u_config_create:
   ------------------
   661|      0|        u_config_free(c);
   662|      0|    return ~0;
-  663|  18.4k|}
+  663|  18.3k|}
 u_config_free:
-  705|  18.4k|{
-  706|  18.4k|    u_config_t *child = NULL;
+  705|  18.3k|{
+  706|  18.3k|    u_config_t *child = NULL;
   707|       |
-  708|  18.4k|    if (c)
+  708|  18.3k|    if (c)
   ------------------
-  |  Branch (708:9): [True: 18.4k, False: 0]
+  |  Branch (708:9): [True: 18.3k, False: 0]
   ------------------
-  709|  18.4k|    {
+  709|  18.3k|    {
   710|       |        /* free all children */
-  711|  36.3k|        while ((child = TAILQ_FIRST(&c->children)) != NULL)
+  711|  36.0k|        while ((child = TAILQ_FIRST(&c->children)) != NULL)
   ------------------
-  |  |  311|  36.3k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  311|  36.0k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
   ------------------
-  |  Branch (711:16): [True: 17.8k, False: 18.4k]
+  |  Branch (711:16): [True: 17.7k, False: 18.3k]
   ------------------
-  712|  17.8k|        {
-  713|  17.8k|            u_config_del_key(c, child);
-  714|  17.8k|            (void) u_config_free(child);
-  715|  17.8k|        }
+  712|  17.7k|        {
+  713|  17.7k|            u_config_del_key(c, child);
+  714|  17.7k|            (void) u_config_free(child);
+  715|  17.7k|        }
   716|       |
   717|       |        /* free parent */
-  718|  18.4k|        U_FREE(c->key);
+  718|  18.3k|        U_FREE(c->key);
   ------------------
-  |  |   47|  18.4k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|  18.3k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 18.4k]
-  |  |  ------------------
-  ------------------
-  719|  18.4k|        U_FREE(c->value);
-  ------------------
-  |  |   47|  18.4k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
-  |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 18.4k]
+  |  |  |  Branch (47:60): [Folded, False: 18.3k]
   |  |  ------------------
   ------------------
-  720|  18.4k|        u_free(c);
-  721|  18.4k|    }
+  719|  18.3k|        U_FREE(c->value);
+  ------------------
+  |  |   47|  18.3k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 18.3k]
+  |  |  ------------------
+  ------------------
+  720|  18.3k|        u_free(c);
+  721|  18.3k|    }
   722|       |
-  723|  18.4k|    return 0;
-  724|  18.4k|}
+  723|  18.3k|    return 0;
+  724|  18.3k|}
 u_config_get_value:
-  754|  3.56k|{
-  755|  3.56k|    dbg_return_if (c == NULL, NULL);
+  754|  3.63k|{
+  755|  3.63k|    dbg_return_if (c == NULL, NULL);
   ------------------
-  |  |  619|  3.56k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  3.63k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 3.56k]
-  |  |  |  Branch (619:79): [Folded, False: 3.56k]
+  |  |  |  Branch (619:50): [True: 0, False: 3.63k]
+  |  |  |  Branch (619:79): [Folded, False: 3.63k]
   |  |  ------------------
   ------------------
   756|       |
-  757|  3.56k|    return c->value;
-  758|  3.56k|}
+  757|  3.63k|    return c->value;
+  758|  3.63k|}
 u_config_get_subkey_value:
-  771|  3.68k|{
-  772|  3.68k|    u_config_t *skey;
+  771|  3.56k|{
+  772|  3.56k|    u_config_t *skey;
   773|       |
-  774|  3.68k|    nop_err_if(u_config_get_subkey(c, subkey, &skey));
+  774|  3.56k|    nop_err_if(u_config_get_subkey(c, subkey, &skey));
   ------------------
-  |  |  382|  3.68k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  3.56k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 1.57k, False: 2.10k]
-  |  |  |  Branch (382:74): [Folded, False: 2.10k]
+  |  |  |  Branch (382:48): [True: 1.53k, False: 2.02k]
+  |  |  |  Branch (382:74): [Folded, False: 2.02k]
   |  |  ------------------
   ------------------
   775|       |
-  776|  2.10k|    return u_config_get_value(skey);
-  777|  1.57k|err:
+  776|  2.02k|    return u_config_get_value(skey);
+  777|  1.53k|err:
   778|       |    return NULL;
-  779|  3.68k|}
+  779|  3.56k|}
 u_config_load_from_buf:
-  985|    580|{
-  986|    580|    u_config_driver_t drv = { NULL, NULL, u_config_buf_gets, NULL };
-  987|    580|    struct u_config_buf_s arg = { buf, len };
-  988|    580|    u_config_t *c = NULL;
+  985|    596|{
+  986|    596|    u_config_driver_t drv = { NULL, NULL, u_config_buf_gets, NULL };
+  987|    596|    struct u_config_buf_s arg = { buf, len };
+  988|    596|    u_config_t *c = NULL;
   989|       |
-  990|    580|    dbg_err_if(u_config_create(&c));
+  990|    596|    dbg_err_if(u_config_create(&c));
   ------------------
-  |  |  626|    580|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    596|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 580]
-  |  |  |  Branch (626:77): [Folded, False: 580]
+  |  |  |  Branch (626:50): [True: 0, False: 596]
+  |  |  |  Branch (626:77): [Folded, False: 596]
   |  |  ------------------
   ------------------
   991|       |
-  992|    580|    dbg_err_if(u_config_do_load_drv(c, &drv, &arg, 0));
+  992|    596|    dbg_err_if(u_config_do_load_drv(c, &drv, &arg, 0));
   ------------------
-  |  |  626|    580|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    596|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 177, False: 403]
-  |  |  |  Branch (626:77): [Folded, False: 403]
+  |  |  |  Branch (626:50): [True: 182, False: 414]
+  |  |  |  Branch (626:77): [Folded, False: 414]
   |  |  ------------------
   ------------------
   993|       |
-  994|    403|    *pc = c;
+  994|    414|    *pc = c;
   995|       |
-  996|    403|    return 0;
-  997|    177|err:
-  998|    177|    if(c)
+  996|    414|    return 0;
+  997|    182|err:
+  998|    182|    if(c)
   ------------------
-  |  Branch (998:8): [True: 177, False: 0]
+  |  Branch (998:8): [True: 182, False: 0]
   ------------------
-  999|    177|        u_config_free(c);
- 1000|    177|    return ~0;
- 1001|    580|}
+  999|    182|        u_config_free(c);
+ 1000|    182|    return ~0;
+ 1001|    596|}
 config.c:u_config_get_root:
- 1040|  8.49k|{
- 1041|  96.6k|    while(c->parent)
+ 1040|  8.46k|{
+ 1041|  88.3k|    while(c->parent)
   ------------------
-  |  Branch (1041:11): [True: 88.1k, False: 8.49k]
+  |  Branch (1041:11): [True: 79.8k, False: 8.46k]
   ------------------
- 1042|  88.1k|        c = c->parent;
- 1043|  8.49k|    return c;
- 1044|  8.49k|}
+ 1042|  79.8k|        c = c->parent;
+ 1043|  8.46k|    return c;
+ 1044|  8.46k|}
 config.c:u_config_do_set_key:
- 1048|  13.2k|{
- 1049|  13.2k|    u_config_t *child = NULL;
- 1050|  13.2k|    char *p, *child_key;
+ 1048|  13.0k|{
+ 1049|  13.0k|    u_config_t *child = NULL;
+ 1050|  13.0k|    char *p, *child_key;
  1051|       |
- 1052|  13.2k|    if((p = strchr(key, '.')) == NULL)
+ 1052|  13.0k|    if((p = strchr(key, '.')) == NULL)
   ------------------
-  |  Branch (1052:8): [True: 7.68k, False: 5.61k]
+  |  Branch (1052:8): [True: 7.67k, False: 5.35k]
   ------------------
- 1053|  7.68k|    {
- 1054|  7.68k|        child = u_config_get_child(c, key);
- 1055|  7.68k|        if(child == NULL || !overwrite)
+ 1053|  7.67k|    {
+ 1054|  7.67k|        child = u_config_get_child(c, key);
+ 1055|  7.67k|        if(child == NULL || !overwrite)
   ------------------
-  |  Branch (1055:12): [True: 5.67k, False: 2.00k]
-  |  Branch (1055:29): [True: 2.00k, False: 0]
+  |  Branch (1055:12): [True: 5.68k, False: 1.99k]
+  |  Branch (1055:29): [True: 1.99k, False: 0]
   ------------------
- 1056|  7.68k|        {   /* there's no such child, add a new child */
- 1057|  7.68k|            dbg_err_if(u_config_add_child(c, key, &child));
+ 1056|  7.67k|        {   /* there's no such child, add a new child */
+ 1057|  7.67k|            dbg_err_if(u_config_add_child(c, key, &child));
   ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.68k]
-  |  |  |  Branch (626:77): [Folded, False: 7.68k]
-  |  |  ------------------
-  ------------------
- 1058|  7.68k|        } 
- 1059|  7.68k|        dbg_err_if(u_config_set_value(child, val));
-  ------------------
-  |  |  626|  7.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 7, False: 7.67k]
+  |  |  |  Branch (626:50): [True: 0, False: 7.67k]
   |  |  |  Branch (626:77): [Folded, False: 7.67k]
+  |  |  ------------------
+  ------------------
+ 1058|  7.67k|        } 
+ 1059|  7.67k|        dbg_err_if(u_config_set_value(child, val));
+  ------------------
+  |  |  626|  7.67k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 13, False: 7.66k]
+  |  |  |  Branch (626:77): [Folded, False: 7.66k]
   |  |  ------------------
   ------------------
  1060|       |
  1061|       |        /* return the child we just added/modified */
- 1062|  7.67k|        if(pchild)
+ 1062|  7.66k|        if(pchild)
   ------------------
-  |  Branch (1062:12): [True: 4, False: 7.67k]
+  |  Branch (1062:12): [True: 4, False: 7.66k]
   ------------------
  1063|      4|            *pchild = child;
- 1064|  7.67k|    } else {
- 1065|  5.61k|        child_key = u_strndup(key, p-key);
- 1066|  5.61k|        dbg_err_if(child_key == NULL);
+ 1064|  7.66k|    } else {
+ 1065|  5.35k|        child_key = u_strndup(key, p-key);
+ 1066|  5.35k|        dbg_err_if(child_key == NULL);
   ------------------
-  |  |  626|  5.61k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  5.35k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 5.61k]
-  |  |  |  Branch (626:77): [Folded, False: 5.61k]
-  |  |  ------------------
-  ------------------
- 1067|  5.61k|        if((child = u_config_get_child(c, child_key)) == NULL)
-  ------------------
-  |  Branch (1067:12): [True: 4.58k, False: 1.02k]
-  ------------------
- 1068|  4.58k|            dbg_err_if(u_config_add_child(c, child_key, &child));
-  ------------------
-  |  |  626|  4.58k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 4.58k]
-  |  |  |  Branch (626:77): [Folded, False: 4.58k]
+  |  |  |  Branch (626:50): [True: 0, False: 5.35k]
+  |  |  |  Branch (626:77): [Folded, False: 5.35k]
   |  |  ------------------
   ------------------
- 1069|  5.61k|        U_FREE(child_key);
+ 1067|  5.35k|        if((child = u_config_get_child(c, child_key)) == NULL)
   ------------------
-  |  |   47|  5.61k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  Branch (1067:12): [True: 4.35k, False: 993]
+  ------------------
+ 1068|  4.35k|            dbg_err_if(u_config_add_child(c, child_key, &child));
+  ------------------
+  |  |  626|  4.35k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 5.61k]
+  |  |  |  Branch (626:50): [True: 0, False: 4.35k]
+  |  |  |  Branch (626:77): [Folded, False: 4.35k]
   |  |  ------------------
   ------------------
- 1070|  5.61k|        return u_config_do_set_key(child, ++p, val, overwrite, NULL);
- 1071|  5.61k|    }
- 1072|  7.67k|    return 0;
- 1073|      7|err:
- 1074|      7|    return ~0;
- 1075|  13.2k|}
+ 1069|  5.35k|        U_FREE(child_key);
+  ------------------
+  |  |   47|  5.35k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 5.35k]
+  |  |  ------------------
+  ------------------
+ 1070|  5.35k|        return u_config_do_set_key(child, ++p, val, overwrite, NULL);
+ 1071|  5.35k|    }
+ 1072|  7.66k|    return 0;
+ 1073|     13|err:
+ 1074|     13|    return ~0;
+ 1075|  13.0k|}
 config.c:u_config_do_load_drv:
- 1112|  6.20k|{
- 1113|  6.20k|    enum { MAX_NEST_LEV = 20 };
- 1114|  6.20k|    u_string_t *line = NULL, *key = NULL, *lastkey = NULL, *value = NULL;
- 1115|  6.20k|    const char *ln, *p;
- 1116|  6.20k|    size_t len;
- 1117|  6.20k|    int lineno = 1;
- 1118|  6.20k|    u_config_t *child = NULL;
- 1119|  6.20k|    u_config_t *subkey;
+ 1112|  6.28k|{
+ 1113|  6.28k|    enum { MAX_NEST_LEV = 20 };
+ 1114|  6.28k|    u_string_t *line = NULL, *key = NULL, *lastkey = NULL, *value = NULL;
+ 1115|  6.28k|    const char *ln, *p;
+ 1116|  6.28k|    size_t len;
+ 1117|  6.28k|    int lineno = 1;
+ 1118|  6.28k|    u_config_t *child = NULL;
+ 1119|  6.28k|    u_config_t *subkey;
  1120|       |
- 1121|  6.20k|    dbg_err_if(u_string_create(NULL, 0, &line));
+ 1121|  6.28k|    dbg_err_if(u_string_create(NULL, 0, &line));
   ------------------
-  |  |  626|  6.20k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 6.20k]
-  |  |  |  Branch (626:77): [Folded, False: 6.20k]
-  |  |  ------------------
-  ------------------
- 1122|  6.20k|    dbg_err_if(u_string_create(NULL, 0, &key));
-  ------------------
-  |  |  626|  6.20k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 6.20k]
-  |  |  |  Branch (626:77): [Folded, False: 6.20k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.28k]
+  |  |  |  Branch (626:77): [Folded, False: 6.28k]
   |  |  ------------------
   ------------------
- 1123|  6.20k|    dbg_err_if(u_string_create(NULL, 0, &value));
+ 1122|  6.28k|    dbg_err_if(u_string_create(NULL, 0, &key));
   ------------------
-  |  |  626|  6.20k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 6.20k]
-  |  |  |  Branch (626:77): [Folded, False: 6.20k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.28k]
+  |  |  |  Branch (626:77): [Folded, False: 6.28k]
   |  |  ------------------
   ------------------
- 1124|  6.20k|    dbg_err_if(u_string_create(NULL, 0, &lastkey));
+ 1123|  6.28k|    dbg_err_if(u_string_create(NULL, 0, &value));
   ------------------
-  |  |  626|  6.20k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 6.20k]
-  |  |  |  Branch (626:77): [Folded, False: 6.20k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.28k]
+  |  |  |  Branch (626:77): [Folded, False: 6.28k]
+  |  |  ------------------
+  ------------------
+ 1124|  6.28k|    dbg_err_if(u_string_create(NULL, 0, &lastkey));
+  ------------------
+  |  |  626|  6.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.28k]
+  |  |  |  Branch (626:77): [Folded, False: 6.28k]
   |  |  ------------------
   ------------------
  1125|       |
- 1126|  6.20k|    dbg_err_if(drv->gets == NULL);
+ 1126|  6.28k|    dbg_err_if(drv->gets == NULL);
   ------------------
-  |  |  626|  6.20k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 6.20k]
-  |  |  |  Branch (626:77): [Folded, False: 6.20k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.28k]
+  |  |  |  Branch (626:77): [Folded, False: 6.28k]
   |  |  ------------------
   ------------------
  1127|       |
- 1128|  23.3k|    for(; cs_getline(drv->gets, arg, line) == 0; u_string_clear(line), ++lineno)
+ 1128|  24.1k|    for(; cs_getline(drv->gets, arg, line) == 0; u_string_clear(line), ++lineno)
   ------------------
-  |  Branch (1128:11): [True: 21.2k, False: 2.13k]
+  |  Branch (1128:11): [True: 21.6k, False: 2.46k]
   ------------------
- 1129|  21.2k|    {
- 1130|  21.2k|        dbg_err_if (u_config_remove_comment(line));
+ 1129|  21.6k|    {
+ 1130|  21.6k|        dbg_err_if (u_config_remove_comment(line));
   ------------------
-  |  |  626|  21.2k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  21.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 2, False: 21.2k]
-  |  |  |  Branch (626:77): [Folded, False: 21.2k]
+  |  |  |  Branch (626:50): [True: 2, False: 21.6k]
+  |  |  |  Branch (626:77): [Folded, False: 21.6k]
   |  |  ------------------
   ------------------
  1131|       |
  1132|       |        /* remove leading and trailing blanks */
- 1133|  21.2k|        dbg_err_if(u_string_trim(line));
+ 1133|  21.6k|        dbg_err_if(u_string_trim(line));
   ------------------
-  |  |  626|  21.2k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  21.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 21.2k]
-  |  |  |  Branch (626:77): [Folded, False: 21.2k]
+  |  |  |  Branch (626:50): [True: 0, False: 21.6k]
+  |  |  |  Branch (626:77): [Folded, False: 21.6k]
   |  |  ------------------
   ------------------
  1134|       |
- 1135|  21.2k|        ln = u_string_c(line);
- 1136|  21.2k|        len = u_string_len(line);
+ 1135|  21.6k|        ln = u_string_c(line);
+ 1136|  21.6k|        len = u_string_len(line);
  1137|       |
  1138|       |        /* remove trailing nl(s) */
- 1139|  24.6k|        while(len && u_isnl(ln[len-1]))
+ 1139|  25.2k|        while(len && u_isnl(ln[len-1]))
   ------------------
-  |  Branch (1139:15): [True: 23.6k, False: 1.00k]
-  |  Branch (1139:22): [True: 3.42k, False: 20.2k]
+  |  Branch (1139:15): [True: 23.9k, False: 1.32k]
+  |  Branch (1139:22): [True: 3.57k, False: 20.3k]
   ------------------
- 1140|  3.42k|            u_string_set_length(line, --len);
+ 1140|  3.57k|            u_string_set_length(line, --len);
  1141|       |
- 1142|  21.2k|        if(len == 0)
+ 1142|  21.6k|        if(len == 0)
   ------------------
-  |  Branch (1142:12): [True: 1.00k, False: 20.2k]
+  |  Branch (1142:12): [True: 1.32k, False: 20.3k]
   ------------------
- 1143|  1.00k|            continue; /* empty line */
+ 1143|  1.32k|            continue; /* empty line */
  1144|       |
  1145|       |        /* eat leading blanks */
- 1146|  20.2k|        for(; u_isblank(*ln); ++ln);
+ 1146|  20.3k|        for(; u_isblank(*ln); ++ln);
   ------------------
-  |  Branch (1146:15): [True: 0, False: 20.2k]
+  |  Branch (1146:15): [True: 0, False: 20.3k]
   ------------------
  1147|       |
- 1148|  20.2k|        if(ln[0] == '{')
+ 1148|  20.3k|        if(ln[0] == '{')
   ------------------
-  |  Branch (1148:12): [True: 5.64k, False: 14.5k]
+  |  Branch (1148:12): [True: 5.70k, False: 14.6k]
   ------------------
- 1149|  5.64k|        {   /* group config values */
- 1150|  5.64k|            if(u_string_len(lastkey) == 0)
+ 1149|  5.70k|        {   /* group config values */
+ 1150|  5.70k|            if(u_string_len(lastkey) == 0)
   ------------------
-  |  Branch (1150:16): [True: 5, False: 5.64k]
+  |  Branch (1150:16): [True: 4, False: 5.70k]
   ------------------
- 1151|  5.64k|                crit_err("config error [line %d]: { not after a no-value key", 
+ 1151|  5.70k|                crit_err("config error [line %d]: { not after a no-value key", 
   ------------------
-  |  |  456|      5|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  456|      4|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  ------------------
-  |  |  |  |  115|      5|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
+  |  |  |  |  115|      4|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
   |  |  |  |  ------------------
-  |  |  |  |  |  |   23|      5|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |   23|      4|#define msg(label, err, ...) label( err, __VA_ARGS__ )
   |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  456|      5|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  456|      4|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  258|      5|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  258|      4|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  183|      5|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  183|      4|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|      5|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|      5|            __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  ------------------
-  |  |  |  |  ------------------
-  |  |  |  |  |  Branch (115:56): [Folded, False: 0]
-  |  |  |  |  ------------------
-  |  |  ------------------
-  ------------------
- 1152|  5.64k|                         lineno);
- 1153|  5.64k|            if(!u_isblank_str(++ln))
-  ------------------
-  |  Branch (1153:16): [True: 14, False: 5.62k]
-  ------------------
- 1154|  5.64k|                crit_err("config error [line %d]: { or } must be the "
-  ------------------
-  |  |  456|     14|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
-  |  |  ------------------
-  |  |  |  |  115|     14|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
-  |  |  |  |  ------------------
-  |  |  |  |  |  |   23|     14|#define msg(label, err, ...) label( err, __VA_ARGS__ )
-  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  456|     14|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  258|     14|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  183|     14|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
-  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     14|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     14|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|      4|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|      4|            __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  ------------------
@@ -1927,56 +1897,86 @@ config.c:u_config_do_load_drv:
   |  |  |  |  ------------------
   |  |  ------------------
   ------------------
- 1155|  5.62k|                         "only not-blank char in a line", lineno);
+ 1152|  5.70k|                         lineno);
+ 1153|  5.70k|            if(!u_isblank_str(++ln))
+  ------------------
+  |  Branch (1153:16): [True: 11, False: 5.68k]
+  ------------------
+ 1154|  5.70k|                crit_err("config error [line %d]: { or } must be the "
+  ------------------
+  |  |  456|     11|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  ------------------
+  |  |  |  |  115|     11|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
+  |  |  |  |  ------------------
+  |  |  |  |  |  |   23|     11|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  456|     11|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  258|     11|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  183|     11|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     11|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     11|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  |  |  ------------------
+  |  |  |  |  |  |  ------------------
+  |  |  |  |  ------------------
+  |  |  |  |  |  Branch (115:56): [Folded, False: 0]
+  |  |  |  |  ------------------
+  |  |  ------------------
+  ------------------
+ 1155|  5.68k|                         "only not-blank char in a line", lineno);
  1156|       |
  1157|       |            /* modify the existing child (when overwriting) or add a new one */
- 1158|  5.62k|            if(!overwrite || 
+ 1158|  5.68k|            if(!overwrite || 
   ------------------
-  |  Branch (1158:16): [True: 5.62k, False: 0]
+  |  Branch (1158:16): [True: 5.68k, False: 0]
   ------------------
  1159|      0|               (child = u_config_get_child(c, u_string_c(lastkey))) == NULL)
   ------------------
   |  Branch (1159:16): [True: 0, False: 0]
   ------------------
- 1160|  5.62k|            {
- 1161|  5.62k|                dbg_err_if(u_config_add_child(c, u_string_c(lastkey), &child));
+ 1160|  5.68k|            {
+ 1161|  5.68k|                dbg_err_if(u_config_add_child(c, u_string_c(lastkey), &child));
   ------------------
-  |  |  626|  5.62k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  5.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 5.62k]
-  |  |  |  Branch (626:77): [Folded, False: 5.62k]
+  |  |  |  Branch (626:50): [True: 0, False: 5.68k]
+  |  |  |  Branch (626:77): [Folded, False: 5.68k]
   |  |  ------------------
   ------------------
- 1162|  5.62k|            }
+ 1162|  5.68k|            }
  1163|       |
- 1164|  5.62k|            dbg_err_if(u_config_do_load_drv(child, drv, arg, overwrite));
+ 1164|  5.68k|            dbg_err_if(u_config_do_load_drv(child, drv, arg, overwrite));
   ------------------
-  |  |  626|  5.62k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  5.68k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 2.91k, False: 2.70k]
-  |  |  |  Branch (626:77): [Folded, False: 2.70k]
+  |  |  |  Branch (626:50): [True: 2.67k, False: 3.01k]
+  |  |  |  Branch (626:77): [Folded, False: 3.01k]
   |  |  ------------------
   ------------------
  1165|       |
- 1166|  2.70k|            dbg_err_if(u_string_clear(lastkey));
+ 1166|  3.01k|            dbg_err_if(u_string_clear(lastkey));
   ------------------
-  |  |  626|  2.70k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  3.01k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 2.70k]
-  |  |  |  Branch (626:77): [Folded, False: 2.70k]
+  |  |  |  Branch (626:50): [True: 0, False: 3.01k]
+  |  |  |  Branch (626:77): [Folded, False: 3.01k]
   |  |  ------------------
   ------------------
  1167|       |
- 1168|  2.70k|            continue;
- 1169|  14.5k|        } else if(ln[0] == '}') {
+ 1168|  3.01k|            continue;
+ 1169|  14.6k|        } else if(ln[0] == '}') {
   ------------------
-  |  Branch (1169:19): [True: 1.09k, False: 13.4k]
+  |  Branch (1169:19): [True: 1.08k, False: 13.5k]
   ------------------
- 1170|  1.09k|            crit_err_ifm(c->parent == NULL,"config error: unmatched '}'");
+ 1170|  1.08k|            crit_err_ifm(c->parent == NULL,"config error: unmatched '}'");
   ------------------
-  |  |  470|  1.09k|#define crit_err_ifm(expr, ...)         msg_err_ifm(crit_, expr, __VA_ARGS__)
+  |  |  470|  1.08k|#define crit_err_ifm(expr, ...)         msg_err_ifm(crit_, expr, __VA_ARGS__)
   |  |  ------------------
-  |  |  |  |  297|  1.09k|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
+  |  |  |  |  297|  1.08k|    do { if( (expr) ) { msg(label, 0, __VA_ARGS__); goto err; } } while(0)
   |  |  |  |  ------------------
   |  |  |  |  |  |   23|      7|#define msg(label, err, ...) label( err, __VA_ARGS__ )
   |  |  |  |  |  |  ------------------
@@ -1993,14 +1993,14 @@ config.c:u_config_do_load_drv:
   |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  ------------------
   |  |  |  |  ------------------
-  |  |  |  |  |  Branch (297:14): [True: 7, False: 1.08k]
-  |  |  |  |  |  Branch (297:73): [Folded, False: 1.08k]
+  |  |  |  |  |  Branch (297:14): [True: 7, False: 1.07k]
+  |  |  |  |  |  Branch (297:73): [Folded, False: 1.07k]
   |  |  |  |  ------------------
   |  |  ------------------
   ------------------
- 1171|  1.08k|            if(!u_isblank_str(++ln))
+ 1171|  1.07k|            if(!u_isblank_str(++ln))
   ------------------
-  |  Branch (1171:16): [True: 2, False: 1.08k]
+  |  Branch (1171:16): [True: 2, False: 1.07k]
   ------------------
  1172|      2|                dbg_err("config error [line %d]: { or } must be the "
   ------------------
@@ -2009,30 +2009,30 @@ config.c:u_config_do_load_drv:
   |  |  |  Branch (613:64): [Folded, False: 0]
   |  |  ------------------
   ------------------
- 1173|  1.08k|                         "only not-blank char in a line", lineno);
- 1174|  1.08k|            break; /* exit */
- 1175|  1.08k|        }
+ 1173|  1.07k|                         "only not-blank char in a line", lineno);
+ 1174|  1.07k|            break; /* exit */
+ 1175|  1.07k|        }
  1176|       |
- 1177|  13.4k|        if(u_string_len(lastkey))
+ 1177|  13.5k|        if(u_string_len(lastkey))
   ------------------
-  |  Branch (1177:12): [True: 32, False: 13.4k]
+  |  Branch (1177:12): [True: 31, False: 13.5k]
   ------------------
- 1178|  13.4k|            crit_err("config error [line %d]: '%s' has no value (nor a { on the next line)", lineno, u_string_c(lastkey));
+ 1178|  13.5k|            crit_err("config error [line %d]: '%s' has no value (nor a { on the next line)", lineno, u_string_c(lastkey));
   ------------------
-  |  |  456|     32|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  456|     31|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  ------------------
-  |  |  |  |  115|     32|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
+  |  |  |  |  115|     31|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
   |  |  |  |  ------------------
-  |  |  |  |  |  |   23|     32|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |   23|     31|#define msg(label, err, ...) label( err, __VA_ARGS__ )
   |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  456|     32|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  456|     31|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  258|     32|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  258|     31|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  183|     32|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  183|     31|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     32|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     32|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|     31|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|     31|            __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  ------------------
@@ -2044,47 +2044,47 @@ config.c:u_config_do_load_drv:
   ------------------
  1179|       |
  1180|       |        /* find the end of the key string */
- 1181|   102k|        for(p = ln; *p && !u_isblank(*p); ++p);
+ 1181|   101k|        for(p = ln; *p && !u_isblank(*p); ++p);
   ------------------
-  |  Branch (1181:21): [True: 96.2k, False: 5.77k]
-  |  Branch (1181:27): [True: 88.5k, False: 7.68k]
+  |  Branch (1181:21): [True: 95.4k, False: 5.83k]
+  |  Branch (1181:27): [True: 87.7k, False: 7.67k]
   ------------------
  1182|       |
  1183|       |        /* set the key */
- 1184|  13.4k|        dbg_err_if(u_string_set(key, ln, p-ln));
+ 1184|  13.5k|        dbg_err_if(u_string_set(key, ln, p-ln));
   ------------------
-  |  |  626|  13.4k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  13.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 13.4k]
-  |  |  |  Branch (626:77): [Folded, False: 13.4k]
+  |  |  |  Branch (626:50): [True: 0, False: 13.5k]
+  |  |  |  Branch (626:77): [Folded, False: 13.5k]
   |  |  ------------------
   ------------------
  1185|       |
  1186|       |        /* set the value */
- 1187|  13.4k|        dbg_err_if(u_string_set(value, p, strlen(p)));
+ 1187|  13.5k|        dbg_err_if(u_string_set(value, p, strlen(p)));
   ------------------
-  |  |  626|  13.4k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  13.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 13.4k]
-  |  |  |  Branch (626:77): [Folded, False: 13.4k]
+  |  |  |  Branch (626:50): [True: 0, False: 13.5k]
+  |  |  |  Branch (626:77): [Folded, False: 13.5k]
   |  |  ------------------
   ------------------
- 1188|  13.4k|        dbg_err_if(u_string_trim(value));
+ 1188|  13.5k|        dbg_err_if(u_string_trim(value));
   ------------------
-  |  |  626|  13.4k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  13.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 13.4k]
-  |  |  |  Branch (626:77): [Folded, False: 13.4k]
+  |  |  |  Branch (626:50): [True: 0, False: 13.5k]
+  |  |  |  Branch (626:77): [Folded, False: 13.5k]
   |  |  ------------------
   ------------------
  1189|       |
- 1190|  13.4k|        if(!strcmp(u_string_c(key), "include") ||     /* forced dependency */
+ 1190|  13.5k|        if(!strcmp(u_string_c(key), "include") ||     /* forced dependency */
   ------------------
-  |  Branch (1190:12): [True: 4, False: 13.4k]
+  |  Branch (1190:12): [True: 4, False: 13.5k]
   ------------------
- 1191|  13.4k|                !strcmp(u_string_c(key), "-include")) /* optional dependency */
+ 1191|  13.5k|                !strcmp(u_string_c(key), "-include")) /* optional dependency */
   ------------------
-  |  Branch (1191:17): [True: 2, False: 13.4k]
+  |  Branch (1191:17): [True: 2, False: 13.5k]
   ------------------
  1192|      6|        {
  1193|      6|            crit_err_ifm(u_string_len(value) == 0, "missing include filename");
@@ -2150,30 +2150,30 @@ config.c:u_config_do_load_drv:
  1204|      4|        } 
  1205|       |
  1206|       |        /* if the valus is empty an open bracket will follow, save the key */
- 1207|  13.4k|        if(u_string_len(value) == 0)
+ 1207|  13.5k|        if(u_string_len(value) == 0)
   ------------------
-  |  Branch (1207:12): [True: 5.77k, False: 7.67k]
+  |  Branch (1207:12): [True: 5.83k, False: 7.67k]
   ------------------
- 1208|  5.77k|        {
- 1209|  5.77k|            dbg_err_if(u_string_set(lastkey, ln, p-ln));
+ 1208|  5.83k|        {
+ 1209|  5.83k|            dbg_err_if(u_string_set(lastkey, ln, p-ln));
   ------------------
-  |  |  626|  5.77k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  5.83k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 5.77k]
-  |  |  |  Branch (626:77): [Folded, False: 5.77k]
+  |  |  |  Branch (626:50): [True: 0, False: 5.83k]
+  |  |  |  Branch (626:77): [Folded, False: 5.83k]
   |  |  ------------------
   ------------------
- 1210|  5.77k|            continue;
- 1211|  5.77k|        }
+ 1210|  5.83k|            continue;
+ 1211|  5.83k|        }
  1212|       |
  1213|       |        /* add to the var list */
  1214|  7.67k|        dbg_err_if(u_config_do_set_key(c, 
   ------------------
   |  |  626|  15.3k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 6, False: 7.67k]
+  |  |  |  Branch (626:50): [True: 12, False: 7.66k]
   |  |  |  Branch (626:51): [True: 7.67k, False: 0]
-  |  |  |  Branch (626:77): [Folded, False: 7.67k]
+  |  |  |  Branch (626:77): [Folded, False: 7.66k]
   |  |  ------------------
   ------------------
  1215|  7.67k|                        u_string_c(key), 
@@ -2181,26 +2181,26 @@ config.c:u_config_do_load_drv:
  1217|  7.67k|                        overwrite, NULL));
  1218|  7.67k|    }
  1219|       |    
- 1220|  3.21k|    if(u_string_len(lastkey))
+ 1220|  3.53k|    if(u_string_len(lastkey))
   ------------------
-  |  Branch (1220:8): [True: 103, False: 3.11k]
+  |  Branch (1220:8): [True: 107, False: 3.42k]
   ------------------
- 1221|  3.21k|            crit_err("config error [line %d]: '%s' has no value (nor a { on the next line)", lineno, u_string_c(lastkey));
+ 1221|  3.53k|            crit_err("config error [line %d]: '%s' has no value (nor a { on the next line)", lineno, u_string_c(lastkey));
   ------------------
-  |  |  456|    103|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  456|    107|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  ------------------
-  |  |  |  |  115|    103|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
+  |  |  |  |  115|    107|    do { msg(label, 0, __VA_ARGS__); goto err; } while(0)
   |  |  |  |  ------------------
-  |  |  |  |  |  |   23|    103|#define msg(label, err, ...) label( err, __VA_ARGS__ )
+  |  |  |  |  |  |   23|    107|#define msg(label, err, ...) label( err, __VA_ARGS__ )
   |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  456|    103|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  456|    107|#define crit_err(...)                   msg_err(crit_, __VA_ARGS__)
   |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  258|    103|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  258|    107|#define crit_( err, ...) u_log_critical(facility, 1, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  183|    103|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  183|    107|    u_log_write(facility, LOG_CRIT, flags, err, __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|    103|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
-  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|    103|            __VA_ARGS__)
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   21|    107|    u_log_write_ex(fac, lev, flags, err, __FILE__, __LINE__, __FUNCTION__, \
+  |  |  |  |  |  |  |  |  |  |  |  |  |  |   22|    107|            __VA_ARGS__)
   |  |  |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  |  |  ------------------
   |  |  |  |  |  |  |  |  ------------------
@@ -2211,170 +2211,170 @@ config.c:u_config_do_load_drv:
   |  |  ------------------
   ------------------
  1222|       |
- 1223|  3.11k|    u_string_free(lastkey);
- 1224|  3.11k|    u_string_free(value);
- 1225|  3.11k|    u_string_free(key);
- 1226|  3.11k|    u_string_free(line);
+ 1223|  3.42k|    u_string_free(lastkey);
+ 1224|  3.42k|    u_string_free(value);
+ 1225|  3.42k|    u_string_free(key);
+ 1226|  3.42k|    u_string_free(line);
  1227|       |
- 1228|  3.11k|    return 0;
- 1229|  3.09k|err:
- 1230|  3.09k|    if(lastkey)
+ 1228|  3.42k|    return 0;
+ 1229|  2.85k|err:
+ 1230|  2.85k|    if(lastkey)
   ------------------
-  |  Branch (1230:8): [True: 3.09k, False: 0]
+  |  Branch (1230:8): [True: 2.85k, False: 0]
   ------------------
- 1231|  3.09k|        u_string_free(lastkey);
- 1232|  3.09k|    if(key)
+ 1231|  2.85k|        u_string_free(lastkey);
+ 1232|  2.85k|    if(key)
   ------------------
-  |  Branch (1232:8): [True: 3.09k, False: 0]
+  |  Branch (1232:8): [True: 2.85k, False: 0]
   ------------------
- 1233|  3.09k|        u_string_free(key);
- 1234|  3.09k|    if(value)
+ 1233|  2.85k|        u_string_free(key);
+ 1234|  2.85k|    if(value)
   ------------------
-  |  Branch (1234:8): [True: 3.09k, False: 0]
+  |  Branch (1234:8): [True: 2.85k, False: 0]
   ------------------
- 1235|  3.09k|        u_string_free(value);
- 1236|  3.09k|    if(line)
+ 1235|  2.85k|        u_string_free(value);
+ 1236|  2.85k|    if(line)
   ------------------
-  |  Branch (1236:8): [True: 3.09k, False: 0]
+  |  Branch (1236:8): [True: 2.85k, False: 0]
   ------------------
- 1237|  3.09k|        u_string_free(line);
- 1238|  3.09k|    return ~0;
- 1239|  3.21k|}
+ 1237|  2.85k|        u_string_free(line);
+ 1238|  2.85k|    return ~0;
+ 1239|  3.53k|}
 config.c:cs_getline:
- 1078|  23.3k|{
+ 1078|  24.1k|{
  1079|       |    /* Klin's replacement (see cmake/LibU.cmake): LibU's lost a last line with
  1080|       |       no newline at the end of the input, and the last character of every
  1081|       |       1023-byte chunk of a longer line */
- 1082|  23.3k|    enum { BUFSZ = 1024 };
- 1083|  23.3k|    char buf[BUFSZ];
- 1084|  23.3k|    size_t len;
- 1085|  23.3k|    int got = 0;
+ 1082|  24.1k|    enum { BUFSZ = 1024 };
+ 1083|  24.1k|    char buf[BUFSZ];
+ 1084|  24.1k|    size_t len;
+ 1085|  24.1k|    int got = 0;
  1086|       |
- 1087|  23.3k|    u_string_clear(ln);
+ 1087|  24.1k|    u_string_clear(ln);
  1088|       |
- 1089|  23.8k|    while(cb(arg, buf, BUFSZ) != NULL)
+ 1089|  24.5k|    while(cb(arg, buf, BUFSZ) != NULL)
   ------------------
-  |  Branch (1089:11): [True: 21.2k, False: 2.56k]
+  |  Branch (1089:11): [True: 21.6k, False: 2.92k]
   ------------------
- 1090|  21.2k|    {
- 1091|  21.2k|        got = 1;
- 1092|  21.2k|        if((len = strlen(buf)) == 0)
+ 1090|  21.6k|    {
+ 1091|  21.6k|        got = 1;
+ 1092|  21.6k|        if((len = strlen(buf)) == 0)
   ------------------
-  |  Branch (1092:12): [True: 0, False: 21.2k]
+  |  Branch (1092:12): [True: 0, False: 21.6k]
   ------------------
  1093|      0|            break; /* empty line */
- 1094|  21.2k|        if(u_isnl(buf[len - 1]))
+ 1094|  21.6k|        if(u_isnl(buf[len - 1]))
   ------------------
-  |  Branch (1094:12): [True: 20.8k, False: 442]
+  |  Branch (1094:12): [True: 21.1k, False: 466]
   ------------------
- 1095|  20.8k|        {
- 1096|  20.8k|            dbg_err_if(u_string_append(ln, buf, len - 1));
+ 1095|  21.1k|        {
+ 1096|  21.1k|            dbg_err_if(u_string_append(ln, buf, len - 1));
   ------------------
-  |  |  626|  20.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  21.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 20.8k]
-  |  |  |  Branch (626:77): [Folded, False: 20.8k]
+  |  |  |  Branch (626:50): [True: 0, False: 21.1k]
+  |  |  |  Branch (626:77): [Folded, False: 21.1k]
   |  |  ------------------
   ------------------
- 1097|  20.8k|            return 0;
- 1098|  20.8k|        }
+ 1097|  21.1k|            return 0;
+ 1098|  21.1k|        }
  1099|       |        /* a chunk of a longer line, or the last line without a newline */
- 1100|    442|        dbg_err_if(u_string_append(ln, buf, len));
+ 1100|    466|        dbg_err_if(u_string_append(ln, buf, len));
   ------------------
-  |  |  626|    442|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    466|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 442]
-  |  |  |  Branch (626:77): [Folded, False: 442]
+  |  |  |  Branch (626:50): [True: 0, False: 466]
+  |  |  |  Branch (626:77): [Folded, False: 466]
   |  |  ------------------
   ------------------
- 1101|    442|    }
+ 1101|    466|    }
  1102|       |
- 1103|  2.56k|    nop_err_if(!got); /* eof */
+ 1103|  2.92k|    nop_err_if(!got); /* eof */
   ------------------
-  |  |  382|  2.56k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  2.92k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 2.13k, False: 436]
-  |  |  |  Branch (382:74): [Folded, False: 436]
+  |  |  |  Branch (382:48): [True: 2.46k, False: 460]
+  |  |  |  Branch (382:74): [Folded, False: 460]
   |  |  ------------------
   ------------------
  1104|       |
- 1105|    436|    return 0;
- 1106|  2.13k|err:
- 1107|  2.13k|    return ~0;
- 1108|  2.56k|}
+ 1105|    460|    return 0;
+ 1106|  2.46k|err:
+ 1107|  2.46k|    return ~0;
+ 1108|  2.92k|}
 config.c:u_config_remove_comment:
- 1368|  21.2k|{
- 1369|  21.2k|    char last, ln[2048], *p;
+ 1368|  21.6k|{
+ 1369|  21.6k|    char last, ln[2048], *p;
  1370|       |
- 1371|  21.2k|    dbg_return_if (line == NULL, ~0);
+ 1371|  21.6k|    dbg_return_if (line == NULL, ~0);
   ------------------
-  |  |  619|  21.2k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  21.6k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 21.2k]
-  |  |  |  Branch (619:79): [Folded, False: 21.2k]
+  |  |  |  Branch (619:50): [True: 0, False: 21.6k]
+  |  |  |  Branch (619:79): [Folded, False: 21.6k]
   |  |  ------------------
   ------------------
  1372|       |
- 1373|  21.2k|    dbg_err_if (u_strlcpy(ln, u_string_c(line), sizeof ln));
+ 1373|  21.6k|    dbg_err_if (u_strlcpy(ln, u_string_c(line), sizeof ln));
   ------------------
-  |  |  626|  21.2k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  21.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 2, False: 21.2k]
-  |  |  |  Branch (626:77): [Folded, False: 21.2k]
+  |  |  |  Branch (626:50): [True: 2, False: 21.6k]
+  |  |  |  Branch (626:77): [Folded, False: 21.6k]
   |  |  ------------------
   ------------------
  1374|       |
- 1375|   280k|    for (last = '\0', p = ln; *p != '\0'; )
+ 1375|   276k|    for (last = '\0', p = ln; *p != '\0'; )
   ------------------
-  |  Branch (1375:31): [True: 259k, False: 21.0k]
+  |  Branch (1375:31): [True: 255k, False: 21.4k]
   ------------------
- 1376|   259k|    {
- 1377|   259k|        if (*p == '#')
+ 1376|   255k|    {
+ 1377|   255k|        if (*p == '#')
   ------------------
-  |  Branch (1377:13): [True: 483, False: 259k]
+  |  Branch (1377:13): [True: 501, False: 254k]
   ------------------
- 1378|    483|        {
+ 1378|    501|        {
  1379|       |            /* See if '#' was escaped. */
- 1380|    483|            if (last != '\\')
+ 1380|    501|            if (last != '\\')
   ------------------
-  |  Branch (1380:17): [True: 222, False: 261]
+  |  Branch (1380:17): [True: 233, False: 268]
   ------------------
- 1381|    222|            {
- 1382|    222|                *p = '\0';
- 1383|    222|                break;
- 1384|    222|            }
- 1385|    261|            else
- 1386|    261|            {
- 1387|    261|                size_t rlen = strlen(p);
+ 1381|    233|            {
+ 1382|    233|                *p = '\0';
+ 1383|    233|                break;
+ 1384|    233|            }
+ 1385|    268|            else
+ 1386|    268|            {
+ 1387|    268|                size_t rlen = strlen(p);
  1388|       |
  1389|       |                /* Save 'last' before memmove operation and implicitly unput
  1390|       |                 * it (i.e. don't increment p) so that scanning can resume at
  1391|       |                 * the right position. */
- 1392|    261|                last = *p;
+ 1392|    268|                last = *p;
  1393|       |
- 1394|    261|                memmove(p - 1, p, rlen);
- 1395|    261|                p[rlen - 1] = '\0';
+ 1394|    268|                memmove(p - 1, p, rlen);
+ 1395|    268|                p[rlen - 1] = '\0';
  1396|       |
- 1397|    261|                continue;
- 1398|    261|            }
- 1399|    483|        }
+ 1397|    268|                continue;
+ 1398|    268|            }
+ 1399|    501|        }
  1400|       |
- 1401|   259k|        last = *p++;
- 1402|   259k|    }
+ 1401|   254k|        last = *p++;
+ 1402|   254k|    }
  1403|       |
- 1404|  21.2k|    dbg_err_if (u_string_set(line, ln, strlen(ln)));
+ 1404|  21.6k|    dbg_err_if (u_string_set(line, ln, strlen(ln)));
   ------------------
-  |  |  626|  21.2k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  21.6k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 21.2k]
-  |  |  |  Branch (626:77): [Folded, False: 21.2k]
+  |  |  |  Branch (626:50): [True: 0, False: 21.6k]
+  |  |  |  Branch (626:77): [Folded, False: 21.6k]
   |  |  ------------------
   ------------------
  1405|       |
- 1406|  21.2k|    return 0;
+ 1406|  21.6k|    return 0;
  1407|      2|err:
  1408|      2|    return ~0;
- 1409|  21.2k|}
+ 1409|  21.6k|}
 config.c:u_config_include:
  1243|      4|{
  1244|      4|    u_config_t *subkey;
@@ -2604,201 +2604,201 @@ config.c:u_config_include:
  1297|      4|    return ~0;
  1298|      0|}
 config.c:u_config_del_key:
- 1302|  17.8k|{
+ 1302|  17.7k|{
  1303|       |    TAILQ_REMOVE(&c->children, child, np);
   ------------------
-  |  |  184|  17.8k|#define TAILQ_REMOVE(head, elm, field) {                                    \
-  |  |  185|  17.8k|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  184|  17.7k|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|  17.7k|        if (((elm)->field.tqe_next) != NULL)                                \
   |  |  ------------------
-  |  |  |  Branch (185:13): [True: 7.35k, False: 10.5k]
+  |  |  |  Branch (185:13): [True: 7.32k, False: 10.3k]
   |  |  ------------------
-  |  |  186|  17.8k|                (elm)->field.tqe_next->field.tqe_prev =                     \
-  |  |  187|  7.35k|                    (elm)->field.tqe_prev;                                  \
-  |  |  188|  17.8k|        else                                                                \
-  |  |  189|  17.8k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
-  |  |  190|  17.8k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
-  |  |  191|  17.8k|}
+  |  |  186|  17.7k|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|  7.32k|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|  17.7k|        else                                                                \
+  |  |  189|  17.7k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|  17.7k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|  17.7k|}
   ------------------
- 1304|  17.8k|}
+ 1304|  17.7k|}
 config.c:u_config_buf_gets:
- 1334|  23.8k|{
- 1335|  23.8k|    struct u_config_buf_s *g = (struct u_config_buf_s*)arg;
- 1336|  23.8k|    char c, *s = buf;
+ 1334|  24.5k|{
+ 1335|  24.5k|    struct u_config_buf_s *g = (struct u_config_buf_s*)arg;
+ 1336|  24.5k|    char c, *s = buf;
  1337|       |
- 1338|  23.8k|    dbg_err_if(arg == NULL);
+ 1338|  24.5k|    dbg_err_if(arg == NULL);
   ------------------
-  |  |  626|  23.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  24.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 23.8k]
-  |  |  |  Branch (626:77): [Folded, False: 23.8k]
-  |  |  ------------------
-  ------------------
- 1339|  23.8k|    dbg_err_if(buf == NULL);
-  ------------------
-  |  |  626|  23.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 23.8k]
-  |  |  |  Branch (626:77): [Folded, False: 23.8k]
+  |  |  |  Branch (626:50): [True: 0, False: 24.5k]
+  |  |  |  Branch (626:77): [Folded, False: 24.5k]
   |  |  ------------------
   ------------------
- 1340|  23.8k|    dbg_err_if(size == 0);
+ 1339|  24.5k|    dbg_err_if(buf == NULL);
   ------------------
-  |  |  626|  23.8k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  24.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 23.8k]
-  |  |  |  Branch (626:77): [Folded, False: 23.8k]
+  |  |  |  Branch (626:50): [True: 0, False: 24.5k]
+  |  |  |  Branch (626:77): [Folded, False: 24.5k]
+  |  |  ------------------
+  ------------------
+ 1340|  24.5k|    dbg_err_if(size == 0);
+  ------------------
+  |  |  626|  24.5k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 24.5k]
+  |  |  |  Branch (626:77): [Folded, False: 24.5k]
   |  |  ------------------
   ------------------
  1341|       |
- 1342|  23.8k|    if(g->len == 0 || g->data[0] == '\0')
+ 1342|  24.5k|    if(g->len == 0 || g->data[0] == '\0')
   ------------------
-  |  Branch (1342:8): [True: 2.56k, False: 21.2k]
-  |  Branch (1342:23): [True: 0, False: 21.2k]
+  |  Branch (1342:8): [True: 2.92k, False: 21.6k]
+  |  Branch (1342:23): [True: 0, False: 21.6k]
   ------------------
- 1343|  2.56k|        return NULL;
+ 1343|  2.92k|        return NULL;
  1344|       |
- 1345|  21.2k|    size--; /* save a char for the trailing \0 */
+ 1345|  21.6k|    size--; /* save a char for the trailing \0 */
  1346|       |
- 1347|   287k|    for(; size && g->len; --size)
+ 1347|   283k|    for(; size && g->len; --size)
   ------------------
-  |  Branch (1347:11): [True: 287k, False: 6]
-  |  Branch (1347:19): [True: 287k, False: 438]
+  |  Branch (1347:11): [True: 283k, False: 6]
+  |  Branch (1347:19): [True: 282k, False: 463]
   ------------------
- 1348|   287k|    {
- 1349|   287k|        c = *g->data;
+ 1348|   282k|    {
+ 1349|   282k|        c = *g->data;
  1350|       |
- 1351|   287k|        g->data++, g->len--;
+ 1351|   282k|        g->data++, g->len--;
  1352|       |
- 1353|   287k|        *s++ = c;
+ 1353|   282k|        *s++ = c;
  1354|       |
- 1355|   287k|        if(c == '\n')
+ 1355|   282k|        if(c == '\n')
   ------------------
-  |  Branch (1355:12): [True: 20.8k, False: 266k]
+  |  Branch (1355:12): [True: 21.1k, False: 261k]
   ------------------
- 1356|  20.8k|            break;
- 1357|   287k|    }
- 1358|  21.2k|    *s = '\0';
+ 1356|  21.1k|            break;
+ 1357|   282k|    }
+ 1358|  21.6k|    *s = '\0';
  1359|       |
  1360|       |    /* dbg("ln: [%s]", buf); */
  1361|       |
- 1362|  21.2k|    return buf;
+ 1362|  21.6k|    return buf;
  1363|      0|err:
  1364|       |    return NULL;
- 1365|  23.8k|}
+ 1365|  24.5k|}
 
 u_isblank:
-   42|   202k|{
-   43|   202k|    return c == ' ' || c == '\t';
+   42|   201k|{
+   43|   201k|    return c == ' ' || c == '\t';
   ------------------
-  |  Branch (43:12): [True: 28.0k, False: 174k]
-  |  Branch (43:24): [True: 148, False: 174k]
+  |  Branch (43:12): [True: 28.1k, False: 173k]
+  |  Branch (43:24): [True: 146, False: 173k]
   ------------------
-   44|   202k|}
+   44|   201k|}
 u_isblank_str:
-   57|  6.72k|{
+   57|  6.77k|{
    58|  12.1k|    for ( ; *s; ++s)
   ------------------
-  |  Branch (58:13): [True: 5.41k, False: 6.71k]
+  |  Branch (58:13): [True: 5.41k, False: 6.76k]
   ------------------
    59|  5.41k|    {
    60|  5.41k|        if (!u_isblank(*s))
   ------------------
-  |  Branch (60:13): [True: 16, False: 5.39k]
+  |  Branch (60:13): [True: 13, False: 5.40k]
   ------------------
-   61|     16|            return 0;
+   61|     13|            return 0;
    62|  5.41k|    }
    63|       |
-   64|  6.71k|    return 1;
-   65|  6.72k|}
+   64|  6.76k|    return 1;
+   65|  6.77k|}
 u_isnl:
-   79|  44.9k|{
-   80|  44.9k|    return c == '\n' || c == '\r';
+   79|  45.5k|{
+   80|  45.5k|    return c == '\n' || c == '\r';
   ------------------
-  |  Branch (80:12): [True: 20.8k, False: 24.0k]
-  |  Branch (80:25): [True: 3.42k, False: 20.6k]
+  |  Branch (80:12): [True: 21.1k, False: 24.3k]
+  |  Branch (80:25): [True: 3.57k, False: 20.8k]
   ------------------
-   81|  44.9k|}
+   81|  45.5k|}
 u_trim:
-  119|  35.7k|{
-  120|  35.7k|    char *p;
+  119|  36.0k|{
+  120|  36.0k|    char *p;
   121|       |
-  122|  35.7k|    nop_return_if (s == NULL, );
+  122|  36.0k|    nop_return_if (s == NULL, );
   ------------------
-  |  |  381|  35.7k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
+  |  |  381|  36.0k|#define nop_return_if(expr, err)       do { if(expr) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (381:48): [True: 0, False: 35.7k]
-  |  |  |  Branch (381:74): [Folded, False: 35.7k]
+  |  |  |  Branch (381:48): [True: 0, False: 36.0k]
+  |  |  |  Branch (381:74): [Folded, False: 36.0k]
   |  |  ------------------
   ------------------
   123|       |
   124|       |    /* trim trailing blanks */
-  125|  35.7k|    p = s + strlen(s) - 1;
-  126|  38.4k|    while (s < p && u_isblank(*p))
+  125|  36.0k|    p = s + strlen(s) - 1;
+  126|  38.5k|    while (s < p && u_isblank(*p))
   ------------------
-  |  Branch (126:12): [True: 32.3k, False: 6.05k]
-  |  Branch (126:21): [True: 2.63k, False: 29.7k]
+  |  Branch (126:12): [True: 32.2k, False: 6.29k]
+  |  Branch (126:21): [True: 2.56k, False: 29.7k]
   ------------------
-  127|  2.63k|        --p;
-  128|  35.7k|    p[1] = '\0';
+  127|  2.56k|        --p;
+  128|  36.0k|    p[1] = '\0';
   129|       |
   130|       |    /* trim leading blanks */
-  131|  35.7k|    p = s;
-  132|  48.2k|    while (*p && u_isblank(*p))
+  131|  36.0k|    p = s;
+  132|  48.6k|    while (*p && u_isblank(*p))
   ------------------
-  |  Branch (132:12): [True: 48.0k, False: 207]
-  |  Branch (132:18): [True: 12.4k, False: 35.5k]
+  |  Branch (132:12): [True: 48.4k, False: 223]
+  |  Branch (132:18): [True: 12.6k, False: 35.7k]
   ------------------
-  133|  12.4k|        ++p;
+  133|  12.6k|        ++p;
   134|       |
-  135|  35.7k|    if (p > s)
+  135|  36.0k|    if (p > s)
   ------------------
-  |  Branch (135:9): [True: 12.3k, False: 23.4k]
+  |  Branch (135:9): [True: 12.5k, False: 23.5k]
   ------------------
-  136|  12.3k|        memmove(s, p, 1 + strlen(p));
+  136|  12.5k|        memmove(s, p, 1 + strlen(p));
   137|       |
-  138|  35.7k|    return;
-  139|  35.7k|}
+  138|  36.0k|    return;
+  139|  36.0k|}
 u_strndup:
-  155|  32.9k|{
-  156|  32.9k|    char *cp;
+  155|  32.3k|{
+  156|  32.3k|    char *cp;
   157|       |
   158|       |    /* check bounds */
-  159|  32.9k|    dbg_return_if (len > strlen(s), NULL);
+  159|  32.3k|    dbg_return_if (len > strlen(s), NULL);
   ------------------
-  |  |  619|  32.9k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  32.3k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 32.9k]
-  |  |  |  Branch (619:79): [Folded, False: 32.9k]
+  |  |  |  Branch (619:50): [True: 0, False: 32.3k]
+  |  |  |  Branch (619:79): [Folded, False: 32.3k]
   |  |  ------------------
   ------------------
   160|       |
   161|       |    /* make room for the substring + \0 */
-  162|  32.9k|    dbg_return_sif ((cp = u_malloc(len + 1)) == NULL, NULL);
+  162|  32.3k|    dbg_return_sif ((cp = u_malloc(len + 1)) == NULL, NULL);
   ------------------
-  |  |  620|  32.9k|    #define dbg_return_sif(expr, err)   dbg_return_if(expr, err)
+  |  |  620|  32.3k|    #define dbg_return_sif(expr, err)   dbg_return_if(expr, err)
   |  |  ------------------
-  |  |  |  |  619|  32.9k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  |  |  619|  32.3k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  |  |  ------------------
-  |  |  |  |  |  Branch (619:50): [True: 0, False: 32.9k]
-  |  |  |  |  |  Branch (619:79): [Folded, False: 32.9k]
+  |  |  |  |  |  Branch (619:50): [True: 0, False: 32.3k]
+  |  |  |  |  |  Branch (619:79): [Folded, False: 32.3k]
   |  |  |  |  ------------------
   |  |  ------------------
   ------------------
   163|       |
-  164|  32.9k|    memcpy(cp, s, len);
-  165|  32.9k|    cp[len] = '\0';
+  164|  32.3k|    memcpy(cp, s, len);
+  165|  32.3k|    cp[len] = '\0';
   166|       |
-  167|  32.9k|    return cp;
-  168|  32.9k|}
+  167|  32.3k|    return cp;
+  168|  32.3k|}
 u_strdup:
-  184|  25.5k|{
-  185|  25.5k|    return u_strndup(s, strlen(s));
-  186|  25.5k|}
+  184|  25.3k|{
+  185|  25.3k|    return u_strndup(s, strlen(s));
+  186|  25.3k|}
 u_strlcpy:
-  204|  21.8k|{
-  205|  21.8k|    return (strlcpy(dst, src, size) >= size ? ~0 : 0);
+  204|  22.3k|{
+  205|  22.3k|    return (strlcpy(dst, src, size) >= size ? ~0 : 0);
   ------------------
-  |  Branch (205:13): [True: 20, False: 21.7k]
+  |  Branch (205:13): [True: 36, False: 22.2k]
   ------------------
-  206|  21.8k|}
+  206|  22.3k|}
 

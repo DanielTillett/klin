@@ -59,8 +59,8 @@ LLVMFuzzerTestOneInput:
   ------------------
    42|     78|                 (strlen(path) >= 3 && !strcmp(path + strlen(path) - 3, "/.."))))
   ------------------
-  |  Branch (42:19): [True: 42, False: 36]
-  |  Branch (42:40): [True: 0, False: 42]
+  |  Branch (42:19): [True: 41, False: 37]
+  |  Branch (42:40): [True: 0, False: 41]
   ------------------
    43|      0|            abort();    /* a path out of the root */
    44|     78|    }
@@ -83,34 +83,34 @@ strlcpy:
   |  Branch (34:6): [True: 78, False: 0]
   |  Branch (34:16): [True: 78, False: 0]
   ------------------
-   35|  5.93k|		do {
-   36|  5.93k|			if ((*d++ = *s++) == 0)
+   35|  6.26k|		do {
+   36|  6.26k|			if ((*d++ = *s++) == 0)
   ------------------
-  |  Branch (36:8): [True: 16, False: 5.91k]
+  |  Branch (36:8): [True: 17, False: 6.24k]
   ------------------
-   37|     16|				break;
-   38|  5.93k|		} while (--n != 0);
+   37|     17|				break;
+   38|  6.26k|		} while (--n != 0);
   ------------------
-  |  Branch (38:12): [True: 5.85k, False: 62]
+  |  Branch (38:12): [True: 6.18k, False: 61]
   ------------------
    39|     78|	}
    40|       |
    41|       |	/* Not enough room in dst, add NUL and traverse rest of src */
    42|     78|	if (n == 0) {
   ------------------
-  |  Branch (42:6): [True: 62, False: 16]
+  |  Branch (42:6): [True: 61, False: 17]
   ------------------
-   43|     62|		if (siz != 0)
+   43|     61|		if (siz != 0)
   ------------------
-  |  Branch (43:7): [True: 62, False: 0]
+  |  Branch (43:7): [True: 61, False: 0]
   ------------------
-   44|     62|			*d = '\0';		/* NUL-terminate dst */
-   45|     62|		while (*s++)
+   44|     61|			*d = '\0';		/* NUL-terminate dst */
+   45|     61|		while (*s++)
   ------------------
-  |  Branch (45:10): [True: 0, False: 62]
+  |  Branch (45:10): [True: 0, False: 61]
   ------------------
    46|      0|			;
-   47|     62|	}
+   47|     61|	}
    48|       |
    49|     78|	return(s - src - 1);	/* count does not include NUL */
    50|     78|}
@@ -132,15 +132,15 @@ u_uri_normalize:
   ------------------
    43|       |
    44|       |    /* convert backslashes to slashes */
-   45|  5.99k|    for(pp = path; *pp; ++pp)
+   45|  6.32k|    for(pp = path; *pp; ++pp)
   ------------------
-  |  Branch (45:20): [True: 5.91k, False: 78]
+  |  Branch (45:20): [True: 6.24k, False: 78]
   ------------------
-   46|  5.91k|        if(*pp == BACKSLASH)
+   46|  6.24k|        if(*pp == BACKSLASH)
   ------------------
-  |  Branch (46:12): [True: 282, False: 5.63k]
+  |  Branch (46:12): [True: 296, False: 5.95k]
   ------------------
-   47|    282|            *pp = SLASH;
+   47|    296|            *pp = SLASH;
    48|       |
    49|       |    /* must be an absolute path (i.e. must start with a slash) */
    50|     78|    dbg_err_if(path[0] != SLASH);
@@ -160,68 +160,68 @@ u_uri_normalize:
    54|       |
    55|       |    /* rewrite in place: the output ('/seg' for each kept segment) is never
    56|       |       longer than the input read so far */
-   57|  1.72k|    for(r = w = path; *r; )
+   57|  1.83k|    for(r = w = path; *r; )
   ------------------
-  |  Branch (57:23): [True: 1.66k, False: 65]
+  |  Branch (57:23): [True: 1.76k, False: 65]
   ------------------
-   58|  1.66k|    {
-   59|  3.64k|        while(*r == SLASH)
+   58|  1.76k|    {
+   59|  3.88k|        while(*r == SLASH)
   ------------------
-  |  Branch (59:15): [True: 1.98k, False: 1.66k]
+  |  Branch (59:15): [True: 2.11k, False: 1.76k]
   ------------------
-   60|  1.98k|            ++r;    /* double slash */
-   61|  1.66k|        if(*r == '\0')
+   60|  2.11k|            ++r;    /* double slash */
+   61|  1.76k|        if(*r == '\0')
   ------------------
-  |  Branch (61:12): [True: 13, False: 1.64k]
+  |  Branch (61:12): [True: 13, False: 1.75k]
   ------------------
    62|     13|            break;
    63|       |
-   64|  5.58k|        for(seg = r; *r && *r != SLASH; ++r)
+   64|  5.89k|        for(seg = r; *r && *r != SLASH; ++r)
   ------------------
-  |  Branch (64:22): [True: 5.51k, False: 65]
-  |  Branch (64:28): [True: 3.93k, False: 1.58k]
+  |  Branch (64:22): [True: 5.82k, False: 65]
+  |  Branch (64:28): [True: 4.13k, False: 1.69k]
   ------------------
-   65|  3.93k|            ;
-   66|  1.64k|        len = (size_t) (r - seg);
+   65|  4.13k|            ;
+   66|  1.75k|        len = (size_t) (r - seg);
    67|       |
-   68|  1.64k|        if(len == 1 && seg[0] == '.')
+   68|  1.75k|        if(len == 1 && seg[0] == '.')
   ------------------
-  |  Branch (68:12): [True: 566, False: 1.08k]
-  |  Branch (68:24): [True: 210, False: 356]
+  |  Branch (68:12): [True: 542, False: 1.21k]
+  |  Branch (68:24): [True: 219, False: 323]
   ------------------
-   69|    210|            continue; /* /./ */
+   69|    219|            continue; /* /./ */
    70|       |
-   71|  1.43k|        if(len == 2 && seg[0] == '.' && seg[1] == '.')
+   71|  1.53k|        if(len == 2 && seg[0] == '.' && seg[1] == '.')
   ------------------
-  |  Branch (71:12): [True: 738, False: 699]
-  |  Branch (71:24): [True: 508, False: 230]
-  |  Branch (71:41): [True: 273, False: 235]
+  |  Branch (71:12): [True: 876, False: 660]
+  |  Branch (71:24): [True: 649, False: 227]
+  |  Branch (71:41): [True: 414, False: 235]
   ------------------
-   72|    273|        {
+   72|    414|        {
    73|       |            /* eat last dir */
-   74|    912|            while(w > path && w[-1] != SLASH)
+   74|  1.11k|            while(w > path && w[-1] != SLASH)
   ------------------
-  |  Branch (74:19): [True: 845, False: 67]
-  |  Branch (74:31): [True: 639, False: 206]
+  |  Branch (74:19): [True: 925, False: 194]
+  |  Branch (74:31): [True: 705, False: 220]
   ------------------
-   75|    639|                --w;
-   76|    273|            if(w > path)
+   75|    705|                --w;
+   76|    414|            if(w > path)
   ------------------
-  |  Branch (76:16): [True: 206, False: 67]
+  |  Branch (76:16): [True: 220, False: 194]
   ------------------
-   77|    206|                --w;
-   78|    273|            continue;
-   79|    273|        }
+   77|    220|                --w;
+   78|    414|            continue;
+   79|    414|        }
    80|       |
-   81|  1.16k|        *w++ = SLASH;
-   82|  1.16k|        memmove(w, seg, len);
-   83|  1.16k|        w += len;
-   84|  1.16k|    }
+   81|  1.12k|        *w++ = SLASH;
+   82|  1.12k|        memmove(w, seg, len);
+   83|  1.12k|        w += len;
+   84|  1.12k|    }
    85|       |
    86|     78|    if(w == path || trsl)
   ------------------
-  |  Branch (86:8): [True: 34, False: 44]
-  |  Branch (86:21): [True: 2, False: 42]
+  |  Branch (86:8): [True: 35, False: 43]
+  |  Branch (86:21): [True: 1, False: 42]
   ------------------
    87|     36|        *w++ = SLASH;
    88|     78|    *w = '\0';
@@ -287,34 +287,34 @@ u_urlncpy_s:
   |  |  |  Branch (619:79): [Folded, False: 636]
   |  |  ------------------
   ------------------
-  496|  36.7k|    for (i = 0; i < slen; ++i)
+  496|  37.8k|    for (i = 0; i < slen; ++i)
   ------------------
-  |  Branch (496:17): [True: 36.1k, False: 636]
+  |  Branch (496:17): [True: 37.2k, False: 636]
   ------------------
-  497|  36.1k|    {
-  498|  36.1k|        c = (unsigned char)src[i];
-  499|  36.1k|        n = flags == URLCPY_ENCODE && c != ' ' && !isalnum(c) &&
+  497|  37.2k|    {
+  498|  37.2k|        c = (unsigned char)src[i];
+  499|  37.2k|        n = flags == URLCPY_ENCODE && c != ' ' && !isalnum(c) &&
   ------------------
-  |  Branch (499:13): [True: 12.0k, False: 24.1k]
-  |  Branch (499:39): [True: 11.7k, False: 330]
-  |  Branch (499:51): [True: 7.56k, False: 4.15k]
+  |  Branch (499:13): [True: 12.4k, False: 24.8k]
+  |  Branch (499:39): [True: 12.2k, False: 203]
+  |  Branch (499:51): [True: 7.93k, False: 4.27k]
   ------------------
-  500|  30.6k|            c != '_' && c != '-' && c != '.' ? 3 : 1;
+  500|  31.6k|            c != '_' && c != '-' && c != '.' ? 3 : 1;
   ------------------
-  |  Branch (500:13): [True: 7.25k, False: 314]
-  |  Branch (500:25): [True: 7.05k, False: 203]
-  |  Branch (500:37): [True: 5.55k, False: 1.49k]
+  |  Branch (500:13): [True: 7.62k, False: 314]
+  |  Branch (500:25): [True: 7.41k, False: 203]
+  |  Branch (500:37): [True: 5.61k, False: 1.80k]
   ------------------
-  501|  36.1k|        dbg_return_if(n >= capacity - needed, -1);
+  501|  37.2k|        dbg_return_if(n >= capacity - needed, -1);
   ------------------
-  |  |  619|  36.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  37.2k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 36.1k]
-  |  |  |  Branch (619:79): [Folded, False: 36.1k]
+  |  |  |  Branch (619:50): [True: 0, False: 37.2k]
+  |  |  |  Branch (619:79): [Folded, False: 37.2k]
   |  |  ------------------
   ------------------
-  502|  36.1k|        needed += n;
-  503|  36.1k|    }
+  502|  37.2k|        needed += n;
+  503|  37.2k|    }
   504|    636|    return u_urlncpy(dst, src, slen, flags);
   505|    636|}
 u_hexncpy_s:
@@ -373,35 +373,35 @@ u_htmlncpy_s:
   |  |  |  Branch (619:79): [Folded, False: 424]
   |  |  ------------------
   ------------------
-  526|  24.5k|    for (i = 0; i < slen; ++i)
+  526|  25.2k|    for (i = 0; i < slen; ++i)
   ------------------
-  |  Branch (526:17): [True: 24.1k, False: 424]
+  |  Branch (526:17): [True: 24.8k, False: 424]
   ------------------
-  527|  24.1k|    {
-  528|  24.1k|        n = 1;
-  529|  24.1k|        if (flags == HTMLCPY_ENCODE)
+  527|  24.8k|    {
+  528|  24.8k|        n = 1;
+  529|  24.8k|        if (flags == HTMLCPY_ENCODE)
   ------------------
-  |  Branch (529:13): [True: 12.0k, False: 12.0k]
+  |  Branch (529:13): [True: 12.4k, False: 12.4k]
   ------------------
-  530|  72.3k|            for (j = 0; entities[j].entity; ++j)
+  530|  74.4k|            for (j = 0; entities[j].entity; ++j)
   ------------------
-  |  Branch (530:25): [True: 60.2k, False: 12.0k]
+  |  Branch (530:25): [True: 62.0k, False: 12.4k]
   ------------------
-  531|  60.2k|                if ((unsigned char)src[i] == entities[j].s_char)
+  531|  62.0k|                if ((unsigned char)src[i] == entities[j].s_char)
   ------------------
-  |  Branch (531:21): [True: 1.83k, False: 58.4k]
+  |  Branch (531:21): [True: 1.81k, False: 60.2k]
   ------------------
-  532|  1.83k|                    n = strlen(entities[j].entity);
-  533|  24.1k|        dbg_return_if(n >= capacity - needed, -1);
+  532|  1.81k|                    n = strlen(entities[j].entity);
+  533|  24.8k|        dbg_return_if(n >= capacity - needed, -1);
   ------------------
-  |  |  619|  24.1k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  24.8k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 24.1k]
-  |  |  |  Branch (619:79): [Folded, False: 24.1k]
+  |  |  |  Branch (619:50): [True: 0, False: 24.8k]
+  |  |  |  Branch (619:79): [Folded, False: 24.8k]
   |  |  ------------------
   ------------------
-  534|  24.1k|        needed += n;
-  535|  24.1k|    }
+  534|  24.8k|        needed += n;
+  535|  24.8k|    }
   536|    424|    return u_htmlncpy(dst, src, slen, flags);
   537|    424|}
 u_sqlncpy_s:
@@ -417,26 +417,26 @@ u_sqlncpy_s:
   |  |  |  Branch (619:79): [Folded, False: 212]
   |  |  ------------------
   ------------------
-  543|  12.2k|    for (i = 0; i < slen; ++i)
+  543|  12.6k|    for (i = 0; i < slen; ++i)
   ------------------
-  |  Branch (543:17): [True: 12.0k, False: 212]
+  |  Branch (543:17): [True: 12.4k, False: 212]
   ------------------
-  544|  12.0k|    {
-  545|  12.0k|        n = flags == SQLCPY_ENCODE && src[i] == '\'' ? 2 : 1;
+  544|  12.4k|    {
+  545|  12.4k|        n = flags == SQLCPY_ENCODE && src[i] == '\'' ? 2 : 1;
   ------------------
-  |  Branch (545:13): [True: 12.0k, False: 0]
-  |  Branch (545:39): [True: 664, False: 11.3k]
+  |  Branch (545:13): [True: 12.4k, False: 0]
+  |  Branch (545:39): [True: 652, False: 11.7k]
   ------------------
-  546|  12.0k|        dbg_return_if(n >= capacity - needed, -1);
+  546|  12.4k|        dbg_return_if(n >= capacity - needed, -1);
   ------------------
-  |  |  619|  12.0k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  12.4k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 12.0k]
-  |  |  |  Branch (619:79): [Folded, False: 12.0k]
+  |  |  |  Branch (619:50): [True: 0, False: 12.4k]
+  |  |  |  Branch (619:79): [Folded, False: 12.4k]
   |  |  ------------------
   ------------------
-  547|  12.0k|        needed += n;
-  548|  12.0k|    }
+  547|  12.4k|        needed += n;
+  548|  12.4k|    }
   549|    212|    return u_sqlncpy(dst, src, slen, flags);
   550|    212|}
 u_urlncpy:
@@ -567,28 +567,28 @@ u_htmlncpy:
   859|      0|    return -1;
   860|    424|}
 u_stristr:
-  876|  1.28k|{
-  877|  1.28k|    const char *p;
-  878|  1.28k|    size_t len;
+  876|  1.27k|{
+  877|  1.27k|    const char *p;
+  878|  1.27k|    size_t len;
   879|       |
-  880|  1.28k|    dbg_err_if (sub == NULL);
+  880|  1.27k|    dbg_err_if (sub == NULL);
   ------------------
-  |  |  626|  1.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  1.27k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 1.28k]
-  |  |  |  Branch (626:77): [Folded, False: 1.28k]
+  |  |  |  Branch (626:50): [True: 0, False: 1.27k]
+  |  |  |  Branch (626:77): [Folded, False: 1.27k]
   |  |  ------------------
   ------------------
-  881|  1.28k|    dbg_err_if (string == NULL);
+  881|  1.27k|    dbg_err_if (string == NULL);
   ------------------
-  |  |  626|  1.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  1.27k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 1.28k]
-  |  |  |  Branch (626:77): [Folded, False: 1.28k]
+  |  |  |  Branch (626:50): [True: 0, False: 1.27k]
+  |  |  |  Branch (626:77): [Folded, False: 1.27k]
   |  |  ------------------
   ------------------
   882|       |
-  883|  1.28k|    len = strlen(sub);
+  883|  1.27k|    len = strlen(sub);
   884|   111k|    for(p = string; *p; ++p)
   ------------------
   |  Branch (884:21): [True: 110k, False: 1.06k]
@@ -596,17 +596,17 @@ u_stristr:
   885|   110k|    {
   886|   110k|        if(strncasecmp(p, sub, len) == 0)
   ------------------
-  |  Branch (886:12): [True: 221, False: 109k]
+  |  Branch (886:12): [True: 219, False: 110k]
   ------------------
-  887|    221|            return KLIN_UNCONST(p);
+  887|    219|            return KLIN_UNCONST(p);
   ------------------
-  |  |   38|    221|#define KLIN_UNCONST(p) ((void *)(uintptr_t)(const void *)(p))
+  |  |   38|    219|#define KLIN_UNCONST(p) ((void *)(uintptr_t)(const void *)(p))
   ------------------
   888|   110k|    }
   889|       |
   890|  1.06k|err: /* fall through */
   891|       |    return NULL;
-  892|  1.28k|}
+  892|  1.27k|}
 utils.c:u_sqlncpy_encode:
   407|    212|{
   408|    212|    ssize_t wr = 0;
@@ -629,22 +629,22 @@ utils.c:u_sqlncpy_encode:
   |  |  ------------------
   ------------------
   413|       |
-  414|  12.2k|    for(; slen; --slen)
+  414|  12.6k|    for(; slen; --slen)
   ------------------
-  |  Branch (414:11): [True: 12.0k, False: 212]
+  |  Branch (414:11): [True: 12.4k, False: 212]
   ------------------
-  415|  12.0k|    {
-  416|  12.0k|        c = *d++ = *s++;
-  417|  12.0k|        wr++;
-  418|  12.0k|        if(c == '\'') 
+  415|  12.4k|    {
+  416|  12.4k|        c = *d++ = *s++;
+  417|  12.4k|        wr++;
+  418|  12.4k|        if(c == '\'') 
   ------------------
-  |  Branch (418:12): [True: 664, False: 11.3k]
+  |  Branch (418:12): [True: 652, False: 11.7k]
   ------------------
-  419|    664|        {
-  420|    664|            *d++ = '\'';
-  421|    664|            wr++;
-  422|    664|        } 
-  423|  12.0k|    }
+  419|    652|        {
+  420|    652|            *d++ = '\'';
+  421|    652|            wr++;
+  422|    652|        } 
+  423|  12.4k|    }
   424|    212|    *d = 0;
   425|       |
   426|    212|    return wr;
@@ -672,34 +672,34 @@ utils.c:u_urlncpy_encode:
   |  |  ------------------
   ------------------
   560|       |
-  561|  12.2k|    for(; slen; --slen)
+  561|  12.6k|    for(; slen; --slen)
   ------------------
-  |  Branch (561:11): [True: 12.0k, False: 212]
+  |  Branch (561:11): [True: 12.4k, False: 212]
   ------------------
-  562|  12.0k|    {
-  563|  12.0k|        c = *s++;
-  564|  12.0k|        if(c == ' ') {
+  562|  12.4k|    {
+  563|  12.4k|        c = *s++;
+  564|  12.4k|        if(c == ' ') {
   ------------------
-  |  Branch (564:12): [True: 330, False: 11.7k]
+  |  Branch (564:12): [True: 203, False: 12.2k]
   ------------------
-  565|    330|            *d++ = '+';
-  566|    330|            wr++;
-  567|  11.7k|        } else if(isalnum(c) || c == '_' || c == '-' || c == '.') {
+  565|    203|            *d++ = '+';
+  566|    203|            wr++;
+  567|  12.2k|        } else if(isalnum(c) || c == '_' || c == '-' || c == '.') {
   ------------------
-  |  Branch (567:19): [True: 4.15k, False: 7.56k]
-  |  Branch (567:33): [True: 314, False: 7.25k]
-  |  Branch (567:45): [True: 203, False: 7.05k]
-  |  Branch (567:57): [True: 1.49k, False: 5.55k]
+  |  Branch (567:19): [True: 4.27k, False: 7.93k]
+  |  Branch (567:33): [True: 314, False: 7.62k]
+  |  Branch (567:45): [True: 203, False: 7.41k]
+  |  Branch (567:57): [True: 1.80k, False: 5.61k]
   ------------------
-  568|  6.17k|            *d++ = c;
-  569|  6.17k|            wr++;
-  570|  6.17k|        } else {
-  571|  5.55k|            *d++ = '%';                                        
-  572|  5.55k|            *d++ = hexc[(c >> 4) & 0xF];             
-  573|  5.55k|            *d++ = hexc[c & 0xF];  
-  574|  5.55k|            wr += 3;
-  575|  5.55k|        }
-  576|  12.0k|    }
+  568|  6.59k|            *d++ = c;
+  569|  6.59k|            wr++;
+  570|  6.59k|        } else {
+  571|  5.61k|            *d++ = '%';                                        
+  572|  5.61k|            *d++ = hexc[(c >> 4) & 0xF];             
+  573|  5.61k|            *d++ = hexc[c & 0xF];  
+  574|  5.61k|            wr += 3;
+  575|  5.61k|        }
+  576|  12.4k|    }
   577|    212|    *d = 0;
   578|       |
   579|    212|    return wr;
@@ -726,42 +726,42 @@ utils.c:u_urlncpy_decode:
   |  |  ------------------
   ------------------
   589|       |
-  590|  22.4k|    for(; slen; --slen, ++wr)
+  590|  22.7k|    for(; slen; --slen, ++wr)
   ------------------
-  |  Branch (590:11): [True: 22.0k, False: 404]
+  |  Branch (590:11): [True: 22.3k, False: 404]
   ------------------
-  591|  22.0k|    {
-  592|  22.0k|        c = *s++;
-  593|  22.0k|        if(c == '%')
+  591|  22.3k|    {
+  592|  22.3k|        c = *s++;
+  593|  22.3k|        if(c == '%')
   ------------------
-  |  Branch (593:12): [True: 826, False: 21.1k]
+  |  Branch (593:12): [True: 1.00k, False: 21.3k]
   ------------------
-  594|    826|        {
-  595|    826|            dbg_err_if(slen < 3 || !isxdigit((unsigned char)s[0]) ||
+  594|  1.00k|        {
+  595|  1.00k|            dbg_err_if(slen < 3 || !isxdigit((unsigned char)s[0]) ||
   ------------------
-  |  |  626|  3.28k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  3.98k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 6, False: 820]
-  |  |  |  Branch (626:51): [True: 12, False: 808]
-  |  |  |  Branch (626:51): [True: 2, False: 806]
-  |  |  |  Branch (626:77): [Folded, False: 806]
+  |  |  |  Branch (626:51): [True: 6, False: 996]
+  |  |  |  Branch (626:51): [True: 12, False: 984]
+  |  |  |  Branch (626:51): [True: 2, False: 982]
+  |  |  |  Branch (626:77): [Folded, False: 982]
   |  |  ------------------
   ------------------
-  596|    826|                !isxdigit((unsigned char)s[1]));
-  597|    806|            c = htoi(s[0]) << 4 | htoi(s[1]);
+  596|  1.00k|                !isxdigit((unsigned char)s[1]));
+  597|    982|            c = htoi(s[0]) << 4 | htoi(s[1]);
   598|       |            //dbg_err_if(c == 0);
-  599|    806|            *d++ = (char)c;
-  600|    806|            s += 2;
-  601|    806|            slen -= 2;
-  602|  21.1k|        } else if(c == '+') {
+  599|    982|            *d++ = (char)c;
+  600|    982|            s += 2;
+  601|    982|            slen -= 2;
+  602|  21.3k|        } else if(c == '+') {
   ------------------
-  |  Branch (602:19): [True: 198, False: 20.9k]
+  |  Branch (602:19): [True: 326, False: 21.0k]
   ------------------
-  603|    198|            *d++ = ' ';
-  604|  20.9k|        } else {
-  605|  20.9k|            *d++ = c;
-  606|  20.9k|        }
-  607|  22.0k|    }
+  603|    326|            *d++ = ' ';
+  604|  21.0k|        } else {
+  605|  21.0k|            *d++ = c;
+  606|  21.0k|        }
+  607|  22.3k|    }
   608|    404|    *d = 0;
   609|       |
   610|    404|    return wr;
@@ -770,29 +770,29 @@ utils.c:u_urlncpy_decode:
   613|       |
   614|    424|}
 utils.c:htoi:
-  394|  1.61k|{
-  395|  1.61k|    c = tolower(c);
+  394|  1.96k|{
+  395|  1.96k|    c = tolower(c);
   ------------------
   |  Branch (395:9): [True: 0, False: 0]
   |  Branch (395:9): [True: 0, False: 0]
-  |  Branch (395:9): [Folded, False: 1.61k]
+  |  Branch (395:9): [Folded, False: 1.96k]
   ------------------
   396|       |
-  397|  1.61k|    if(c >= '0' && c <= '9')
+  397|  1.96k|    if(c >= '0' && c <= '9')
   ------------------
-  |  Branch (397:8): [True: 1.61k, False: 0]
-  |  Branch (397:20): [True: 850, False: 762]
+  |  Branch (397:8): [True: 1.96k, False: 0]
+  |  Branch (397:20): [True: 1.00k, False: 958]
   ------------------
-  398|    850|        return c - '0';
-  399|    762|    else if(c >= 'a' && c <= 'z')
+  398|  1.00k|        return c - '0';
+  399|    958|    else if(c >= 'a' && c <= 'z')
   ------------------
-  |  Branch (399:13): [True: 762, False: 0]
-  |  Branch (399:25): [True: 762, False: 0]
+  |  Branch (399:13): [True: 958, False: 0]
+  |  Branch (399:25): [True: 958, False: 0]
   ------------------
-  400|    762|        return c - 'a' + 10;
+  400|    958|        return c - 'a' + 10;
   401|      0|    else
   402|      0|        return 0;
-  403|  1.61k|}
+  403|  1.96k|}
 utils.c:u_hexncpy_decode:
   684|    212|{
   685|    212|	size_t i, t;
@@ -820,23 +820,23 @@ utils.c:u_hexncpy_decode:
   ------------------
   |  |  626|    212|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 60, False: 152]
-  |  |  |  Branch (626:77): [Folded, False: 152]
+  |  |  |  Branch (626:50): [True: 56, False: 156]
+  |  |  |  Branch (626:77): [Folded, False: 156]
   |  |  ------------------
   ------------------
   693|       |
-  694|    737|	for(i = 0, t = 0; i < slen; ++t, i += 2)
+  694|    741|	for(i = 0, t = 0; i < slen; ++t, i += 2)
   ------------------
-  |  Branch (694:20): [True: 719, False: 18]
+  |  Branch (694:20): [True: 723, False: 18]
   ------------------
-  695|    719|    {
-  696|    719|        hi = u_hex2ch(s[i]);
-  697|    719|        lo = u_hex2ch(s[i+1]);
-  698|    719|        dbg_err_if(hi < 0 || lo < 0);
+  695|    723|    {
+  696|    723|        hi = u_hex2ch(s[i]);
+  697|    723|        lo = u_hex2ch(s[i+1]);
+  698|    723|        dbg_err_if(hi < 0 || lo < 0);
   ------------------
   |  |  626|  1.31k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 127, False: 592]
+  |  |  |  Branch (626:51): [True: 131, False: 592]
   |  |  |  Branch (626:51): [True: 7, False: 585]
   |  |  |  Branch (626:77): [Folded, False: 585]
   |  |  ------------------
@@ -849,30 +849,30 @@ utils.c:u_hexncpy_decode:
   704|     18|    return t;
   705|    194|err:
   706|    194|    return -1;
-  707|    152|}
+  707|    156|}
 utils.c:u_hex2ch:
-  661|  1.43k|{
-  662|  1.43k|    if(c >= 'a' && c <= 'f')
+  661|  1.44k|{
+  662|  1.44k|    if(c >= 'a' && c <= 'f')
   ------------------
-  |  Branch (662:8): [True: 415, False: 1.02k]
-  |  Branch (662:20): [True: 405, False: 10]
+  |  Branch (662:8): [True: 417, False: 1.02k]
+  |  Branch (662:20): [True: 406, False: 11]
   ------------------
-  663|    405|        return c - 'a' + 10;
-  664|  1.03k|    else if(c >= 'A' && c <= 'F')
+  663|    406|        return c - 'a' + 10;
+  664|  1.04k|    else if(c >= 'A' && c <= 'F')
   ------------------
-  |  Branch (664:13): [True: 421, False: 612]
-  |  Branch (664:25): [True: 398, False: 23]
+  |  Branch (664:13): [True: 422, False: 618]
+  |  Branch (664:25): [True: 398, False: 24]
   ------------------
   665|    398|        return c - 'A' + 10;
-  666|    635|    else if(c >= '0' && c <= '9') 
+  666|    642|    else if(c >= '0' && c <= '9') 
   ------------------
-  |  Branch (666:13): [True: 445, False: 190]
-  |  Branch (666:25): [True: 398, False: 47]
+  |  Branch (666:13): [True: 448, False: 194]
+  |  Branch (666:25): [True: 400, False: 48]
   ------------------
-  667|    398|        return c - '0';
-  668|    237|    else
-  669|    237|        return -1; /* error */
-  670|  1.43k|}
+  667|    400|        return c - '0';
+  668|    242|    else
+  669|    242|        return -1; /* error */
+  670|  1.44k|}
 utils.c:u_htmlncpy_encode:
   766|    212|{
   767|    212|    struct html_entities_s *p;
@@ -906,28 +906,28 @@ utils.c:u_htmlncpy_encode:
   ------------------
   779|  1.06k|        map[p->s_char] = p->entity;
   780|       |
-  781|  12.2k|    while(slen)
+  781|  12.6k|    while(slen)
   ------------------
-  |  Branch (781:11): [True: 12.0k, False: 212]
+  |  Branch (781:11): [True: 12.4k, False: 212]
   ------------------
-  782|  12.0k|    {
-  783|  12.0k|        c = *s++;
-  784|  12.0k|        if(map[c] == NULL)
+  782|  12.4k|    {
+  783|  12.4k|        c = *s++;
+  784|  12.4k|        if(map[c] == NULL)
   ------------------
-  |  Branch (784:12): [True: 10.2k, False: 1.83k]
+  |  Branch (784:12): [True: 10.5k, False: 1.81k]
   ------------------
-  785|  10.2k|        {
-  786|  10.2k|            *d++ = c;   /* this char doesn't need encoding */
-  787|  10.2k|            wr++;
-  788|  10.2k|            --slen;
-  789|  10.2k|        } else {
-  790|  1.83k|            elen = strlen(map[c]);
-  791|  1.83k|            strcpy(d, map[c]); /* append the entity */
-  792|  1.83k|            --slen;
-  793|  1.83k|            d += elen;
-  794|  1.83k|            wr += elen;
-  795|  1.83k|        }
-  796|  12.0k|    }
+  785|  10.5k|        {
+  786|  10.5k|            *d++ = c;   /* this char doesn't need encoding */
+  787|  10.5k|            wr++;
+  788|  10.5k|            --slen;
+  789|  10.5k|        } else {
+  790|  1.81k|            elen = strlen(map[c]);
+  791|  1.81k|            strcpy(d, map[c]); /* append the entity */
+  792|  1.81k|            --slen;
+  793|  1.81k|            d += elen;
+  794|  1.81k|            wr += elen;
+  795|  1.81k|        }
+  796|  12.4k|    }
   797|    212|    *d = 0;
   798|       |
   799|    212|    return wr;
@@ -962,15 +962,15 @@ utils.c:u_htmlncpy_decode:
   |  Branch (813:23): [True: 1.06k, False: 212]
   ------------------
   814|  1.06k|    {
-  815|  1.28k|        while((found = u_stristr(d, p->entity)) != NULL)
+  815|  1.27k|        while((found = u_stristr(d, p->entity)) != NULL)
   ------------------
-  |  Branch (815:15): [True: 221, False: 1.06k]
+  |  Branch (815:15): [True: 219, False: 1.06k]
   ------------------
-  816|    221|        {
-  817|    221|            *found = p->s_char;
-  818|    221|            after = found + strlen(p->entity);
-  819|    221|            memmove(++found, after, 1 + strlen(after));
-  820|    221|        }
+  816|    219|        {
+  817|    219|            *found = p->s_char;
+  818|    219|            after = found + strlen(p->entity);
+  819|    219|            memmove(++found, after, 1 + strlen(after));
+  820|    219|        }
   821|  1.06k|    }
   822|       |
   823|    212|    return strlen(d);
