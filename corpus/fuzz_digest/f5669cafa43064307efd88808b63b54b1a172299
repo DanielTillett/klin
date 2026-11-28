@@ -1,0 +1,52 @@
+r"",eg="u"c"
+user
+{
+ name u
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAIAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u",000000, bnonce="c"
+user
+{
+ name u
+ digÿÿÿÿÿÿÿest SH0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAA==$AAAAAAAAA]A=
+}
+;vvvUvv="u", real, qop=au71h1 nconce="c"
+user
+{
+ naA-256 001R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u", real, qopponse="01", al"c"
+user
+{
+ name u
+ digest SHA-256 0011
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vv="u", n[ce=2c"
+user
+{
+ name u
+ digest SHA-25incd11 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvvop= cnoncc"
+user
+{
+ nigest SHA-2561 R
+ password pbkdf2-sha256$1$AAvAvvvvvAAAAAAAIAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+; real, qop=au7t, nconce="c"
+user
+{
+ name u
+ diHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv="u",fvÿÿÿÿÿÿÿÿvv", respo=00000001, cnonce="c"
+user
+{
+ name u
+ digest R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]AAAAAA

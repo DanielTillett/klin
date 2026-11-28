@@ -1,0 +1,17 @@
+algum="c
+user
+{
+ nae up
+ password pbkdf2-sha256$1$inc=$AAAAAAAA?AAAAAAAAAA=
+}
+A- ="
+user
+{
+
+ password pbkdf2-sha256$1$inc=$AAAAAAAA?AAAAAÁAIAAAAAAAAAA=
+}
+pth, A-"
+user
+{
+ 56ÿ0ÿÿ0 R
+ password pbkdf2-sha256$1$inc=$CAAAAA?AAAAAAAAA

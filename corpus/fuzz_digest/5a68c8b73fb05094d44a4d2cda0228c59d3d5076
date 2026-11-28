@@ -1,0 +1,105 @@
+u6ø"
+user
+{
+  password pbkdf2-sha256$1$AAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvv realm="R", nonce="1., cnonce=Q"c"
+user
+{
+ name S
+ password pbkdf2-sha256$1$AApassAAAAAAAAAAAAAusrlm=/t", res="0000^^=0", algo¹rithm=Sÿÿÿÿÿÿponse="00", algo››››››››››››››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvvv=vvvvvvvvv", respo=", îonce="c"
+user
+{
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res="00", algorithmÿÿÿÿÿÿÿ›››››››››››››››››››››››››››››››››››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvvv="u", ="RoŽse="01ÿÿ algorih, 001nce="c"
+user
+{
+ name-255 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res=;ithm=SHA=c0000^^AAe=0", algorithm=Sÿÿÿnÿpÿithm=SHori1thm=SHAuÿÿÿ ilg›ÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvv="u", real, qou3th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ dioest SHA&256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$A=AAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ››››AAAAAAAAAAAAAAAAA=AAAAAAAAAAA€ørAAAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿAAAAAAAAAA=
+}
+;~vvvv=ÿÿÿÿÿÿÿÿ cnonce="c"
+user
+{
+!name u
+ digest SHA- 0620511 R
+ password pbkdf2-sha256$1$AAAAAAAAAAÿAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAÑÑÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ››››df2-sha25`6$þÿÿô1$ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvvv="u", ="RoŽse="01ÿÿ algorih, 001nce="c"
+user
+{
+ name-255 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res=;ithm=SHA=c0000^^AAe=0", algorithm=Sÿÿÿnÿpÿithm=SHori1thm=SHAuÿÿÿ ilg›ÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvv="u", real, qou3th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA&256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$A=AAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ›››››››››››››››››››››››››››››››››››››››››››››››››››››››››AAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=, cnonce="c"
+user
+{
+ name u
+ di'est SHA-770 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAÿÿÿüAAäaAÑAÑAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ›››››››››››››››››››››AAAAAAAAAA=
+}
+;vvvvv="ealm="Rvvvvvv", respoŽsn000001, cnone="c"
+user
+{
+ name SHA-255 0011 R
+ password pbkdf2-sha256$1$AAAAAAus"00", algorithmÿÿÿÿÿÿÿ’›››››››››››››››››››user›Ÿ›››››››››››››››››››››››››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvv realm="R", nonce="1., cnonce=Q"c"
+user
+{
+ name S
+ password pbkdf2-sha256$1$AApassAAAAAAAAAAAAAusrlm=/t", res="0000^^=0ÿÿÿÿÿÿponse="00", algo››››››››››››inclu››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvvv=vvvvvvvvv", respo=", îonce="c"
+user
+{
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res="00", algorithmÿÿÿÿÿÿÿ›››››››››››››››››››››››››››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvvv="u", ="RoŽse="01ÿÿ algorih, 001nce="c"
+user
+{
+ name-255 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res=;ithm=SHA=c0000^^AAe=0", algorithm=Sÿÿÿnÿpÿithm=SHori1thm=SHauÿÿÿ ilg›ÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvv="u",oŽse="rih, 001nce="c"
+user
+{
+ name-255 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAusrlm=/t", res=;ithm=SHA=c0000¢¡¾»e=0", algorithm=Sÿÿÿnÿpÿithm=SHori1thm=SHAuÿÿÿ ilg›ÿÿÿÿÿÿÑÑÑAAAAAAAAAAAAA=
+}
+;vvvv="u", real, qou3th, nc=00000001, cnonce="c"
+user
+{
+ name u
+ digest SHA&256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$A=AAAAAAAAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ›››››››››››››››››››››››››››››››››››››››››››››››››››››››››AAAAAAAAAAAAAAAAAA=
+}
+;vvvvv="u", real, qop=, cnonce="c"
+user
+{
+ name u
+ di'est SHA-770 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAÿÿÿüAAäaAÑAÑAAAÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ›››››››››››››››››››››AAAAAAAAAA=
+}
+;vvvvv="ealm="Rvvvvvv", respoŽnce="1., cnonce=Q"c"
+user
+{
+ name S
+ password pbkdf2-sha256$1$AApassAAAAAAAAAAAAAusrlm=/t", res="0000^^=0", algo¹rithm=Sÿÿÿÿÿÿponse="00", algo››››››››››››››››ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ(ÿ"/x",e u
+0000001 d1

@@ -1,0 +1,17 @@
+"c"
+user
+{
+ name t11 R
+ password pbkdf2-sha256$1$$AAAAA=
+}
+;v re"c"
+user
+{
+ password pbkdf2-sha256$1$$AAAAA=
+}
+;vvv nc=›once="c"
+user
+{
+amne u
+ dig R
+ password pbkdf2-sha256$1$$AAAAA

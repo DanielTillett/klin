@@ -1,0 +1,72 @@
+=,=usernam,=allmabc"="R",ecnoern01, Zn"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿAAIAAAAAAAAAAA=
+}
+vvvvvurixusern00, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿ;ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿincludeÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf1-sha256$1$AAAAAAAAACAAAAA¿¾¶¾AAAAAAAAAAAAA=
+
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ022 R
+word pbkDf2-sha256$
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf2-sha256$1$AAAAAAA=
+}
+vvvvvurixusern01, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ011 R
+ password pbkdAAAAAAAAAAAAAAAAAAAAAA=
+}
+vvvvvurixusern00, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿ~ÿÿÿinÿÿÿ-incluÿÿ011 R
+ password pbkdAAAAAAAAAAIAAAAAAAAAAA=
+}
+vvvvvurixusern00, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf1-sha256$1$AAAAAAAA=
+
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ022 R
+word pbkDf2-sha256$
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf2-sha256$1$AAAAAAAAAAAAEA=
+}
+vvvvvurixusern00, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf1-sha256$1$AAAAAAAA=
+
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ022 R
+word pbkDf2-sha256$
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf2-sha256$1$AAAAAAAAAAAAEAAAAAAAAAAAAAÿAAAAAA=
+}
+vvvvvurixusern01, Znonce="cnonce="c"
+user
+{
+ name u
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pbkdf1-sha256$1$AAAAAAAAACAAAAA¿¾¶¾AAAAAAAAAA=
+
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ022 R
+word pbkDf2-sha256$
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ011 R
+word pAAAA=
+
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ¿ÿÿÿÿÿÿÿÿÿÿÿÿÿ¬,ÿÿÿÿÿÿÿ022 R
+word pbkDf2-sha256$
+ digest SHA-256 0ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿïÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ01ÿÿÿÿ~ÿÿÿÿÿÿÿÿÿÿ011 R
+sword pbkdf2-shaAAAAAAAAAAA=
