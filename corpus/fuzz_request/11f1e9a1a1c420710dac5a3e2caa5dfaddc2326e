@@ -1,0 +1,28 @@
+POST /f HTTP/1.1
+Host: 
+Content-Type:multipart/form-dataGE4-datancoboundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqn!
+Content-Disposition: form-data
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿ|||||| 1212
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿ12/
+
+ 
+
+--ÿqÿContent-Disposition: form-dataÿÿÿÿanda
+
+ ò
+--ÿqÿContent-Disposition: form-dataÿÿÿÿÿÿ||||||: 1213
+
+ 
+
+--ÿqÿContenLenlll&llll0

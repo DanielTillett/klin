@@ -1,0 +1,36 @@
+GET /a/b?xHTf HTTP/1.1
+Host: x
+Content-Type: applicaP
+Host: x
+Content-Type: aCont
+Con: x
+Content-Type: apPUTplied
+ConteCookient-LengthC: 11C
+Content-LengthC: 22CPOST /f 11.H
+ost: x
+Content-Type: ation/x/-www-form-urlencoded
+Conten8:4×:
+Content-LengthC: 1f HTTP/1.0
+If-Modint-fied-Since: +un, 06 Nov 1994 08:49:37TP/1ki×:
+Conted-Type: ÿÿÿÿÿÿÿlicatioded
+Conten8:4×:
+Content-LengthC: 22CPOST /f HTTP/1.0
+If-Modint-fied-Since: +un, 06 Nov994 08:49:37TP/1ki×:
+Content-LengthC: 2CPOST /f HTTP/1.1
+Host: xPATCHtent-x
+Content-Type: applicafilename=tion/x-www-form-urncoded
+Content-LeogthC: f HTTP/2.1
+Host: x
+Ctent-Type: appcåded
+Conten4:49:37TP/1ki×:
+Content-LengthC: 22CPOSTP/1.1
+Host: xPATCHtent-x
+Content-Type: application/x-www-fosm-urlencoded
+Content-LengthC: 22CPOST /f HTTP/1.1
+Host: x
+Content-Type: applica%00n/x-wwÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿlication/x-www-form-ed
+Conted-Since: ÿÿÿÿÿÿÿÿÿÿÿGET / H/1.0£
+If-Modi6(,uT
+
+ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ 'a=b; kli
+T

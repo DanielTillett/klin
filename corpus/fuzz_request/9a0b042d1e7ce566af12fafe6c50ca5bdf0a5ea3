@@ -1,0 +1,3 @@
+GET / HTTP/1.0
+If-Modified-Since:Sun,0Dec 1 0:9:3 Gx
+

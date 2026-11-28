@@ -1,0 +1,10 @@
+POST /f HTTP/1.1
+Hos: x
+Content-Type:multipart/form-dataGE0boundary=;üo
+Content-Length: 1212
+
+HEAD
+--ÿqÿ
+Content-Disposition: form-datat]; filename='hea; nT$u
+
+ne

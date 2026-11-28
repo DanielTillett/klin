@@ -1,0 +1,17 @@
+POST /f HTTP/1.1
+Ht: x
+Content-Type:multipart/form-databoundary=ÿ;ÿ/o
+Content-Length: 1212 
+
+--ÿqÿÿÿÿ
+Content-Disposition: form-data
+
+
+
+
+
+
+
+________________dia
+
+ lgCo
