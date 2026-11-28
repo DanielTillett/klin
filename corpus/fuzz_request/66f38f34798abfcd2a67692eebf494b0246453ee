@@ -1,7 +1,0 @@
-POST /f HTTP/1.1
-Ho:
-Content-Type:multipart/form-dataGÖboundary=ÿœ; 
-Content-Length: 1212
-
-00
---ÿœata

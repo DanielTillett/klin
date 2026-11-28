@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-Hv: x
-Content-Type:/x
-Content-Length:14
-
-c

@@ -1,5 +1,0 @@
-GET /%36 HTTP/1.1
-Host: lHTTP
-If-Modified-Since:Sun, 2May 0 8:9:3.
-
-?

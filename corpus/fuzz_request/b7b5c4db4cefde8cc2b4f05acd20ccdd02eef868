@@ -1,8 +1,0 @@
-POST /f HTTP/1.1
-CoNtent-Type:multipart/form-datan boundary=;H
-Content-Length: 1211
-
---i
-Content-Disposition: form-datata; name="CC)a; name="Cstio
-
--Modif

@@ -1,6 +1,0 @@
-POST /f HTTP/1.1
-cook:POT
-Content-Type:multipart/form-dataom boundary= 
-Content-Length:1212
-
---ÿa=
