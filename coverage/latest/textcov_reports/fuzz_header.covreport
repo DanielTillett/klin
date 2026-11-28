@@ -1,227 +1,227 @@
 fuzz_header.c:fuzz_string:
-   30|    160|{
-   31|    160|    char *s = malloc(size + 1);
+   30|    159|{
+   31|    159|    char *s = malloc(size + 1);
    32|       |
-   33|    160|    if(s == NULL)
+   33|    159|    if(s == NULL)
   ------------------
-  |  Branch (33:8): [True: 0, False: 160]
+  |  Branch (33:8): [True: 0, False: 159]
   ------------------
    34|      0|        abort();
-   35|    160|    memcpy(s, data, size);
-   36|    160|    s[size] = '\0';
-   37|    160|    return s;
-   38|    160|}
+   35|    159|    memcpy(s, data, size);
+   36|    159|    s[size] = '\0';
+   37|    159|    return s;
+   38|    159|}
 
 LLVMFuzzerTestOneInput:
-   33|    160|{
-   34|    160|    char *input;
+   33|    159|{
+   34|    159|    char *input;
    35|       |
-   36|    160|    if(size > FUZZ_MAX)
+   36|    159|    if(size > FUZZ_MAX)
   ------------------
-  |  Branch (36:8): [True: 0, False: 160]
+  |  Branch (36:8): [True: 0, False: 159]
   ------------------
    37|      0|        return 0;
-   38|    160|    input = fuzz_string(data, size);
-   39|    160|    fuzz_load(input, size, 1);
-   40|    160|    fuzz_load(input, size, 0);
-   41|    160|    free(input);
-   42|    160|    return 0;
-   43|    160|}
+   38|    159|    input = fuzz_string(data, size);
+   39|    159|    fuzz_load(input, size, 1);
+   40|    159|    fuzz_load(input, size, 0);
+   41|    159|    free(input);
+   42|    159|    return 0;
+   43|    159|}
 fuzz_header.c:fuzz_load:
-   17|    320|{
-   18|    320|    header_t *header = NULL;
-   19|    320|    io_t *io = NULL;
-   20|    320|    int status;
+   17|    318|{
+   18|    318|    header_t *header = NULL;
+   19|    318|    io_t *io = NULL;
+   20|    318|    int status;
    21|       |
-   22|    320|    if(io_mem_create(input, size, 0, &io) || header_create(&header))
+   22|    318|    if(io_mem_create(input, size, 0, &io) || header_create(&header))
   ------------------
-  |  Branch (22:8): [True: 0, False: 320]
-  |  Branch (22:46): [True: 0, False: 320]
+  |  Branch (22:8): [True: 0, False: 318]
+  |  Branch (22:46): [True: 0, False: 318]
   ------------------
    23|      0|        abort();
-   24|    320|    if(strict)
+   24|    318|    if(strict)
   ------------------
-  |  Branch (24:8): [True: 160, False: 160]
+  |  Branch (24:8): [True: 159, False: 159]
   ------------------
-   25|    160|        (void) header_load_request(header, io, 100, 8192, 32768, &status);
-   26|    160|    else
-   27|    160|        (void) header_load(header, io);
-   28|    320|    header_free(header);
-   29|    320|    io_free(io);
-   30|    320|}
+   25|    159|        (void) header_load_request(header, io, 100, 8192, 32768, &status);
+   26|    159|    else
+   27|    159|        (void) header_load(header, io);
+   28|    318|    header_free(header);
+   29|    318|    io_free(io);
+   30|    318|}
 
 u_malloc:
-   62|  2.80k|{
-   63|  2.80k|    return u_memory_fns.f_malloc(sz);
-   64|  2.80k|}
+   62|  2.68k|{
+   63|  2.68k|    return u_memory_fns.f_malloc(sz);
+   64|  2.68k|}
 u_zalloc:
-   74|  2.90k|{
-   75|  2.90k|    return u_memory_fns.f_calloc(1, sz);
-   76|  2.90k|}
+   74|  2.75k|{
+   75|  2.75k|    return u_memory_fns.f_calloc(1, sz);
+   76|  2.75k|}
 u_free:
-   86|  8.84k|{
-   87|  8.84k|    if (ptr)
+   86|  8.41k|{
+   87|  8.41k|    if (ptr)
   ------------------
-  |  Branch (87:9): [True: 5.62k, False: 3.21k]
+  |  Branch (87:9): [True: 5.34k, False: 3.07k]
   ------------------
-   88|  5.62k|        u_memory_fns.f_free(ptr);
-   89|  8.84k|}
+   88|  5.34k|        u_memory_fns.f_free(ptr);
+   89|  8.41k|}
 
 io_close:
-  441|    320|{
-  442|    320|    dbg_err_if (io == NULL);
+  441|    318|{
+  442|    318|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   443|       |
-  444|    320|    if(io->close)
+  444|    318|    if(io->close)
   ------------------
-  |  Branch (444:8): [True: 320, False: 0]
+  |  Branch (444:8): [True: 318, False: 0]
   ------------------
-  445|    320|        dbg_err_if(io->close(io));
+  445|    318|        dbg_err_if(io->close(io));
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   446|       |
-  447|    320|    return 0;
+  447|    318|    return 0;
   448|      0|err:
   449|      0|    return ~0;
-  450|    320|}
+  450|    318|}
 io_free:
-  468|    320|{
-  469|    320|    dbg_err_if (io == NULL);
+  468|    318|{
+  469|    318|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  470|    320|    dbg_err_if (io->refcnt == 0);
+  470|    318|    dbg_err_if (io->refcnt == 0);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   471|       |
   472|       |    /* skip if this io_t has been dup'd and there are still one or more 
   473|       |       references in use */
-  474|    320|    if(--io->refcnt)
+  474|    318|    if(--io->refcnt)
   ------------------
-  |  Branch (474:8): [True: 0, False: 320]
+  |  Branch (474:8): [True: 0, False: 318]
   ------------------
   475|      0|        return 0;
   476|       |
   477|       |    /* flush, remove and free all codecs */
-  478|    320|    dbg_if(io_codecs_remove(io));
+  478|    318|    dbg_if(io_codecs_remove(io));
   ------------------
-  |  |  615|    320|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  615|    318|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
   |  |  ------------------
-  |  |  |  Branch (615:50): [True: 0, False: 320]
-  |  |  |  Branch (615:73): [Folded, False: 320]
+  |  |  |  Branch (615:50): [True: 0, False: 318]
+  |  |  |  Branch (615:73): [Folded, False: 318]
   |  |  ------------------
   ------------------
   479|       |
-  480|    320|    dbg_if(io_flush(io));
+  480|    318|    dbg_if(io_flush(io));
   ------------------
-  |  |  615|    320|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  615|    318|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
   |  |  ------------------
-  |  |  |  Branch (615:50): [True: 0, False: 320]
-  |  |  |  Branch (615:73): [Folded, False: 320]
+  |  |  |  Branch (615:50): [True: 0, False: 318]
+  |  |  |  Branch (615:73): [Folded, False: 318]
   |  |  ------------------
   ------------------
   481|       |
   482|       |    /* flush and close the stream (but don't free it) */
-  483|    320|    dbg_if(io_close(io));
+  483|    318|    dbg_if(io_close(io));
   ------------------
-  |  |  615|    320|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  615|    318|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
   |  |  ------------------
-  |  |  |  Branch (615:50): [True: 0, False: 320]
-  |  |  |  Branch (615:73): [Folded, False: 320]
+  |  |  |  Branch (615:50): [True: 0, False: 318]
+  |  |  |  Branch (615:73): [Folded, False: 318]
   |  |  ------------------
   ------------------
   484|       |
   485|       |    /* free per-type alloc'ed data */
-  486|    320|    if(io->free)
+  486|    318|    if(io->free)
   ------------------
-  |  Branch (486:8): [True: 320, False: 0]
+  |  Branch (486:8): [True: 318, False: 0]
   ------------------
-  487|    320|        dbg_if(io->free(io));
+  487|    318|        dbg_if(io->free(io));
   ------------------
-  |  |  615|    320|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
+  |  |  615|    318|    #define dbg_if(expr)                do { if( (expr) ) { ; } } while(0)
   |  |  ------------------
-  |  |  |  Branch (615:50): [True: 0, False: 320]
-  |  |  |  Branch (615:73): [Folded, False: 320]
+  |  |  |  Branch (615:50): [True: 0, False: 318]
+  |  |  |  Branch (615:73): [Folded, False: 318]
   |  |  ------------------
   ------------------
   488|       |
-  489|    320|    U_FREE(io->rbuf);
+  489|    318|    U_FREE(io->rbuf);
   ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
-  |  |  ------------------
-  ------------------
-  490|    320|    U_FREE(io->ubuf);
-  ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
-  |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
+  |  |  |  Branch (47:60): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  491|    320|    U_FREE(io->wbuf);
+  490|    318|    U_FREE(io->ubuf);
   ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
-  |  |  ------------------
-  ------------------
-  492|    320|    U_FREE(io->name);
-  ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
-  |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
+  |  |  |  Branch (47:60): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  493|    320|    U_FREE(io);
+  491|    318|    U_FREE(io->wbuf);
   ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
+  |  |  |  Branch (47:60): [Folded, False: 318]
+  |  |  ------------------
+  ------------------
+  492|    318|    U_FREE(io->name);
+  ------------------
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 318]
+  |  |  ------------------
+  ------------------
+  493|    318|    U_FREE(io);
+  ------------------
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 318]
   |  |  ------------------
   ------------------
   494|       |
-  495|    320|    return 0;
+  495|    318|    return 0;
   496|      0|err:
   497|      0|    return ~0;
-  498|    320|}
+  498|    318|}
 io_flush:
-  745|    320|{
-  746|    320|    ssize_t c;
-  747|    320|    size_t off = 0;
+  745|    318|{
+  746|    318|    ssize_t c;
+  747|    318|    size_t off = 0;
   748|       |
-  749|    320|    dbg_err_if (io == NULL);
+  749|    318|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   750|       | 
-  751|    320|    while(io->wcount)
+  751|    318|    while(io->wcount)
   ------------------
-  |  Branch (751:11): [True: 0, False: 320]
+  |  Branch (751:11): [True: 0, False: 318]
   ------------------
   752|      0|    {
   753|      0|        c = io->write(io, io->wbuf + off, io->wcount);
@@ -243,118 +243,118 @@ io_flush:
   759|      0|        off += c;
   760|      0|    }
   761|       |
-  762|    320|    return 0;
+  762|    318|    return 0;
   763|      0|err:
   764|      0|    return -1;
-  765|    320|}
+  765|    318|}
 io_get_until:
-  916|  7.48k|{
-  917|  7.48k|    ssize_t wr, c, len = 0;
-  918|  7.48k|    char *p, *base = buf;
+  916|  7.18k|{
+  917|  7.18k|    ssize_t wr, c, len = 0;
+  918|  7.18k|    char *p, *base = buf;
   919|       |
-  920|  7.48k|    dbg_err_if (io == NULL);
+  920|  7.18k|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|  7.48k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.48k]
-  |  |  |  Branch (626:77): [Folded, False: 7.48k]
+  |  |  |  Branch (626:50): [True: 0, False: 7.18k]
+  |  |  |  Branch (626:77): [Folded, False: 7.18k]
   |  |  ------------------
   ------------------
-  921|  7.48k|    dbg_err_if (buf == NULL);
+  921|  7.18k|    dbg_err_if (buf == NULL);
   ------------------
-  |  |  626|  7.48k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.48k]
-  |  |  |  Branch (626:77): [Folded, False: 7.48k]
+  |  |  |  Branch (626:50): [True: 0, False: 7.18k]
+  |  |  |  Branch (626:77): [Folded, False: 7.18k]
   |  |  ------------------
   ------------------
   922|       |
-  923|  7.48k|    if(size < 2)
+  923|  7.18k|    if(size < 2)
   ------------------
-  |  Branch (923:8): [True: 0, False: 7.48k]
+  |  Branch (923:8): [True: 0, False: 7.18k]
   ------------------
   924|      0|        return -1; /* buf too small */
   925|       |
-  926|  7.48k|    --size; /* save a char for \0 */
+  926|  7.18k|    --size; /* save a char for \0 */
   927|       |
   928|       |    /* never read past the read limit */
-  929|  7.48k|    if((size = io_read_room(io, size)) == 0)
+  929|  7.18k|    if((size = io_read_room(io, size)) == 0)
   ------------------
-  |  Branch (929:8): [True: 0, False: 7.48k]
+  |  Branch (929:8): [True: 0, False: 7.18k]
   ------------------
   930|      0|    {
   931|      0|        buf[0] = 0;
   932|      0|        return 0;
   933|      0|    }
   934|       |
-  935|  7.48k|    if(io->rcount == 0)
+  935|  7.18k|    if(io->rcount == 0)
   ------------------
-  |  Branch (935:8): [True: 493, False: 6.99k]
+  |  Branch (935:8): [True: 494, False: 6.69k]
   ------------------
-  936|    493|        dbg_err_if(io_underflow(io) < 0);
+  936|    494|        dbg_err_if(io_underflow(io) < 0);
   ------------------
-  |  |  626|    493|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    494|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 493]
-  |  |  |  Branch (626:77): [Folded, False: 493]
+  |  |  |  Branch (626:50): [True: 0, False: 494]
+  |  |  |  Branch (626:77): [Folded, False: 494]
   |  |  ------------------
   ------------------
   937|       |
-  938|  7.48k|    if(io->rcount == 0)
+  938|  7.18k|    if(io->rcount == 0)
   ------------------
-  |  Branch (938:8): [True: 173, False: 7.31k]
+  |  Branch (938:8): [True: 176, False: 7.01k]
   ------------------
-  939|    173|        return 0;
+  939|    176|        return 0;
   940|       |
-  941|  7.31k|    for(;;)
-  942|  7.31k|    {
-  943|  7.31k|        if((p = io_strnchr(io->rbuf + io->roff, io->rcount, stop_at)) != NULL)
+  941|  7.01k|    for(;;)
+  942|  7.01k|    {
+  943|  7.01k|        if((p = io_strnchr(io->rbuf + io->roff, io->rcount, stop_at)) != NULL)
   ------------------
-  |  Branch (943:12): [True: 7.28k, False: 24]
+  |  Branch (943:12): [True: 6.98k, False: 25]
   ------------------
-  944|  7.28k|        {
-  945|  7.28k|            p++; /* jump over 'stop_at' char*/
-  946|  7.28k|            wr = U_MIN((size_t)(p - (io->rbuf + io->roff)), size);
+  944|  6.98k|        {
+  945|  6.98k|            p++; /* jump over 'stop_at' char*/
+  946|  6.98k|            wr = U_MIN((size_t)(p - (io->rbuf + io->roff)), size);
   ------------------
-  |  |   50|  7.28k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |   50|  6.98k|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
   |  |  ------------------
-  |  |  |  Branch (50:22): [True: 7.28k, False: 0]
-  |  |  ------------------
-  ------------------
-  947|  7.28k|            memcpy(buf, io->rbuf + io->roff, wr);
-  948|  7.28k|            buf[wr] = 0;
-  949|  7.28k|            io->rcount -= wr;
-  950|  7.28k|            io->roff += wr;
-  951|  7.28k|            io->rtot += wr;
-  952|  7.28k|            len += wr;
-  953|  7.28k|            break;
-  954|  7.28k|        } else {
-  955|     24|            if(size >= io->rcount)
-  ------------------
-  |  Branch (955:16): [True: 24, False: 0]
-  ------------------
-  956|     24|            {
-  957|     24|                memcpy(buf, io->rbuf + io->roff, io->rcount);
-  958|     24|                len += io->rcount;
-  959|     24|                buf += io->rcount;
-  960|     24|                size -= io->rcount;
-  961|     24|                io->rtot += io->rcount;
-  962|     24|                io->rcount = 0;
-  963|     24|                io->roff = 0;
-  964|     24|                dbg_err_if((c = io_underflow(io)) < 0);
-  ------------------
-  |  |  626|     24|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 24]
-  |  |  |  Branch (626:77): [Folded, False: 24]
+  |  |  |  Branch (50:22): [True: 6.98k, False: 0]
   |  |  ------------------
   ------------------
-  965|     24|                if(c == 0)
+  947|  6.98k|            memcpy(buf, io->rbuf + io->roff, wr);
+  948|  6.98k|            buf[wr] = 0;
+  949|  6.98k|            io->rcount -= wr;
+  950|  6.98k|            io->roff += wr;
+  951|  6.98k|            io->rtot += wr;
+  952|  6.98k|            len += wr;
+  953|  6.98k|            break;
+  954|  6.98k|        } else {
+  955|     25|            if(size >= io->rcount)
   ------------------
-  |  Branch (965:20): [True: 24, False: 0]
+  |  Branch (955:16): [True: 25, False: 0]
   ------------------
-  966|     24|                    break;
-  967|     24|            } else {
+  956|     25|            {
+  957|     25|                memcpy(buf, io->rbuf + io->roff, io->rcount);
+  958|     25|                len += io->rcount;
+  959|     25|                buf += io->rcount;
+  960|     25|                size -= io->rcount;
+  961|     25|                io->rtot += io->rcount;
+  962|     25|                io->rcount = 0;
+  963|     25|                io->roff = 0;
+  964|     25|                dbg_err_if((c = io_underflow(io)) < 0);
+  ------------------
+  |  |  626|     25|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 25]
+  |  |  |  Branch (626:77): [Folded, False: 25]
+  |  |  ------------------
+  ------------------
+  965|     25|                if(c == 0)
+  ------------------
+  |  Branch (965:20): [True: 25, False: 0]
+  ------------------
+  966|     25|                    break;
+  967|     25|            } else {
   968|       |                /* buffer too small, return a partial line */
   969|      0|                memcpy(buf, io->rbuf + io->roff, size);
   970|      0|                len += size;
@@ -363,40 +363,40 @@ io_get_until:
   973|      0|                io->rtot += size;
   974|      0|                break;
   975|      0|            }
-  976|     24|        }
-  977|  7.31k|    }
+  976|     25|        }
+  977|  7.01k|    }
   978|       |
-  979|  7.31k|    base[len] = 0;
-  980|  7.31k|    return len; /* return the # of chars in the line (strlen(line)) */
+  979|  7.01k|    base[len] = 0;
+  980|  7.01k|    return len; /* return the # of chars in the line (strlen(line)) */
   981|      0|err:
   982|      0|    return -1;
-  983|  7.31k|}
+  983|  7.01k|}
 io_codecs_remove:
- 1052|    320|{
- 1053|    320|    codec_t *codec;
- 1054|    320|    int rc = 0;
+ 1052|    318|{
+ 1053|    318|    codec_t *codec;
+ 1054|    318|    int rc = 0;
  1055|       |
- 1056|    320|    dbg_return_if (io == NULL, ~0);
+ 1056|    318|    dbg_return_if (io == NULL, ~0);
   ------------------
-  |  |  619|    320|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    318|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 320]
-  |  |  |  Branch (619:79): [Folded, False: 320]
+  |  |  |  Branch (619:50): [True: 0, False: 318]
+  |  |  |  Branch (619:79): [Folded, False: 318]
   |  |  ------------------
   ------------------
  1057|       |
- 1058|    320|    if(!TAILQ_EMPTY(&io->codec_chain))
+ 1058|    318|    if(!TAILQ_EMPTY(&io->codec_chain))
   ------------------
-  |  |  334|    320|        (TAILQ_FIRST(head) == TAILQ_END(head))
+  |  |  334|    318|        (TAILQ_FIRST(head) == TAILQ_END(head))
   |  |  ------------------
-  |  |  |  |  311|    320|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  |  |  311|    318|#define TAILQ_FIRST(head)   ((head)->tqh_first)
   |  |  ------------------
   |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
   |  |  ------------------
-  |  |  |  |  315|    320|#define TAILQ_END(head)     NULL
+  |  |  |  |  315|    318|#define TAILQ_END(head)     NULL
   |  |  ------------------
   ------------------
-  |  Branch (1058:8): [True: 0, False: 320]
+  |  Branch (1058:8): [True: 0, False: 318]
   ------------------
  1059|      0|    {
  1060|      0|        if(io->wbuf)
@@ -437,48 +437,48 @@ io_codecs_remove:
  1068|      0|        }
  1069|      0|    }
  1070|       |
- 1071|    320|    return rc;
- 1072|    320|}
+ 1071|    318|    return rc;
+ 1072|    318|}
 io_prv_create:
- 1365|    320|{
- 1366|    320|    io_t *io = NULL;
+ 1365|    318|{
+ 1366|    318|    io_t *io = NULL;
  1367|       |
- 1368|    320|    dbg_err_if (pio == NULL);
+ 1368|    318|    dbg_err_if (pio == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
  1369|       |
- 1370|    320|    io = u_zalloc(dev_sz);
- 1371|    320|    dbg_err_if(io == NULL);
+ 1370|    318|    io = u_zalloc(dev_sz);
+ 1371|    318|    dbg_err_if(io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
  1372|       |
- 1373|    320|    TAILQ_INIT(&io->codec_chain);
+ 1373|    318|    TAILQ_INIT(&io->codec_chain);
   ------------------
-  |  |  135|    320|#define TAILQ_INIT(head) {                                                  \
-  |  |  136|    320|        (head)->tqh_first = NULL;                                           \
-  |  |  137|    320|        (head)->tqh_last = &(head)->tqh_first;                              \
-  |  |  138|    320|}
+  |  |  135|    318|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|    318|        (head)->tqh_first = NULL;                                           \
+  |  |  137|    318|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|    318|}
   ------------------
  1374|       |
  1375|       |    /* set refcnt to 1 */
- 1376|    320|    io->refcnt++;
+ 1376|    318|    io->refcnt++;
  1377|       |
  1378|       |    /* size of the io device struct (that's also a 'castable' io_t) */
- 1379|    320|    io->size = dev_sz;
+ 1379|    318|    io->size = dev_sz;
  1380|       |
- 1381|    320|    *pio = io;
+ 1381|    318|    *pio = io;
  1382|       |
- 1383|    320|    return 0;
+ 1383|    318|    return 0;
  1384|      0|err:
  1385|       |    U_FREE(io);
   ------------------
@@ -488,76 +488,76 @@ io_prv_create:
   |  |  ------------------
   ------------------
  1386|      0|    return -1;
- 1387|    320|}
+ 1387|    318|}
 io.c:io_underflow:
-  502|    517|{
-  503|    517|    ssize_t c;
-  504|    517|    size_t sz;
+  502|    519|{
+  503|    519|    ssize_t c;
+  504|    519|    size_t sz;
   505|       |
-  506|    517|    dbg_err_if (io == NULL);
+  506|    519|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|    517|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    519|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 517]
-  |  |  |  Branch (626:77): [Folded, False: 517]
+  |  |  |  Branch (626:50): [True: 0, False: 519]
+  |  |  |  Branch (626:77): [Folded, False: 519]
   |  |  ------------------
   ------------------
   507|       |
-  508|    517|    if(io->rbuf == NULL)
+  508|    519|    if(io->rbuf == NULL)
   ------------------
-  |  Branch (508:8): [True: 320, False: 197]
+  |  Branch (508:8): [True: 318, False: 201]
   ------------------
-  509|    320|        dbg_err_if(io_rbuf_alloc(io)); /* alloc the read buffer */
+  509|    318|        dbg_err_if(io_rbuf_alloc(io)); /* alloc the read buffer */
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   510|       |
-  511|    517|    while(io->rcount == 0)
+  511|    519|    while(io->rcount == 0)
   ------------------
-  |  Branch (511:11): [True: 517, False: 0]
+  |  Branch (511:11): [True: 519, False: 0]
   ------------------
-  512|    517|    {
-  513|    517|        int read_codecs = !TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs;
+  512|    519|    {
+  513|    519|        int read_codecs = !TAILQ_EMPTY(&io->codec_chain) && !io->wr_codecs;
   ------------------
   |  |  334|  1.03k|        (TAILQ_FIRST(head) == TAILQ_END(head))
   |  |  ------------------
-  |  |  |  |  311|    517|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  |  |  311|    519|#define TAILQ_FIRST(head)   ((head)->tqh_first)
   |  |  ------------------
   |  |                       (TAILQ_FIRST(head) == TAILQ_END(head))
   |  |  ------------------
-  |  |  |  |  315|    517|#define TAILQ_END(head)     NULL
+  |  |  |  |  315|    519|#define TAILQ_END(head)     NULL
   |  |  ------------------
   ------------------
-  |  Branch (513:27): [True: 0, False: 517]
+  |  Branch (513:27): [True: 0, False: 519]
   |  Branch (513:61): [True: 0, False: 0]
   ------------------
   514|       |
-  515|    517|        if(io->ucount == 0)
+  515|    519|        if(io->ucount == 0)
   ------------------
-  |  Branch (515:12): [True: 517, False: 0]
+  |  Branch (515:12): [True: 519, False: 0]
   ------------------
-  516|    517|        {
-  517|    517|            if(!read_codecs)
+  516|    519|        {
+  517|    519|            if(!read_codecs)
   ------------------
-  |  Branch (517:16): [True: 517, False: 0]
+  |  Branch (517:16): [True: 519, False: 0]
   ------------------
-  518|    517|            {
-  519|    517|                dbg_err_if((c = io->read(io, io->rbuf, io->rbsz)) < 0);
+  518|    519|            {
+  519|    519|                dbg_err_if((c = io->read(io, io->rbuf, io->rbsz)) < 0);
   ------------------
-  |  |  626|    517|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    519|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 517]
-  |  |  |  Branch (626:77): [Folded, False: 517]
+  |  |  |  Branch (626:50): [True: 0, False: 519]
+  |  |  |  Branch (626:77): [Folded, False: 519]
   |  |  ------------------
   ------------------
-  520|    517|                io->rcount = c;
-  521|    517|                io->roff = 0;
-  522|    517|                break;
-  523|    517|            }
+  520|    519|                io->rcount = c;
+  521|    519|                io->roff = 0;
+  522|    519|                break;
+  523|    519|            }
   524|       |
   525|      0|            if(io->ubuf == NULL)
   ------------------
@@ -668,75 +668,75 @@ io.c:io_underflow:
   567|      0|        io->roff = 0;
   568|      0|    }
   569|       |
-  570|    517|    return io->rcount;
+  570|    519|    return io->rcount;
   571|      0|err:
   572|      0|    return -1;
-  573|    517|}
+  573|    519|}
 io.c:io_rbuf_alloc:
-  210|    320|{
-  211|    320|    dbg_err_if (io == NULL);
+  210|    318|{
+  211|    318|    dbg_err_if (io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   212|       |    
-  213|    320|    io->rbsz = IO_RD_BUFSZ; /* set the buffer size */
+  213|    318|    io->rbsz = IO_RD_BUFSZ; /* set the buffer size */
   214|       |
-  215|    320|    io->rbuf = (char*)u_malloc(io->rbsz);
-  216|    320|    dbg_err_if(io->rbuf == NULL);
+  215|    318|    io->rbuf = (char*)u_malloc(io->rbsz);
+  216|    318|    dbg_err_if(io->rbuf == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  217|    320|    io->roff = 0;
+  217|    318|    io->roff = 0;
   218|       |
-  219|    320|    return 0;
+  219|    318|    return 0;
   220|      0|err:
   221|      0|    return ~0;
-  222|    320|}
+  222|    318|}
 io.c:io_strnchr:
-  883|  7.31k|{
-  884|  7.31k|    register char *p;
+  883|  7.01k|{
+  884|  7.01k|    register char *p;
   885|       |
-  886|  7.31k|    dbg_goto_if (buf == NULL, end);
+  886|  7.01k|    dbg_goto_if (buf == NULL, end);
   ------------------
-  |  |  633|  7.31k|    #define dbg_goto_if(expr, gt)       do { if( (expr) ) goto gt; } while(0)
+  |  |  633|  7.01k|    #define dbg_goto_if(expr, gt)       do { if( (expr) ) goto gt; } while(0)
   |  |  ------------------
-  |  |  |  Branch (633:50): [True: 0, False: 7.31k]
-  |  |  |  Branch (633:76): [Folded, False: 7.31k]
+  |  |  |  Branch (633:50): [True: 0, False: 7.01k]
+  |  |  |  Branch (633:76): [Folded, False: 7.01k]
   |  |  ------------------
   ------------------
   887|       |
-  888|  7.31k|    p = buf;
+  888|  7.01k|    p = buf;
   889|       |
-  890|  41.0k|    while(sz--)
+  890|  42.2k|    while(sz--)
   ------------------
-  |  Branch (890:11): [True: 41.0k, False: 24]
+  |  Branch (890:11): [True: 42.2k, False: 25]
   ------------------
-  891|  41.0k|    {
-  892|  41.0k|        if(*p == c)
+  891|  42.2k|    {
+  892|  42.2k|        if(*p == c)
   ------------------
-  |  Branch (892:12): [True: 7.28k, False: 33.7k]
+  |  Branch (892:12): [True: 6.98k, False: 35.2k]
   ------------------
-  893|  7.28k|            return p;
-  894|  33.7k|        ++p;
-  895|  33.7k|    }
-  896|     24|end:
+  893|  6.98k|            return p;
+  894|  35.2k|        ++p;
+  895|  35.2k|    }
+  896|     25|end:
   897|       |    return NULL;
-  898|  7.31k|}
+  898|  7.01k|}
 io.c:io_read_room:
- 1218|  7.48k|{
- 1219|  7.48k|    if(!io->rlimited)
+ 1218|  7.18k|{
+ 1219|  7.18k|    if(!io->rlimited)
   ------------------
-  |  Branch (1219:8): [True: 7.48k, False: 0]
+  |  Branch (1219:8): [True: 7.18k, False: 0]
   ------------------
- 1220|  7.48k|        return size;
+ 1220|  7.18k|        return size;
  1221|       |
  1222|      0|    return io->rtot >= io->rlimit ? 0 : U_MIN(size, io->rlimit - io->rtot);
   ------------------
@@ -747,56 +747,56 @@ io.c:io_read_room:
   ------------------
   |  Branch (1222:12): [True: 0, False: 0]
   ------------------
- 1223|  7.48k|}
+ 1223|  7.18k|}
 
 io_mem_create:
-  142|    320|{
-  143|    320|    io_mem_t *im = NULL;
-  144|    320|    io_t *io = NULL;
+  142|    318|{
+  143|    318|    io_mem_t *im = NULL;
+  144|    318|    io_t *io = NULL;
   145|       |
-  146|    320|    dbg_err_if (buf == NULL);
+  146|    318|    dbg_err_if (buf == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  147|    320|    dbg_err_if (pio == NULL);
+  147|    318|    dbg_err_if (pio == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   148|       |
-  149|    320|    dbg_err_if(io_create(io_mem_t, &io));   /* not (io_t**)&im: aliasing */
+  149|    318|    dbg_err_if(io_create(io_mem_t, &io));   /* not (io_t**)&im: aliasing */
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  150|    320|    im = (io_mem_t *) io;
+  150|    318|    im = (io_mem_t *) io;
   151|       |
-  152|    320|    im->io.type = IO_TYPE_MEM;
+  152|    318|    im->io.type = IO_TYPE_MEM;
   153|       |
-  154|    320|    im->buf = buf;
-  155|    320|    im->size = size;
-  156|    320|    im->flags = flags;
-  157|    320|    im->off = 0;
-  158|    320|    im->io.read = io_mem_read;
-  159|    320|    im->io.write = io_mem_write;
-  160|    320|    im->io.seek = io_mem_seek;
-  161|    320|    im->io.tell = io_mem_tell;
-  162|    320|    im->io.close = io_mem_close; 
-  163|    320|    im->io.free = io_mem_free; 
+  154|    318|    im->buf = buf;
+  155|    318|    im->size = size;
+  156|    318|    im->flags = flags;
+  157|    318|    im->off = 0;
+  158|    318|    im->io.read = io_mem_read;
+  159|    318|    im->io.write = io_mem_write;
+  160|    318|    im->io.seek = io_mem_seek;
+  161|    318|    im->io.tell = io_mem_tell;
+  162|    318|    im->io.close = io_mem_close; 
+  163|    318|    im->io.free = io_mem_free; 
   164|       |
-  165|    320|    *pio = (io_t*)im;
+  165|    318|    *pio = (io_t*)im;
   166|       |
-  167|    320|    return 0;
+  167|    318|    return 0;
   168|      0|err:
   169|      0|    if(im)
   ------------------
@@ -804,73 +804,73 @@ io_mem_create:
   ------------------
   170|      0|        io_free((io_t *)im);
   171|      0|    return ~0;
-  172|    320|}
+  172|    318|}
 iomem.c:io_mem_read:
-   56|    517|{
-   57|    517|    io_mem_t *im = (io_mem_t *) io_;
-   58|    517|    char *ptr;
-   59|    517|    size_t sz;
+   56|    519|{
+   57|    519|    io_mem_t *im = (io_mem_t *) io_;
+   58|    519|    char *ptr;
+   59|    519|    size_t sz;
    60|       |
-   61|    517|    dbg_return_if (im == NULL, -1);
+   61|    519|    dbg_return_if (im == NULL, -1);
   ------------------
-  |  |  619|    517|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    519|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 517]
-  |  |  |  Branch (619:79): [Folded, False: 517]
+  |  |  |  Branch (619:50): [True: 0, False: 519]
+  |  |  |  Branch (619:79): [Folded, False: 519]
   |  |  ------------------
   ------------------
-   62|    517|    dbg_return_if (buf == NULL, -1);
+   62|    519|    dbg_return_if (buf == NULL, -1);
   ------------------
-  |  |  619|    517|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    519|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 517]
-  |  |  |  Branch (619:79): [Folded, False: 517]
+  |  |  |  Branch (619:50): [True: 0, False: 519]
+  |  |  |  Branch (619:79): [Folded, False: 519]
   |  |  ------------------
   ------------------
    63|       |
-   64|    517|    sz = U_MIN(size, im->size - im->off);
+   64|    519|    sz = U_MIN(size, im->size - im->off);
   ------------------
-  |  |   50|    517|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
+  |  |   50|    519|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
   |  |  ------------------
-  |  |  |  Branch (50:22): [True: 0, False: 517]
+  |  |  |  Branch (50:22): [True: 0, False: 519]
   |  |  ------------------
   ------------------
-   65|    517|    if(sz)
+   65|    519|    if(sz)
   ------------------
-  |  Branch (65:8): [True: 320, False: 197]
+  |  Branch (65:8): [True: 318, False: 201]
   ------------------
-   66|    320|    {
-   67|    320|        ptr = im->buf + im->off; 
-   68|    320|        memcpy(buf, ptr, sz);
-   69|    320|        im->off += sz;
-   70|    320|    }
+   66|    318|    {
+   67|    318|        ptr = im->buf + im->off; 
+   68|    318|        memcpy(buf, ptr, sz);
+   69|    318|        im->off += sz;
+   70|    318|    }
    71|       |
-   72|    517|    return sz;
-   73|    517|}
+   72|    519|    return sz;
+   73|    519|}
 iomem.c:io_mem_close:
-   96|    320|{
-   97|    320|    io_mem_t *im = (io_mem_t *) io_;
+   96|    318|{
+   97|    318|    io_mem_t *im = (io_mem_t *) io_;
    98|       |    u_unused_args(im);
   ------------------
-  |  |   54|    320|#define u_unused_args(...) u_use_unused_args(NULL, __VA_ARGS__)
+  |  |   54|    318|#define u_unused_args(...) u_use_unused_args(NULL, __VA_ARGS__)
   ------------------
-   99|    320|    return 0;
-  100|    320|}
+   99|    318|    return 0;
+  100|    318|}
 iomem.c:io_mem_free:
-  103|    320|{
-  104|    320|    io_mem_t *im = (io_mem_t *) io_;
-  105|    320|    dbg_return_if (im == NULL, ~0);
+  103|    318|{
+  104|    318|    io_mem_t *im = (io_mem_t *) io_;
+  105|    318|    dbg_return_if (im == NULL, ~0);
   ------------------
-  |  |  619|    320|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    318|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 320]
-  |  |  |  Branch (619:79): [Folded, False: 320]
+  |  |  |  Branch (619:50): [True: 0, False: 318]
+  |  |  |  Branch (619:79): [Folded, False: 318]
   |  |  ------------------
   ------------------
   106|       |
-  107|    320|    if(im->flags & IO_MEM_FREE_BUF)
+  107|    318|    if(im->flags & IO_MEM_FREE_BUF)
   ------------------
-  |  Branch (107:8): [True: 0, False: 320]
+  |  Branch (107:8): [True: 0, False: 318]
   ------------------
   108|      0|    {
   109|      0|        U_FREE(im->buf);
@@ -884,111 +884,111 @@ iomem.c:io_mem_free:
   111|      0|        im->size = im->off = 0;
   112|      0|    }
   113|       |
-  114|    320|    return 0;
-  115|    320|}
+  114|    318|    return 0;
+  115|    318|}
 
 field_set_from_line:
-  135|  7.21k|{
-  136|  7.21k|    const char *colon, *p;
+  135|  6.91k|{
+  136|  6.91k|    const char *colon, *p;
   137|       |
-  138|  7.21k|    dbg_err_if (f == NULL);
+  138|  6.91k|    dbg_err_if (f == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
-  |  |  ------------------
-  ------------------
-  139|  7.21k|    dbg_err_if (ln == NULL);
-  ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
-  140|  7.21k|    dbg_err_if (!strlen(ln));
+  139|  6.91k|    dbg_err_if (ln == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
+  |  |  ------------------
+  ------------------
+  140|  6.91k|    dbg_err_if (!strlen(ln));
+  ------------------
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
   141|       |
-  142|  7.21k|    dbg_err_if((colon = strchr(ln, ':')) == NULL);
+  142|  6.91k|    dbg_err_if((colon = strchr(ln, ':')) == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 23, False: 7.18k]
-  |  |  |  Branch (626:77): [Folded, False: 7.18k]
+  |  |  |  Branch (626:50): [True: 21, False: 6.89k]
+  |  |  |  Branch (626:77): [Folded, False: 6.89k]
   |  |  ------------------
   ------------------
   143|       |
   144|       |    /* eat blanks between ':' and value */
-  145|  7.86k|    for(p = colon + 1; u_isblank(*p); ++p)
+  145|  7.51k|    for(p = colon + 1; u_isblank(*p); ++p)
   ------------------
-  |  Branch (145:24): [True: 678, False: 7.18k]
+  |  Branch (145:24): [True: 624, False: 6.89k]
   ------------------
-  146|    678|        ;
+  146|    624|        ;
   147|       |
-  148|  7.18k|    dbg_err_if(field_setn(f, ln, colon - ln, p));
+  148|  6.89k|    dbg_err_if(field_setn(f, ln, colon - ln, p));
   ------------------
-  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.89k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 22, False: 7.16k]
-  |  |  |  Branch (626:77): [Folded, False: 7.16k]
+  |  |  |  Branch (626:50): [True: 20, False: 6.87k]
+  |  |  |  Branch (626:77): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
   149|       |
-  150|  7.16k|    return 0;
-  151|     45|err:
+  150|  6.87k|    return 0;
+  151|     41|err:
   152|       |    u_dbg("failed setting field from line: %s", ln);
   ------------------
-  |  |  612|     45|    #define u_dbg(...)                  dbg_nop()
+  |  |  612|     41|    #define u_dbg(...)                  dbg_nop()
   |  |  ------------------
-  |  |  |  |  611|     45|    #define dbg_nop()                   isspace(0)
+  |  |  |  |  611|     41|    #define dbg_nop()                   isspace(0)
   |  |  ------------------
   ------------------
-  153|     45|    return ~0;
-  154|  7.18k|}
+  153|     41|    return ~0;
+  154|  6.89k|}
 field_create:
-  203|  7.21k|{
-  204|  7.21k|    field_t *f = NULL;
+  203|  6.91k|{
+  204|  6.91k|    field_t *f = NULL;
   205|       |
   206|       |    /* name and value may be NULL */
-  207|  7.21k|    dbg_err_if (pf == NULL);
+  207|  6.91k|    dbg_err_if (pf == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
   208|       |
-  209|  7.21k|    if(field_ncached)
+  209|  6.91k|    if(field_ncached)
   ------------------
-  |  Branch (209:8): [True: 4.95k, False: 2.26k]
+  |  Branch (209:8): [True: 4.79k, False: 2.11k]
   ------------------
-  210|  4.95k|    {
+  210|  4.79k|    {
   211|       |        /* reuse a freed field and its buffer */
-  212|  4.95k|        f = field_cache[--field_ncached];
-  213|  4.95k|        f->name = f->value = NULL;
-  214|  4.95k|    } else {
-  215|  2.26k|        f = u_zalloc(sizeof(field_t));
-  216|  2.26k|        dbg_err_if(f == NULL);
+  212|  4.79k|        f = field_cache[--field_ncached];
+  213|  4.79k|        f->name = f->value = NULL;
+  214|  4.79k|    } else {
+  215|  2.11k|        f = u_zalloc(sizeof(field_t));
+  216|  2.11k|        dbg_err_if(f == NULL);
   ------------------
-  |  |  626|  2.26k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  2.11k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 2.26k]
-  |  |  |  Branch (626:77): [Folded, False: 2.26k]
+  |  |  |  Branch (626:50): [True: 0, False: 2.11k]
+  |  |  |  Branch (626:77): [Folded, False: 2.11k]
   |  |  ------------------
   ------------------
-  217|  2.26k|    }
+  217|  2.11k|    }
   218|       |
-  219|  7.21k|    if (name && value)
+  219|  6.91k|    if (name && value)
   ------------------
-  |  Branch (219:9): [True: 0, False: 7.21k]
+  |  Branch (219:9): [True: 0, False: 6.91k]
   |  Branch (219:17): [True: 0, False: 0]
   ------------------
   220|      0|    {
@@ -1004,10 +1004,10 @@ field_create:
   223|      0|        return 0;
   224|      0|    }
   225|       |
-  226|  7.21k|    if(name || value)
+  226|  6.91k|    if(name || value)
   ------------------
-  |  Branch (226:8): [True: 0, False: 7.21k]
-  |  Branch (226:16): [True: 0, False: 7.21k]
+  |  Branch (226:8): [True: 0, False: 6.91k]
+  |  Branch (226:16): [True: 0, False: 6.91k]
   ------------------
   227|      0|        dbg_err_if(field_store(f, name, name ? strlen(name) : 0, value));
   ------------------
@@ -1019,9 +1019,9 @@ field_create:
   |  |  ------------------
   ------------------
   228|       |
-  229|  7.21k|    *pf = f;
+  229|  6.91k|    *pf = f;
   230|       |
-  231|  7.21k|    return 0;
+  231|  6.91k|    return 0;
   232|      0|err:
   233|      0|    if(f)
   ------------------
@@ -1029,691 +1029,691 @@ field_create:
   ------------------
   234|      0|        field_free(f);
   235|      0|    return ~0;
-  236|  7.21k|}
+  236|  6.91k|}
 field_free:
-  249|  7.21k|{
-  250|  7.21k|    if(f)
+  249|  6.91k|{
+  250|  6.91k|    if(f)
   ------------------
-  |  Branch (250:8): [True: 7.21k, False: 0]
+  |  Branch (250:8): [True: 6.91k, False: 0]
   ------------------
-  251|  7.21k|    {
+  251|  6.91k|    {
   252|       |        /* keep it for the next field_create() if its buffer is small */
-  253|  7.21k|        if(field_ncached < FIELD_CACHE_MAX && f->bufsz <= FIELD_BUF_KEEP &&
+  253|  6.91k|        if(field_ncached < FIELD_CACHE_MAX && f->bufsz <= FIELD_BUF_KEEP &&
   ------------------
-  |  Branch (253:12): [True: 5.02k, False: 2.18k]
-  |  Branch (253:47): [True: 4.99k, False: 34]
+  |  Branch (253:12): [True: 4.87k, False: 2.03k]
+  |  Branch (253:47): [True: 4.84k, False: 34]
   ------------------
-  254|  4.99k|                f->params == NULL)
+  254|  4.84k|                f->params == NULL)
   ------------------
-  |  Branch (254:17): [True: 4.99k, False: 0]
+  |  Branch (254:17): [True: 4.84k, False: 0]
   ------------------
-  255|  4.99k|        {
-  256|  4.99k|            f->name = f->value = NULL;
-  257|  4.99k|            field_cache[field_ncached++] = f;
-  258|  4.99k|            return 0;
-  259|  4.99k|        }
+  255|  4.84k|        {
+  256|  4.84k|            f->name = f->value = NULL;
+  257|  4.84k|            field_cache[field_ncached++] = f;
+  258|  4.84k|            return 0;
+  259|  4.84k|        }
   260|       |
-  261|  2.22k|        U_FREE(f->buf);
+  261|  2.07k|        U_FREE(f->buf);
   ------------------
-  |  |   47|  2.22k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|  2.07k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 2.22k]
-  |  |  ------------------
-  ------------------
-  262|  2.22k|        U_FREE(f);
-  ------------------
-  |  |   47|  2.22k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
-  |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 2.22k]
+  |  |  |  Branch (47:60): [Folded, False: 2.07k]
   |  |  ------------------
   ------------------
-  263|  2.22k|    }
+  262|  2.07k|        U_FREE(f);
+  ------------------
+  |  |   47|  2.07k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |  ------------------
+  |  |  |  Branch (47:60): [Folded, False: 2.07k]
+  |  |  ------------------
+  ------------------
+  263|  2.07k|    }
   264|       |
-  265|  2.22k|    return 0;
-  266|  7.21k|}
+  265|  2.07k|    return 0;
+  266|  6.91k|}
 field.c:field_setn:
-   81|  7.18k|{
-   82|  7.18k|    const unsigned char *p, *end;
+   81|  6.89k|{
+   82|  6.89k|    const unsigned char *p, *end;
    83|       |
-   84|  7.18k|    dbg_err_if (f == NULL);
+   84|  6.89k|    dbg_err_if (f == NULL);
   ------------------
-  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.89k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.18k]
-  |  |  |  Branch (626:77): [Folded, False: 7.18k]
-  |  |  ------------------
-  ------------------
-   85|  7.18k|    dbg_err_if (name == NULL);
-  ------------------
-  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.18k]
-  |  |  |  Branch (626:77): [Folded, False: 7.18k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.89k]
+  |  |  |  Branch (626:77): [Folded, False: 6.89k]
   |  |  ------------------
   ------------------
-   86|  7.18k|    dbg_err_if (value == NULL);
+   85|  6.89k|    dbg_err_if (name == NULL);
   ------------------
-  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.89k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.18k]
-  |  |  |  Branch (626:77): [Folded, False: 7.18k]
-  |  |  ------------------
-  ------------------
-   87|  7.18k|    dbg_err_if (nlen == 0);
-  ------------------
-  |  |  626|  7.18k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 2, False: 7.18k]
-  |  |  |  Branch (626:77): [Folded, False: 7.18k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.89k]
+  |  |  |  Branch (626:77): [Folded, False: 6.89k]
   |  |  ------------------
   ------------------
-   88|  7.18k|    end = (const unsigned char *)name + nlen;
-   89|  26.8k|    for (p = (const unsigned char *)name; p < end; ++p)
+   86|  6.89k|    dbg_err_if (value == NULL);
   ------------------
-  |  Branch (89:43): [True: 19.7k, False: 7.17k]
-  ------------------
-   90|  19.7k|        dbg_err_if(!((*p >= 'a' && *p <= 'z') ||
-  ------------------
-  |  |  626|   131k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.89k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 13.3k, False: 6.37k]
-  |  |  |  Branch (626:51): [True: 12.1k, False: 1.19k]
-  |  |  |  Branch (626:51): [True: 5.80k, False: 1.77k]
-  |  |  |  Branch (626:51): [True: 4.07k, False: 1.72k]
-  |  |  |  Branch (626:51): [True: 2.34k, False: 1.15k]
-  |  |  |  Branch (626:51): [True: 619, False: 1.72k]
-  |  |  |  Branch (626:51): [True: 2.87k, False: 0]
-  |  |  |  Branch (626:51): [True: 2.86k, False: 14]
-  |  |  |  Branch (626:77): [Folded, False: 19.7k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.89k]
+  |  |  |  Branch (626:77): [Folded, False: 6.89k]
   |  |  ------------------
   ------------------
-   91|  7.18k|            (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') ||
-   92|  7.18k|            (*p != '\0' && strchr("!#$%&'*+-.^_`|~", *p) != NULL)));
-   93|  12.4k|    for (p = (const unsigned char *)value; *p; ++p)
+   87|  6.89k|    dbg_err_if (nlen == 0);
   ------------------
-  |  Branch (93:44): [True: 5.32k, False: 7.16k]
-  ------------------
-   94|  5.32k|        dbg_err_if((*p < 32 && *p != '\t') || *p == 127);
-  ------------------
-  |  |  626|  16.1k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.89k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 207, False: 5.11k]
+  |  |  |  Branch (626:50): [True: 2, False: 6.88k]
+  |  |  |  Branch (626:77): [Folded, False: 6.88k]
+  |  |  ------------------
+  ------------------
+   88|  6.88k|    end = (const unsigned char *)name + nlen;
+   89|  28.4k|    for (p = (const unsigned char *)name; p < end; ++p)
+  ------------------
+  |  Branch (89:43): [True: 21.5k, False: 6.87k]
+  ------------------
+   90|  21.5k|        dbg_err_if(!((*p >= 'a' && *p <= 'z') ||
+  ------------------
+  |  |  626|   139k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 15.3k, False: 6.26k]
+  |  |  |  Branch (626:51): [True: 14.1k, False: 1.14k]
+  |  |  |  Branch (626:51): [True: 5.63k, False: 1.76k]
+  |  |  |  Branch (626:51): [True: 3.96k, False: 1.67k]
+  |  |  |  Branch (626:51): [True: 2.30k, False: 1.13k]
+  |  |  |  Branch (626:51): [True: 630, False: 1.67k]
+  |  |  |  Branch (626:51): [True: 2.81k, False: 0]
+  |  |  |  Branch (626:51): [True: 2.79k, False: 12]
+  |  |  |  Branch (626:77): [Folded, False: 21.5k]
+  |  |  ------------------
+  ------------------
+   91|  6.88k|            (*p >= 'A' && *p <= 'Z') || (*p >= '0' && *p <= '9') ||
+   92|  6.88k|            (*p != '\0' && strchr("!#$%&'*+-.^_`|~", *p) != NULL)));
+   93|  12.3k|    for (p = (const unsigned char *)value; *p; ++p)
+  ------------------
+  |  Branch (93:44): [True: 5.50k, False: 6.87k]
+  ------------------
+   94|  5.50k|        dbg_err_if((*p < 32 && *p != '\t') || *p == 127);
+  ------------------
+  |  |  626|  16.7k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:51): [True: 207, False: 5.29k]
   |  |  |  Branch (626:51): [True: 5, False: 202]
-  |  |  |  Branch (626:51): [True: 1, False: 5.31k]
-  |  |  |  Branch (626:77): [Folded, False: 5.31k]
+  |  |  |  Branch (626:51): [True: 1, False: 5.49k]
+  |  |  |  Branch (626:77): [Folded, False: 5.49k]
   |  |  ------------------
   ------------------
    95|       |
-   96|  7.16k|    dbg_err_if(field_store(f, name, nlen, value));
+   96|  6.87k|    dbg_err_if(field_store(f, name, nlen, value));
   ------------------
-  |  |  626|  7.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.87k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (626:77): [Folded, False: 7.16k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (626:77): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
    97|       |
-   98|  7.16k|    return 0;
-   99|     22|err:
-  100|     22|    return ~0;
-  101|  7.16k|}
+   98|  6.87k|    return 0;
+   99|     20|err:
+  100|     20|    return ~0;
+  101|  6.87k|}
 field.c:field_store:
-   43|  7.16k|{
-   44|  7.16k|    size_t vlen = value ? strlen(value) : 0, need = nlen + vlen + 2;
+   43|  6.87k|{
+   44|  6.87k|    size_t vlen = value ? strlen(value) : 0, need = nlen + vlen + 2;
   ------------------
-  |  Branch (44:19): [True: 7.16k, False: 0]
+  |  Branch (44:19): [True: 6.87k, False: 0]
   ------------------
-   45|  7.16k|    char *buf = f->buf;
+   45|  6.87k|    char *buf = f->buf;
    46|       |
    47|       |    /* a new buffer if too small or if the new text comes from this one */
-   48|  7.16k|    if(need > f->bufsz || field_in_buf(f, name) || field_in_buf(f, value))
+   48|  6.87k|    if(need > f->bufsz || field_in_buf(f, name) || field_in_buf(f, value))
   ------------------
-  |  Branch (48:8): [True: 2.32k, False: 4.84k]
-  |  Branch (48:27): [True: 0, False: 4.84k]
-  |  Branch (48:52): [True: 0, False: 4.84k]
+  |  Branch (48:8): [True: 2.21k, False: 4.66k]
+  |  Branch (48:27): [True: 0, False: 4.66k]
+  |  Branch (48:52): [True: 0, False: 4.66k]
   ------------------
-   49|  2.32k|    {
-   50|  2.32k|        buf = u_malloc(U_MAX(need, FIELD_BUF_MIN));
+   49|  2.21k|    {
+   50|  2.21k|        buf = u_malloc(U_MAX(need, FIELD_BUF_MIN));
   ------------------
-  |  |   49|  2.32k|#define U_MAX(a, b) ((a) > (b) ? (a) : (b))
+  |  |   49|  2.21k|#define U_MAX(a, b) ((a) > (b) ? (a) : (b))
   |  |  ------------------
-  |  |  |  Branch (49:22): [True: 67, False: 2.25k]
-  |  |  ------------------
-  ------------------
-   51|  2.32k|        dbg_err_if(buf == NULL);
-  ------------------
-  |  |  626|  2.32k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 2.32k]
-  |  |  |  Branch (626:77): [Folded, False: 2.32k]
+  |  |  |  Branch (49:22): [True: 98, False: 2.11k]
   |  |  ------------------
   ------------------
-   52|  2.32k|    }
+   51|  2.21k|        dbg_err_if(buf == NULL);
+  ------------------
+  |  |  626|  2.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 2.21k]
+  |  |  |  Branch (626:77): [Folded, False: 2.21k]
+  |  |  ------------------
+  ------------------
+   52|  2.21k|    }
    53|       |
-   54|  7.16k|    if(name)
+   54|  6.87k|    if(name)
   ------------------
-  |  Branch (54:8): [True: 7.16k, False: 0]
+  |  Branch (54:8): [True: 6.87k, False: 0]
   ------------------
-   55|  7.16k|        memcpy(buf, name, nlen);
-   56|  7.16k|    buf[nlen] = '\0';
+   55|  6.87k|        memcpy(buf, name, nlen);
+   56|  6.87k|    buf[nlen] = '\0';
    57|       |
-   58|  7.16k|    if(value)
+   58|  6.87k|    if(value)
   ------------------
-  |  Branch (58:8): [True: 7.16k, False: 0]
+  |  Branch (58:8): [True: 6.87k, False: 0]
   ------------------
-   59|  7.16k|        memcpy(buf + nlen + 1, value, vlen + 1);
+   59|  6.87k|        memcpy(buf + nlen + 1, value, vlen + 1);
    60|      0|    else
    61|      0|        buf[nlen + 1] = '\0';
    62|       |
-   63|  7.16k|    f->name = name ? buf : NULL;
+   63|  6.87k|    f->name = name ? buf : NULL;
   ------------------
-  |  Branch (63:15): [True: 7.16k, False: 0]
+  |  Branch (63:15): [True: 6.87k, False: 0]
   ------------------
-   64|  7.16k|    f->value = value ? buf + nlen + 1 : NULL;
+   64|  6.87k|    f->value = value ? buf + nlen + 1 : NULL;
   ------------------
-  |  Branch (64:16): [True: 7.16k, False: 0]
+  |  Branch (64:16): [True: 6.87k, False: 0]
   ------------------
    65|       |
-   66|  7.16k|    if(buf != f->buf)
+   66|  6.87k|    if(buf != f->buf)
   ------------------
-  |  Branch (66:8): [True: 2.32k, False: 4.84k]
+  |  Branch (66:8): [True: 2.21k, False: 4.66k]
   ------------------
-   67|  2.32k|    {
-   68|  2.32k|        U_FREE(f->buf);
+   67|  2.21k|    {
+   68|  2.21k|        U_FREE(f->buf);
   ------------------
-  |  |   47|  2.32k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|  2.21k|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 2.32k]
-  |  |  ------------------
-  ------------------
-   69|  2.32k|        f->buf = buf;
-   70|  2.32k|        f->bufsz = U_MAX(need, FIELD_BUF_MIN);
-  ------------------
-  |  |   49|  2.32k|#define U_MAX(a, b) ((a) > (b) ? (a) : (b))
-  |  |  ------------------
-  |  |  |  Branch (49:22): [True: 67, False: 2.25k]
+  |  |  |  Branch (47:60): [Folded, False: 2.21k]
   |  |  ------------------
   ------------------
-   71|  2.32k|    }
+   69|  2.21k|        f->buf = buf;
+   70|  2.21k|        f->bufsz = U_MAX(need, FIELD_BUF_MIN);
+  ------------------
+  |  |   49|  2.21k|#define U_MAX(a, b) ((a) > (b) ? (a) : (b))
+  |  |  ------------------
+  |  |  |  Branch (49:22): [True: 98, False: 2.11k]
+  |  |  ------------------
+  ------------------
+   71|  2.21k|    }
    72|       |
-   73|  7.16k|    return 0;
+   73|  6.87k|    return 0;
    74|      0|err:
    75|      0|    return ~0;
-   76|  7.16k|}
+   76|  6.87k|}
 field.c:field_in_buf:
-   33|  9.68k|{
-   34|  9.68k|    uintptr_t a = (uintptr_t) p, b = (uintptr_t) f->buf;
+   33|  9.32k|{
+   34|  9.32k|    uintptr_t a = (uintptr_t) p, b = (uintptr_t) f->buf;
    35|       |
-   36|  9.68k|    return p && f->buf && a >= b && a - b < f->bufsz;
+   36|  9.32k|    return p && f->buf && a >= b && a - b < f->bufsz;
   ------------------
-  |  Branch (36:12): [True: 9.68k, False: 0]
-  |  Branch (36:17): [True: 9.68k, False: 0]
-  |  Branch (36:27): [True: 9.55k, False: 126]
-  |  Branch (36:37): [True: 0, False: 9.55k]
+  |  Branch (36:12): [True: 9.32k, False: 0]
+  |  Branch (36:17): [True: 9.32k, False: 0]
+  |  Branch (36:27): [True: 9.16k, False: 158]
+  |  Branch (36:37): [True: 0, False: 9.16k]
   ------------------
-   37|  9.68k|}
+   37|  9.32k|}
 
 header_clear:
-   64|    320|{
-   65|    320|    field_t *f;
+   64|    318|{
+   65|    318|    field_t *f;
    66|       |    
-   67|    320|    dbg_return_if (h == NULL, ~0);
+   67|    318|    dbg_return_if (h == NULL, ~0);
   ------------------
-  |  |  619|    320|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|    318|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 320]
-  |  |  |  Branch (619:79): [Folded, False: 320]
+  |  |  |  Branch (619:50): [True: 0, False: 318]
+  |  |  |  Branch (619:79): [Folded, False: 318]
   |  |  ------------------
   ------------------
    68|       |    
    69|       |    /* free all items */
-   70|  7.48k|    while((f = TAILQ_FIRST(&h->fields)) != NULL)
+   70|  7.18k|    while((f = TAILQ_FIRST(&h->fields)) != NULL)
   ------------------
-  |  |  311|  7.48k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
+  |  |  311|  7.18k|#define TAILQ_FIRST(head)   ((head)->tqh_first)
   ------------------
-  |  Branch (70:11): [True: 7.16k, False: 320]
+  |  Branch (70:11): [True: 6.87k, False: 318]
   ------------------
-   71|  7.16k|    {
-   72|  7.16k|        header_del_field(h, f);
-   73|  7.16k|        field_free(f);
-   74|  7.16k|    }
+   71|  6.87k|    {
+   72|  6.87k|        header_del_field(h, f);
+   73|  6.87k|        field_free(f);
+   74|  6.87k|    }
    75|       |
-   76|    320|    return 0;
-   77|    320|}
+   76|    318|    return 0;
+   77|    318|}
 header_del_field:
-  307|  7.16k|{
-  308|  7.16k|    dbg_return_if (h == NULL, ~0);
+  307|  6.87k|{
+  308|  6.87k|    dbg_return_if (h == NULL, ~0);
   ------------------
-  |  |  619|  7.16k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  6.87k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (619:79): [Folded, False: 7.16k]
+  |  |  |  Branch (619:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (619:79): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
-  309|  7.16k|    dbg_return_if (f == NULL, ~0);
+  309|  6.87k|    dbg_return_if (f == NULL, ~0);
   ------------------
-  |  |  619|  7.16k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  6.87k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (619:79): [Folded, False: 7.16k]
+  |  |  |  Branch (619:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (619:79): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
   310|       |
-  311|  7.16k|    TAILQ_REMOVE(&h->fields, f, np);
+  311|  6.87k|    TAILQ_REMOVE(&h->fields, f, np);
   ------------------
-  |  |  184|  7.16k|#define TAILQ_REMOVE(head, elm, field) {                                    \
-  |  |  185|  7.16k|        if (((elm)->field.tqe_next) != NULL)                                \
+  |  |  184|  6.87k|#define TAILQ_REMOVE(head, elm, field) {                                    \
+  |  |  185|  6.87k|        if (((elm)->field.tqe_next) != NULL)                                \
   |  |  ------------------
-  |  |  |  Branch (185:13): [True: 6.89k, False: 270]
+  |  |  |  Branch (185:13): [True: 6.60k, False: 270]
   |  |  ------------------
-  |  |  186|  7.16k|                (elm)->field.tqe_next->field.tqe_prev =                     \
-  |  |  187|  6.89k|                    (elm)->field.tqe_prev;                                  \
-  |  |  188|  7.16k|        else                                                                \
-  |  |  189|  7.16k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
-  |  |  190|  7.16k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
-  |  |  191|  7.16k|}
+  |  |  186|  6.87k|                (elm)->field.tqe_next->field.tqe_prev =                     \
+  |  |  187|  6.60k|                    (elm)->field.tqe_prev;                                  \
+  |  |  188|  6.87k|        else                                                                \
+  |  |  189|  6.87k|                (head)->tqh_last = (elm)->field.tqe_prev;                   \
+  |  |  190|  6.87k|        *(elm)->field.tqe_prev = (elm)->field.tqe_next;                     \
+  |  |  191|  6.87k|}
   ------------------
-  312|  7.16k|    h->nfields--;
-  313|  7.16k|    h->cur = NULL;
+  312|  6.87k|    h->nfields--;
+  313|  6.87k|    h->cur = NULL;
   314|       |
-  315|  7.16k|    return 0;
-  316|  7.16k|}
+  315|  6.87k|    return 0;
+  316|  6.87k|}
 header_add_field:
-  330|  7.16k|{
-  331|  7.16k|    dbg_return_if (h == NULL, ~0);
+  330|  6.87k|{
+  331|  6.87k|    dbg_return_if (h == NULL, ~0);
   ------------------
-  |  |  619|  7.16k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  6.87k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (619:79): [Folded, False: 7.16k]
+  |  |  |  Branch (619:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (619:79): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
-  332|  7.16k|    dbg_return_if (f == NULL, ~0);
+  332|  6.87k|    dbg_return_if (f == NULL, ~0);
   ------------------
-  |  |  619|  7.16k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
+  |  |  619|  6.87k|    #define dbg_return_if(expr, err)    do { if( (expr) ) return err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (619:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (619:79): [Folded, False: 7.16k]
+  |  |  |  Branch (619:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (619:79): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
   333|       |
-  334|  7.16k|    TAILQ_INSERT_TAIL(&h->fields, f, np);
+  334|  6.87k|    TAILQ_INSERT_TAIL(&h->fields, f, np);
   ------------------
-  |  |  154|  7.16k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
-  |  |  155|  7.16k|        (elm)->field.tqe_next = NULL;                                       \
-  |  |  156|  7.16k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
-  |  |  157|  7.16k|        *(head)->tqh_last = (elm);                                          \
-  |  |  158|  7.16k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
-  |  |  159|  7.16k|}
+  |  |  154|  6.87k|#define TAILQ_INSERT_TAIL(head, elm, field) {                               \
+  |  |  155|  6.87k|        (elm)->field.tqe_next = NULL;                                       \
+  |  |  156|  6.87k|        (elm)->field.tqe_prev = (head)->tqh_last;                           \
+  |  |  157|  6.87k|        *(head)->tqh_last = (elm);                                          \
+  |  |  158|  6.87k|        (head)->tqh_last = &(elm)->field.tqe_next;                          \
+  |  |  159|  6.87k|}
   ------------------
-  335|  7.16k|    h->nfields++;
-  336|  7.16k|    h->cur = NULL;
+  335|  6.87k|    h->nfields++;
+  336|  6.87k|    h->cur = NULL;
   337|       |
-  338|  7.16k|    return 0;
-  339|  7.16k|}
+  338|  6.87k|    return 0;
+  339|  6.87k|}
 header_load_ex:
-  429|    160|{
-  430|    160|    enum { MAX_FIELDS = 256, MAX_LINE = 8192, MAX_TOTAL = 65536 };
+  429|    159|{
+  430|    159|    enum { MAX_FIELDS = 256, MAX_LINE = 8192, MAX_TOTAL = 65536 };
   431|       |    /* a line, its '\n' and one more byte to tell that it is too long */
-  432|    160|    char text[MAX_LINE + 2];
-  433|    160|    size_t count = 0, total = 0, len;
-  434|    160|    ssize_t rc;
+  432|    159|    char text[MAX_LINE + 2];
+  433|    159|    size_t count = 0, total = 0, len;
+  434|    159|    ssize_t rc;
   435|       |
-  436|    160|    dbg_err_if(h == NULL || io == NULL);
+  436|    159|    dbg_err_if(h == NULL || io == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 0, False: 160]
-  |  |  |  Branch (626:51): [True: 0, False: 160]
-  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  |  Branch (626:51): [True: 0, False: 159]
+  |  |  |  Branch (626:51): [True: 0, False: 159]
+  |  |  |  Branch (626:77): [Folded, False: 159]
   |  |  ------------------
   ------------------
-  437|    160|    for (;;)
-  438|  4.05k|    {
+  437|    159|    for (;;)
+  438|  3.86k|    {
   439|       |        /* each line is read straight from the io buffer and parsed in
   440|       |           place: no string object to grow and free for every line */
-  441|  4.05k|        rc = io_get_until(io, '\n', text, sizeof(text));
-  442|  4.05k|        dbg_err_if(rc <= 0);    /* EOF or a read error */
+  441|  3.86k|        rc = io_get_until(io, '\n', text, sizeof(text));
+  442|  3.86k|        dbg_err_if(rc <= 0);    /* EOF or a read error */
   ------------------
-  |  |  626|  4.05k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  3.86k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 88, False: 3.96k]
-  |  |  |  Branch (626:77): [Folded, False: 3.96k]
+  |  |  |  Branch (626:50): [True: 90, False: 3.77k]
+  |  |  |  Branch (626:77): [Folded, False: 3.77k]
   |  |  ------------------
   ------------------
-  443|  3.96k|        len = (size_t) rc;
+  443|  3.77k|        len = (size_t) rc;
   444|       |        /* too long, or EOF before the end of the line */
-  445|  3.96k|        dbg_err_if(len > MAX_LINE || text[len - 1] != '\n');
+  445|  3.77k|        dbg_err_if(len > MAX_LINE || text[len - 1] != '\n');
   ------------------
-  |  |  626|  7.92k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.55k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 0, False: 3.96k]
-  |  |  |  Branch (626:51): [True: 16, False: 3.94k]
-  |  |  |  Branch (626:77): [Folded, False: 3.94k]
-  |  |  ------------------
-  ------------------
-  446|  3.94k|        dbg_err_if(memchr(text, '\0', len) != NULL);
-  ------------------
-  |  |  626|  3.94k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 1, False: 3.94k]
-  |  |  |  Branch (626:77): [Folded, False: 3.94k]
+  |  |  |  Branch (626:51): [True: 0, False: 3.77k]
+  |  |  |  Branch (626:51): [True: 16, False: 3.76k]
+  |  |  |  Branch (626:77): [Folded, False: 3.76k]
   |  |  ------------------
   ------------------
-  447|  3.94k|        dbg_err_if(len > MAX_TOTAL - total);
+  446|  3.76k|        dbg_err_if(memchr(text, '\0', len) != NULL);
   ------------------
-  |  |  626|  3.94k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  3.76k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 3.94k]
-  |  |  |  Branch (626:77): [Folded, False: 3.94k]
+  |  |  |  Branch (626:50): [True: 2, False: 3.76k]
+  |  |  |  Branch (626:77): [Folded, False: 3.76k]
   |  |  ------------------
   ------------------
-  448|  3.94k|        total += len;
-  449|  3.94k|        text[--len] = '\0';
-  450|  3.94k|        if (len && text[len - 1] == '\r')
+  447|  3.76k|        dbg_err_if(len > MAX_TOTAL - total);
   ------------------
-  |  Branch (450:13): [True: 3.94k, False: 5]
-  |  Branch (450:20): [True: 209, False: 3.73k]
+  |  |  626|  3.76k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 3.76k]
+  |  |  |  Branch (626:77): [Folded, False: 3.76k]
+  |  |  ------------------
   ------------------
-  451|    209|            text[--len] = '\0';
-  452|  3.94k|        if (len == 0)
+  448|  3.76k|        total += len;
+  449|  3.76k|        text[--len] = '\0';
+  450|  3.76k|        if (len && text[len - 1] == '\r')
   ------------------
-  |  Branch (452:13): [True: 7, False: 3.93k]
+  |  Branch (450:13): [True: 3.75k, False: 6]
+  |  Branch (450:20): [True: 208, False: 3.54k]
+  ------------------
+  451|    208|            text[--len] = '\0';
+  452|  3.76k|        if (len == 0)
+  ------------------
+  |  Branch (452:13): [True: 7, False: 3.75k]
   ------------------
   453|      7|            break;
   454|       |        /* Obsolete line folding and embedded CR are ambiguous to proxies. */
-  455|  3.93k|        dbg_err_if(u_isblank(text[0]) || memchr(text, '\r', len) != NULL);
+  455|  3.75k|        dbg_err_if(u_isblank(text[0]) || memchr(text, '\r', len) != NULL);
   ------------------
-  |  |  626|  7.87k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  7.50k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 1, False: 3.93k]
-  |  |  |  Branch (626:51): [True: 2, False: 3.93k]
-  |  |  |  Branch (626:77): [Folded, False: 3.93k]
-  |  |  ------------------
-  ------------------
-  456|  3.93k|        dbg_err_if(++count > MAX_FIELDS);
-  ------------------
-  |  |  626|  3.93k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
-  |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 3.93k]
-  |  |  |  Branch (626:77): [Folded, False: 3.93k]
+  |  |  |  Branch (626:51): [True: 1, False: 3.75k]
+  |  |  |  Branch (626:51): [True: 2, False: 3.75k]
+  |  |  |  Branch (626:77): [Folded, False: 3.75k]
   |  |  ------------------
   ------------------
-  457|  3.93k|        dbg_err_if(header_process_line(h, text, mode));
+  456|  3.75k|        dbg_err_if(++count > MAX_FIELDS);
   ------------------
-  |  |  626|  3.93k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  3.75k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 45, False: 3.89k]
-  |  |  |  Branch (626:77): [Folded, False: 3.89k]
+  |  |  |  Branch (626:50): [True: 0, False: 3.75k]
+  |  |  |  Branch (626:77): [Folded, False: 3.75k]
   |  |  ------------------
   ------------------
-  458|  3.93k|    }
+  457|  3.75k|        dbg_err_if(header_process_line(h, text, mode));
+  ------------------
+  |  |  626|  3.75k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 41, False: 3.70k]
+  |  |  |  Branch (626:77): [Folded, False: 3.70k]
+  |  |  ------------------
+  ------------------
+  458|  3.75k|    }
   459|      7|    return 0;
-  460|    153|err:
-  461|    153|    return ~0;
-  462|    160|}
+  460|    152|err:
+  461|    152|    return ~0;
+  462|    159|}
 header_load_request:
-  510|    160|{
-  511|    160|    enum { LINE_BUF = 65536 };
-  512|    160|    char *text = NULL;
-  513|    160|    size_t count = 0, total = 0, len;
-  514|    160|    ssize_t rc;
+  510|    159|{
+  511|    159|    enum { LINE_BUF = 65536 };
+  512|    159|    char *text = NULL;
+  513|    159|    size_t count = 0, total = 0, len;
+  514|    159|    ssize_t rc;
   515|       |
-  516|    160|    dbg_err_if(h == NULL || io == NULL || status == NULL);
+  516|    159|    dbg_err_if(h == NULL || io == NULL || status == NULL);
   ------------------
-  |  |  626|    640|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    636|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:51): [True: 0, False: 160]
-  |  |  |  Branch (626:51): [True: 0, False: 160]
-  |  |  |  Branch (626:51): [True: 0, False: 160]
-  |  |  |  Branch (626:77): [Folded, False: 160]
-  |  |  ------------------
-  ------------------
-  517|    160|    *status = 0;
-  518|    160|    max_line = U_MIN(U_MAX(max_line, 64), LINE_BUF - 2);
-  ------------------
-  |  |   50|    320|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
-  |  |  ------------------
-  |  |  |  Branch (50:22): [True: 160, False: 0]
-  |  |  |  Branch (50:23): [True: 160, False: 0]
-  |  |  |  Branch (50:35): [True: 160, False: 0]
+  |  |  |  Branch (626:51): [True: 0, False: 159]
+  |  |  |  Branch (626:51): [True: 0, False: 159]
+  |  |  |  Branch (626:51): [True: 0, False: 159]
+  |  |  |  Branch (626:77): [Folded, False: 159]
   |  |  ------------------
   ------------------
-  519|    160|    dbg_err_if((text = u_malloc(max_line + 2)) == NULL);
+  517|    159|    *status = 0;
+  518|    159|    max_line = U_MIN(U_MAX(max_line, 64), LINE_BUF - 2);
   ------------------
-  |  |  626|    160|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |   50|    318|#define U_MIN(a, b) ((a) < (b) ? (a) : (b))
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 160]
-  |  |  |  Branch (626:77): [Folded, False: 160]
+  |  |  |  Branch (50:22): [True: 159, False: 0]
+  |  |  |  Branch (50:23): [True: 159, False: 0]
+  |  |  |  Branch (50:35): [True: 159, False: 0]
+  |  |  ------------------
+  ------------------
+  519|    159|    dbg_err_if((text = u_malloc(max_line + 2)) == NULL);
+  ------------------
+  |  |  626|    159|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  ------------------
+  |  |  |  Branch (626:50): [True: 0, False: 159]
+  |  |  |  Branch (626:77): [Folded, False: 159]
   |  |  ------------------
   ------------------
   520|       |
-  521|    160|    for (;;)
-  522|  3.43k|    {
+  521|    159|    for (;;)
+  522|  3.32k|    {
   523|       |        /* a line, its '\n' and one more byte to tell that it is too long */
-  524|  3.43k|        rc = io_get_until(io, '\n', text, max_line + 2);
-  525|  3.43k|        nop_err_if(rc <= 0);    /* EOF, a read error or the deadline */
+  524|  3.32k|        rc = io_get_until(io, '\n', text, max_line + 2);
+  525|  3.32k|        nop_err_if(rc <= 0);    /* EOF, a read error or the deadline */
   ------------------
-  |  |  382|  3.43k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  3.32k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 85, False: 3.35k]
-  |  |  |  Branch (382:74): [Folded, False: 3.35k]
+  |  |  |  Branch (382:48): [True: 86, False: 3.23k]
+  |  |  |  Branch (382:74): [Folded, False: 3.23k]
   |  |  ------------------
   ------------------
-  526|  3.35k|        len = (size_t) rc;
-  527|  3.35k|        if(text[len - 1] != '\n')
+  526|  3.23k|        len = (size_t) rc;
+  527|  3.23k|        if(text[len - 1] != '\n')
   ------------------
-  |  Branch (527:12): [True: 8, False: 3.34k]
+  |  Branch (527:12): [True: 9, False: 3.22k]
   ------------------
-  528|      8|        {
+  528|      9|        {
   529|       |            /* EOF before the end of the line, or a line too long */
-  530|      8|            *status = (len > max_line) ? HTTP_STATUS_HEADER_TOO_LARGE : 0;
+  530|      9|            *status = (len > max_line) ? HTTP_STATUS_HEADER_TOO_LARGE : 0;
   ------------------
-  |  Branch (530:23): [True: 0, False: 8]
+  |  Branch (530:23): [True: 0, False: 9]
   ------------------
-  531|      8|            goto err;
-  532|      8|        }
-  533|  3.34k|        *status = HTTP_STATUS_HEADER_TOO_LARGE;
-  534|  3.34k|        nop_err_if(len > max_line || len > max_size - U_MIN(total, max_size));
+  531|      9|            goto err;
+  532|      9|        }
+  533|  3.22k|        *status = HTTP_STATUS_HEADER_TOO_LARGE;
+  534|  3.22k|        nop_err_if(len > max_line || len > max_size - U_MIN(total, max_size));
   ------------------
-  |  |  382|  16.7k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  16.1k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 3.34k, False: 0]
-  |  |  |  Branch (382:48): [True: 0, False: 3.34k]
-  |  |  |  Branch (382:48): [True: 0, False: 3.34k]
-  |  |  |  Branch (382:74): [Folded, False: 3.34k]
-  |  |  ------------------
-  ------------------
-  535|  3.34k|        total += len;
-  536|  3.34k|        *status = HTTP_STATUS_BAD_REQUEST;
-  537|  3.34k|        nop_err_if(memchr(text, '\0', len) != NULL);
-  ------------------
-  |  |  382|  3.34k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
-  |  |  ------------------
-  |  |  |  Branch (382:48): [True: 1, False: 3.34k]
-  |  |  |  Branch (382:74): [Folded, False: 3.34k]
+  |  |  |  Branch (382:48): [True: 3.22k, False: 0]
+  |  |  |  Branch (382:48): [True: 0, False: 3.22k]
+  |  |  |  Branch (382:48): [True: 0, False: 3.22k]
+  |  |  |  Branch (382:74): [Folded, False: 3.22k]
   |  |  ------------------
   ------------------
-  538|  3.34k|        text[--len] = '\0';
-  539|  3.34k|        if (len && text[len - 1] == '\r')
+  535|  3.22k|        total += len;
+  536|  3.22k|        *status = HTTP_STATUS_BAD_REQUEST;
+  537|  3.22k|        nop_err_if(memchr(text, '\0', len) != NULL);
   ------------------
-  |  Branch (539:13): [True: 3.33k, False: 4]
-  |  Branch (539:20): [True: 180, False: 3.15k]
+  |  |  382|  3.22k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 1, False: 3.22k]
+  |  |  |  Branch (382:74): [Folded, False: 3.22k]
+  |  |  ------------------
+  ------------------
+  538|  3.22k|        text[--len] = '\0';
+  539|  3.22k|        if (len && text[len - 1] == '\r')
+  ------------------
+  |  Branch (539:13): [True: 3.22k, False: 5]
+  |  Branch (539:20): [True: 180, False: 3.04k]
   ------------------
   540|    180|            text[--len] = '\0';
-  541|  3.34k|        if (len == 0)
+  541|  3.22k|        if (len == 0)
   ------------------
-  |  Branch (541:13): [True: 6, False: 3.33k]
+  |  Branch (541:13): [True: 6, False: 3.21k]
   ------------------
   542|      6|            break;
   543|       |        /* obsolete line folding, a bare CR, a blank or another character
   544|       |           before the colon: each is read differently by some proxies */
-  545|  3.33k|        nop_err_if(!header_line_ok(text, len));
+  545|  3.21k|        nop_err_if(!header_line_ok(text, len));
   ------------------
-  |  |  382|  3.33k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  3.21k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 40, False: 3.29k]
-  |  |  |  Branch (382:74): [Folded, False: 3.29k]
-  |  |  ------------------
-  ------------------
-  546|  3.29k|        *status = HTTP_STATUS_HEADER_TOO_LARGE;
-  547|  3.29k|        nop_err_if(++count > max_fields);
-  ------------------
-  |  |  382|  3.29k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
-  |  |  ------------------
-  |  |  |  Branch (382:48): [True: 20, False: 3.27k]
-  |  |  |  Branch (382:74): [Folded, False: 3.27k]
+  |  |  |  Branch (382:48): [True: 38, False: 3.18k]
+  |  |  |  Branch (382:74): [Folded, False: 3.18k]
   |  |  ------------------
   ------------------
-  548|  3.27k|        *status = HTTP_STATUS_BAD_REQUEST;
-  549|  3.27k|        nop_err_if(header_process_line(h, text, HLM_ADD));
+  546|  3.18k|        *status = HTTP_STATUS_HEADER_TOO_LARGE;
+  547|  3.18k|        nop_err_if(++count > max_fields);
   ------------------
-  |  |  382|  3.27k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  382|  3.18k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
   |  |  ------------------
-  |  |  |  Branch (382:48): [True: 0, False: 3.27k]
-  |  |  |  Branch (382:74): [Folded, False: 3.27k]
+  |  |  |  Branch (382:48): [True: 19, False: 3.16k]
+  |  |  |  Branch (382:74): [Folded, False: 3.16k]
   |  |  ------------------
   ------------------
-  550|  3.27k|    }
+  548|  3.16k|        *status = HTTP_STATUS_BAD_REQUEST;
+  549|  3.16k|        nop_err_if(header_process_line(h, text, HLM_ADD));
+  ------------------
+  |  |  382|  3.16k|#define nop_err_if(expr)               do { if(expr) goto err;   } while(0)
+  |  |  ------------------
+  |  |  |  Branch (382:48): [True: 0, False: 3.16k]
+  |  |  |  Branch (382:74): [Folded, False: 3.16k]
+  |  |  ------------------
+  ------------------
+  550|  3.16k|    }
   551|      6|    *status = 0;
   552|      6|    u_free(text);
   553|      6|    return 0;
-  554|    154|err:
+  554|    153|err:
   555|       |    U_FREE(text);
   ------------------
-  |  |   47|    154|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|    153|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 154]
+  |  |  |  Branch (47:60): [Folded, False: 153]
   |  |  ------------------
   ------------------
-  556|    154|    return ~0;
-  557|    160|}
+  556|    153|    return ~0;
+  557|    159|}
 header_load:
-  560|    160|{
-  561|    160|    return header_load_ex(h, io, HLM_ADD);
-  562|    160|}
+  560|    159|{
+  561|    159|    return header_load_ex(h, io, HLM_ADD);
+  562|    159|}
 header_create:
-  565|    320|{
-  566|    320|    header_t *h = NULL;
+  565|    318|{
+  566|    318|    header_t *h = NULL;
   567|       |
-  568|    320|    dbg_err_if (ph == NULL);
+  568|    318|    dbg_err_if (ph == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   569|       |
-  570|    320|    h = u_zalloc(sizeof(header_t));
-  571|    320|    dbg_err_if(h == NULL);
+  570|    318|    h = u_zalloc(sizeof(header_t));
+  571|    318|    dbg_err_if(h == NULL);
   ------------------
-  |  |  626|    320|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|    318|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 320]
-  |  |  |  Branch (626:77): [Folded, False: 320]
+  |  |  |  Branch (626:50): [True: 0, False: 318]
+  |  |  |  Branch (626:77): [Folded, False: 318]
   |  |  ------------------
   ------------------
   572|       |
-  573|    320|    TAILQ_INIT(&h->fields);
+  573|    318|    TAILQ_INIT(&h->fields);
   ------------------
-  |  |  135|    320|#define TAILQ_INIT(head) {                                                  \
-  |  |  136|    320|        (head)->tqh_first = NULL;                                           \
-  |  |  137|    320|        (head)->tqh_last = &(head)->tqh_first;                              \
-  |  |  138|    320|}
+  |  |  135|    318|#define TAILQ_INIT(head) {                                                  \
+  |  |  136|    318|        (head)->tqh_first = NULL;                                           \
+  |  |  137|    318|        (head)->tqh_last = &(head)->tqh_first;                              \
+  |  |  138|    318|}
   ------------------
   574|       |
-  575|    320|    *ph = h;
+  575|    318|    *ph = h;
   576|       |
-  577|    320|    return 0;
+  577|    318|    return 0;
   578|      0|err:
   579|      0|    return ~0;
-  580|    320|}
+  580|    318|}
 header_free:
-  583|    320|{
-  584|    320|    if (h)
+  583|    318|{
+  584|    318|    if (h)
   ------------------
-  |  Branch (584:9): [True: 320, False: 0]
+  |  Branch (584:9): [True: 318, False: 0]
   ------------------
-  585|    320|    {
-  586|    320|        (void) header_clear(h);
-  587|    320|        U_FREE(h);
+  585|    318|    {
+  586|    318|        (void) header_clear(h);
+  587|    318|        U_FREE(h);
   ------------------
-  |  |   47|    320|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
+  |  |   47|    318|#define U_FREE(ptr) do { u_free(ptr); ptr = NULL; } while (0)
   |  |  ------------------
-  |  |  |  Branch (47:60): [Folded, False: 320]
+  |  |  |  Branch (47:60): [Folded, False: 318]
   |  |  ------------------
   ------------------
-  588|    320|    }
+  588|    318|    }
   589|       |
-  590|    320|    return 0;
-  591|    320|}
+  590|    318|    return 0;
+  591|    318|}
 header.c:header_process_line:
-  342|  7.21k|{
-  343|  7.21k|    field_t *ex, *f = NULL;
+  342|  6.91k|{
+  343|  6.91k|    field_t *ex, *f = NULL;
   344|       |
-  345|  7.21k|    dbg_err_if (h == NULL);
+  345|  6.91k|    dbg_err_if (h == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
-  346|  7.21k|    dbg_err_if (line == NULL);
+  346|  6.91k|    dbg_err_if (line == NULL);
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
   347|       |
-  348|  7.21k|    if(line[0] == '\0')
+  348|  6.91k|    if(line[0] == '\0')
   ------------------
-  |  Branch (348:8): [True: 0, False: 7.21k]
+  |  Branch (348:8): [True: 0, False: 6.91k]
   ------------------
   349|      0|        return 0;
   350|       |
   351|       |    /* alloc a new field */
-  352|  7.21k|    dbg_err_if(field_create(NULL, NULL, &f));
+  352|  6.91k|    dbg_err_if(field_create(NULL, NULL, &f));
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.21k]
-  |  |  |  Branch (626:77): [Folded, False: 7.21k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.91k]
+  |  |  |  Branch (626:77): [Folded, False: 6.91k]
   |  |  ------------------
   ------------------
   353|       |
   354|       |    /* parse and set name, value and params */
-  355|  7.21k|    dbg_err_if(field_set_from_line(f, line));
+  355|  6.91k|    dbg_err_if(field_set_from_line(f, line));
   ------------------
-  |  |  626|  7.21k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.91k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 45, False: 7.16k]
-  |  |  |  Branch (626:77): [Folded, False: 7.16k]
+  |  |  |  Branch (626:50): [True: 41, False: 6.87k]
+  |  |  |  Branch (626:77): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
   356|       |
   357|       |    /* add to this header */
-  358|  7.16k|    switch(mode)
-  359|  7.16k|    {
-  360|  7.16k|    case HLM_ADD:
+  358|  6.87k|    switch(mode)
+  359|  6.87k|    {
+  360|  6.87k|    case HLM_ADD:
   ------------------
-  |  Branch (360:5): [True: 7.16k, False: 0]
+  |  Branch (360:5): [True: 6.87k, False: 0]
   ------------------
-  361|  7.16k|        dbg_err_if(header_add_field(h, f));
+  361|  6.87k|        dbg_err_if(header_add_field(h, f));
   ------------------
-  |  |  626|  7.16k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
+  |  |  626|  6.87k|    #define dbg_err_if(expr)            do { if( (expr) ) goto err; } while(0)
   |  |  ------------------
-  |  |  |  Branch (626:50): [True: 0, False: 7.16k]
-  |  |  |  Branch (626:77): [Folded, False: 7.16k]
+  |  |  |  Branch (626:50): [True: 0, False: 6.87k]
+  |  |  |  Branch (626:77): [Folded, False: 6.87k]
   |  |  ------------------
   ------------------
-  362|  7.16k|        break;
-  363|  7.16k|    case HLM_OVERRIDE:
+  362|  6.87k|        break;
+  363|  6.87k|    case HLM_OVERRIDE:
   ------------------
-  |  Branch (363:5): [True: 0, False: 7.16k]
+  |  Branch (363:5): [True: 0, False: 6.87k]
   ------------------
   364|      0|        if((ex = header_get_field(h, field_get_name(f))) != NULL)
   ------------------
@@ -1734,7 +1734,7 @@ header.c:header_process_line:
   370|      0|        break;
   371|      0|    case HLM_KEEP:
   ------------------
-  |  Branch (371:5): [True: 0, False: 7.16k]
+  |  Branch (371:5): [True: 0, False: 6.87k]
   ------------------
   372|      0|        if((ex = header_get_field(h, field_get_name(f))) == NULL)
   ------------------
@@ -1754,7 +1754,7 @@ header.c:header_process_line:
   377|      0|        break;
   378|      0|    default:
   ------------------
-  |  Branch (378:5): [True: 0, False: 7.16k]
+  |  Branch (378:5): [True: 0, False: 6.87k]
   ------------------
   379|      0|        crit_err("unknown header load mode");
   ------------------
@@ -1781,79 +1781,79 @@ header.c:header_process_line:
   |  |  |  |  ------------------
   |  |  ------------------
   ------------------
-  380|  7.16k|    }
+  380|  6.87k|    }
   381|       |
-  382|  7.16k|    return 0;
-  383|     45|err:
-  384|     45|    if(f)
+  382|  6.87k|    return 0;
+  383|     41|err:
+  384|     41|    if(f)
   ------------------
-  |  Branch (384:8): [True: 45, False: 0]
+  |  Branch (384:8): [True: 41, False: 0]
   ------------------
-  385|     45|        field_free(f);
-  386|     45|    return ~0;
-  387|  7.16k|}
+  385|     41|        field_free(f);
+  386|     41|    return ~0;
+  387|  6.87k|}
 header.c:header_line_ok:
-  474|  3.33k|{
-  475|  3.33k|    const unsigned char *p = (const unsigned char *) line,
-  476|  3.33k|          *end = p + len, *colon = memchr(p, ':', len);
+  474|  3.21k|{
+  475|  3.21k|    const unsigned char *p = (const unsigned char *) line,
+  476|  3.21k|          *end = p + len, *colon = memchr(p, ':', len);
   477|       |
-  478|  3.33k|    if(colon == NULL || colon == p)
+  478|  3.21k|    if(colon == NULL || colon == p)
   ------------------
-  |  Branch (478:8): [True: 19, False: 3.31k]
-  |  Branch (478:25): [True: 2, False: 3.31k]
+  |  Branch (478:8): [True: 18, False: 3.20k]
+  |  Branch (478:25): [True: 2, False: 3.19k]
   ------------------
-  479|     21|        return 0;
-  480|  12.9k|    for(; p < colon; ++p)
+  479|     20|        return 0;
+  480|  13.7k|    for(; p < colon; ++p)
   ------------------
-  |  Branch (480:11): [True: 9.61k, False: 3.30k]
+  |  Branch (480:11): [True: 10.5k, False: 3.18k]
   ------------------
-  481|  9.61k|        if(!header_is_tchar(*p))
+  481|  10.5k|        if(!header_is_tchar(*p))
   ------------------
-  |  Branch (481:12): [True: 13, False: 9.59k]
+  |  Branch (481:12): [True: 12, False: 10.5k]
   ------------------
-  482|     13|            return 0;
-  483|  6.26k|    for(++p; p < end; ++p)
+  482|     12|            return 0;
+  483|  6.24k|    for(++p; p < end; ++p)
   ------------------
-  |  Branch (483:14): [True: 2.97k, False: 3.29k]
+  |  Branch (483:14): [True: 3.05k, False: 3.18k]
   ------------------
-  484|  2.97k|        if((*p < 0x20 && *p != '\t') || *p == 0x7f)
+  484|  3.05k|        if((*p < 0x20 && *p != '\t') || *p == 0x7f)
   ------------------
-  |  Branch (484:13): [True: 123, False: 2.85k]
-  |  Branch (484:26): [True: 5, False: 118]
-  |  Branch (484:41): [True: 1, False: 2.96k]
+  |  Branch (484:13): [True: 140, False: 2.91k]
+  |  Branch (484:26): [True: 5, False: 135]
+  |  Branch (484:41): [True: 1, False: 3.05k]
   ------------------
   485|      6|            return 0;
-  486|  3.29k|    return 1;
-  487|  3.30k|}
+  486|  3.18k|    return 1;
+  487|  3.18k|}
 header.c:header_is_tchar:
-  466|  9.61k|{
-  467|  9.61k|    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+  466|  10.5k|{
+  467|  10.5k|    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
   ------------------
-  |  Branch (467:13): [True: 6.51k, False: 3.09k]
-  |  Branch (467:25): [True: 5.91k, False: 597]
-  |  Branch (467:39): [True: 2.83k, False: 858]
-  |  Branch (467:51): [True: 1.96k, False: 870]
+  |  Branch (467:13): [True: 7.52k, False: 2.99k]
+  |  Branch (467:25): [True: 6.95k, False: 571]
+  |  Branch (467:39): [True: 2.70k, False: 858]
+  |  Branch (467:51): [True: 1.86k, False: 845]
   ------------------
-  468|  1.72k|        (c >= '0' && c <= '9') || (c && strchr("!#$%&'*+-.^_`|~", c));
+  468|  1.70k|        (c >= '0' && c <= '9') || (c && strchr("!#$%&'*+-.^_`|~", c));
   ------------------
-  |  Branch (468:10): [True: 1.18k, False: 545]
-  |  Branch (468:22): [True: 312, False: 871]
-  |  Branch (468:36): [True: 1.41k, False: 0]
-  |  Branch (468:41): [True: 1.40k, False: 13]
+  |  Branch (468:10): [True: 1.16k, False: 539]
+  |  Branch (468:22): [True: 318, False: 846]
+  |  Branch (468:36): [True: 1.38k, False: 0]
+  |  Branch (468:41): [True: 1.37k, False: 12]
   ------------------
-  469|  9.61k|}
+  469|  10.5k|}
 
 u_isblank:
-   42|  11.8k|{
-   43|  11.8k|    return c == ' ' || c == '\t';
+   42|  11.2k|{
+   43|  11.2k|    return c == ' ' || c == '\t';
   ------------------
-  |  Branch (43:12): [True: 649, False: 11.1k]
-  |  Branch (43:24): [True: 30, False: 11.1k]
+  |  Branch (43:12): [True: 561, False: 10.7k]
+  |  Branch (43:24): [True: 64, False: 10.6k]
   ------------------
-   44|  11.8k|}
+   44|  11.2k|}
 u_use_unused_args:
-  481|    320|{
-  482|    320|    dummy = 0;
-  483|    320|    return;
-  484|    320|}
+  481|    318|{
+  482|    318|    dummy = 0;
+  483|    318|    return;
+  484|    318|}
 
