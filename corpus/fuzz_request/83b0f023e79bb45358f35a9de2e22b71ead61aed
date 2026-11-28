@@ -1,0 +1,16 @@
+POST /f HTTP/1.1
+Hand:
+Content-Type:multipart/form-dataG6boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-dataform
+
+o
+
+--ÿqÿCo: t:tam#da0õ
+
+
+2ww

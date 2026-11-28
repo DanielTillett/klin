@@ -1,0 +1,6 @@
+GET /a/b?x=1&y=%19 HTTP/1.1
+Host: localhost
+Cookie:GET /Áb/?¶x=ta; boundary=ÿÿÿÿÿÿ: bCoe:GET /Á`/?x= form,data; name=y=%42 H; boundary=ÿÿÿÿÿÿ8 bCont k'a=b; lin_%id=klinTy; k a=b; lrt/form-daÿÿÿÿÿÿÿÿContent-Tyœ; k'a=b; lin_%id=klinaÿmultntent-Type; k a=b;glin_%id=klin-data; boundary=If-M¾ÿÿÿoceÿÿÿÿÿÿ: bContent-Tynte H=%21 ti?x=1&Cont eHt
+COokie: aÿmultipart/form-data; boundary=ÿÿt-Dispospart/form-data; boundary=ÿÿÿÿÿÿ: bContent-Type; k'a="; lin_%id=klinaÿmultipart/form-dontent-Type; k a=b; l¾«CHd=klinaÿmultipart/form-data7 boIr¤au’-yf=Modified-Sinceÿÿÿÿÿÿ: p_s˜›=01232tGET /Áb/?x=0&Conte orm-data; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:G2x=1&Conte-Disposition: form-data; name=y=%21 Hntentype; k a=b; lin_%id=klienta n-ÿa=b;fart/`uay=rÿdnÿÿÿÿÿ: -Type; k a=b; lin_PUT=klinaÿmulti#art/form-dontent]Type; k a=b;'id=klinaÿmul boundary=Sf-ified-Sinceÿÿÿÿÿÿ: bContp_s˜›=01231QQQQQQQQQHQQQQQQQ150
+

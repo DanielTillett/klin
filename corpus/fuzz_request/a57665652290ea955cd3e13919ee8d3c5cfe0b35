@@ -1,0 +1,10 @@
+POST /f HTTP/1.1
+st:Len
+Content-Type:multipart/form-dataGE5boundary=ÿ;üo
+Content-Length: 121
+
+--ÿÿ 
+Content-Disposition:form-dataa: at;filename=Üß        
+
+
+ÿÿÿ

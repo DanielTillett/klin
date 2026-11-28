@@ -1,0 +1,47 @@
+POST /f HTTP/1.0
+Hot:tanHTTPntent-Lengt: x
+Content-Type:multipart/form-dataGE5boundary=ÿ;ÿo
+Content-Length: 2424
+
+ 
+
+--ÿqÿÿÿÿÿt
+Content-Disposition: form-data@ 
+
+ 
+
+--ÿq„Content-Disposition: form-datae=:htion:me=:headm-3
+
+ 
+
+--ÿq„Content-Disposition: form-data; Cookienqtf ;ailenaead$-2
+
+ em
+
+ 
+
+--ÿqÿContent-Disposition: form-datansa; filename=:hea
+
+ 
+
+-
+
+--ÿqÿContent-DispositIon: form-data; fiìentasna; fih
+
+ 
+
+--ÿq„Content-Disposition: form-data; natf ilenaÿÿÿÿÿÿÿdata%nsa; filename=nad
+
+ 
+
+--ÿq„Content-Disposition: form-data;{ÿÿÌDpoma=n:head$-3
+
+ 
+amGET \%e=
+ 
+
+--ÿqHon: f
+
+ 
+
+--ÿq„Cotnt

@@ -1,0 +1,6 @@
+GET /a/b?xÿÿ=2&y=%40 HTTP/1.1
+Hos: localhost
+Cookie:GET /Áb/?x=1&Content-Disposition: ame=y=%21 Ht
+COokie: aary=ÿÿÿÿe:GET /Áb/?x=1&Content-Disposition: f=b; linHEAD=klinaÿ0 ndar;üo=ÿÿÿÿÿÿ: bÁb/?x=1&Content-Áb/: bÁb/?x=1&Content-Disposition2: f=b; linHEADlk=iÿent-Type; k tion: ame=y=%21 Ht
+COokie: aary=ÿÿÿÿe:GET /Áb/?x=1&Content-Disposition: f=b; linHEAD=klinaÿ0 ndary=ÿÿÿent-Type; k a=b bC=0&ContenP/1.1a; ary=ÿ;üo=ÿÿÿÿÿÿ: bÃb/?x=1&Content-Áb/: bÁb/?x=1&Content-Disposition: f=b; linHEADlk=inaÿ0 ndary=ÿÿÿent-Type; k a=b bContent›t= bnCoba=b bContent›t= bnCobentry=ÿ /Áb/?x=
+

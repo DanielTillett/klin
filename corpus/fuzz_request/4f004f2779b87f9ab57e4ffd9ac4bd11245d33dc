@@ -1,0 +1,11 @@
+POST /f HTTP/1.1
+Host:lll=
+Content-Type:multipart/form-dataG0boundary=ÿ;ÿo
+Content-Length: 1212
+
+ 
+
+--ÿÿt
+Content-Disposition: form-dataa; filename= 00    
+
+ÅÅÅÅo

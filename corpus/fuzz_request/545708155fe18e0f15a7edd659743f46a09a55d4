@@ -1,0 +1,9 @@
+GET /a/b?x=1&y=%20 HTTP/1.1
+cook: lk
+COokie: aÿmultipart:GET /Áb/?x=1&Content-Dsposition: form-data; nt/form-data; boundÿÿÿ_%id=klinaÿmultkpart/form-dontent-Type;=b;n_%id=klinaÿmultipart/form-data; boundary=If-Modified-"incetent-DispositÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎÎ`ÎÎÎÎÎÎion: form-dform-y=ÿkeep-alivest
+Cookie:GET /Áb/?x=2&Content-Dispositiorm-data; boundary=ÿÿÿÿType; k'a=bÅßlin_%id=klinaÿmultipart/form-dontent-Type; k a=; li%id=klinaÿmultConnection-data.; b—Š‘›ary=If-ModifideS-inceÿÿ:ÿÿ ÿbÿContent-Typ_s˜›=01232QQQQQQQQQQQQQQQQQQQQt)a; boundary=ÿÿÿÿÿÿ: bCost
+Cookie:GET /Áb/?x=1&Content-Diokie: aÿ%umtl_id=klinaÿmultipartGE5bund/form%00-dontent-Type; k a=b; lin_%id=klinaÿmultipart/form-d&ath; PATCHodified-Sinceÿÿÿÿÿÿ: bContent-Typ_s˜›=01230QQQQQQQContent-Disposition: fÿÿÿßÿÿßÿÿÿîÿÿÿÿQQQQQQQQQQQQQQQQQQQQQQQQ%21 Ht
+COokie: aÿmultipart/for; boundary=ÿÿÿÿÿÿ: bContent-Type; k an_%it/form-data; boundary=ÿÿÿÿÿÿ: bCont- a=b; lin_%id=klinaÿmultipart/form-donten)t-Type; k a=b/HHW/art/fod; lin_%id=klinnda; lin_%id=fied-SinceÿÿÿÿContentÿÿÿÿÿÿÿÿÿÿ-Typ_s˜›=01231QQQQQQQQQQQQQÁQQQ287
+
+
+
