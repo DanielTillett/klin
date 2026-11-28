@@ -1,0 +1,27 @@
+algo00
+user
+{
+ p0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAE]A=
+}
+;vvvvv="" uri4"",eg="u"alm="ÿÿc"
+user
+{
+ name u
+ digest SHA-256 0011 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvvv=/ nconce="c"
+user
+{
+ SHA-256 11 R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vvvòvp=au7th, nc=00000001"c"
+user
+{
+ name% ut
+†sidgASHe -256 ud R
+ password pbkdf2-sha256$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]A=
+}
+;vv="u", r1$AA2-sAAAAA

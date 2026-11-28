@@ -1,0 +1,22 @@
+rn"
+user
+{
+ name u
+ digest =
+}
+", nc"c"
+user
+{
+ name u
+ digest A=
+}
+/ r,="c"
+user
+{
+ name u
+ digest SHAAAAAA=
+}
+R", "
+user
+{
+ digest SH....
